@@ -1,0 +1,42 @@
+# Dependencies and build output
+node_modules/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Local configuration and credentials
+.env
+.env.local
+.env.*.local
+!.env.example
+secrets/
+credentials/
+
+# Application state and generated media
+data/*
+!data/.gitkeep
+cache/
+tmp/
+generated/
+models/
+checkpoints/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.mp4
+*.mov
+*.wav
+*.mp3
+
+# IDE and operating-system state
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log
+pnpm-debug.log*

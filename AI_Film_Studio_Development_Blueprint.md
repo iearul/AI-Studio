@@ -162,6 +162,19 @@ Models and prices will change. The application should survive those changes.
 
 # 4. Suggested Technology Stack
 
+> **Implementation decision — 2026-09-10:** Accepted with the following concrete
+> choices for the first production baseline. The repository uses a pnpm/TypeScript
+> monorepo, Next.js App Router for `apps/web`, and a separate Fastify service for
+> `apps/api`. SQLite remains the system of record. Database access is isolated in
+> `packages/database` behind repositories and versioned SQL migrations so that a
+> future PostgreSQL migration does not leak into domain or UI code. Long-running
+> work begins with a persistent, single-machine job abstraction; BullMQ/Redis is
+> deferred until generation concurrency or crash recovery proves it necessary.
+> Local AI will integrate through the ComfyUI API. Paid cloud-video provider
+> selection remains deliberately open until Phase 6, when price, regional
+> availability, and credentials can be evaluated with an explicit user decision.
+> See `docs/architecture/0001-foundation.md` for the rationale and boundaries.
+
 Use whatever stack is most comfortable, but a practical setup is:
 
 ## Frontend
@@ -2441,3 +2454,35 @@ restore project
 all work correctly.
 
 Once the foundation is reliable, add the AI layer.
+
+---
+
+# 63. Implementation Status and Decision Register
+
+This section records which blueprint alternatives have been selected. It is
+updated whenever an implementation choice is made so the blueprint remains the
+project's source of truth.
+
+| Date | Area | Decision | Status |
+|---|---|---|---|
+| 2026-09-10 | Package management | pnpm workspace with strict TypeScript | Accepted |
+| 2026-09-10 | Frontend | Next.js App Router, React, TypeScript, Tailwind CSS | Accepted |
+| 2026-09-10 | Backend | Separate Fastify API bound to loopback only | Accepted |
+| 2026-09-10 | Database | SQLite with repository boundaries and versioned SQL migrations | Accepted |
+| 2026-09-10 | Background jobs | Persistent local runner first; BullMQ/Redis only when scaling evidence exists | Accepted |
+| 2026-09-10 | Local AI | ComfyUI adapter boundary | Accepted for Phase 4+ |
+| 2026-09-10 | Cloud video | Select one provider during Phase 6 after explicit cost/region review | Deferred |
+| 2026-09-10 | Project content in Git | Excluded; Git contains application source and safe templates only | Accepted |
+
+## Milestone progress
+
+- [x] Architecture foundation and decision register
+- [ ] Phase 1 — Project Manager
+- [ ] Phase 2 — Story System
+- [ ] Phase 3 — Character & Location Bible
+- [ ] Phase 4 — Image Generation
+- [ ] Phase 5 — Local Video
+- [ ] Phase 6 — Cloud Video
+- [ ] Phase 7 — Audio
+- [ ] Phase 8 — Draft Renderer
+- [ ] Phase 9 — Long Video Features
