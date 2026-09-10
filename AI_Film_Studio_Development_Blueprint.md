@@ -2054,6 +2054,16 @@ Success criterion:
 
 ## Phase 4 — Image Generation
 
+> **Implementation status — 2026-09-10:** Phase 4A is complete. The application
+> now has a provider-neutral image interface, a loopback-only ComfyUI adapter for
+> API-format workflows, persistent crash-recoverable jobs, immutable attempt and
+> asset history, a manual-import fallback, and explicit per-shot approve/reject
+> review with exactly one selected frame. The installed ComfyUI endpoint was
+> checked and is currently offline/unconfigured, so a live local-model render is
+> not claimed. Phase 4B tracks selection of an installed model/workflow plus a real
+> render acceptance test; Google Drive asset upload remains blocked by the Phase 1B
+> OAuth credential milestone. See `docs/architecture/0003-image-generation.md`.
+
 Build:
 
 ```text
@@ -2502,6 +2512,11 @@ project's source of truth.
 | 2026-09-10 | Bible identity matching | Exact case-insensitive name or stable generated code; missing labels are unresolved and never fuzzy-guessed | Accepted |
 | 2026-09-10 | Reference image storage | Project-local generated paths; JPEG/PNG/WebP only, 8 MB limit, MIME magic-byte verification, SHA-256 metadata | Accepted |
 | 2026-09-10 | Shot prompt builder | Deterministic provider-neutral composition from project, shot, Bible, and reference records | Accepted |
+| 2026-09-10 | Image attempt history | Immutable attempt, job, prompt/reference/settings snapshot, error, timing, cost, review, and asset records | Accepted |
+| 2026-09-10 | Image job execution | Transactional SQLite queue with one local worker and startup recovery; Redis remains deferred | Accepted |
+| 2026-09-10 | ComfyUI workflow contract | API-format JSON with exact runtime tokens and loopback-only HTTP access | Accepted; live workflow pending |
+| 2026-09-10 | Offline image workflow | Manual JPEG/PNG/WebP import enters the same zero-cost review history | Accepted |
+| 2026-09-10 | Cloud image provider | No provider selected and no automatic cloud spending | Deferred |
 
 ## Milestone progress
 
@@ -2510,7 +2525,8 @@ project's source of truth.
 - [ ] Phase 1B — Google Drive OAuth connection and verified backup upload
 - [x] Phase 2 — Story System
 - [x] Phase 3 — Character & Location Bible
-- [ ] Phase 4 — Image Generation
+- [x] Phase 4A — Image jobs, immutable history, manual fallback, and review UI
+- [ ] Phase 4B — Live ComfyUI model/workflow render and Google Drive asset upload
 - [ ] Phase 5 — Local Video
 - [ ] Phase 6 — Cloud Video
 - [ ] Phase 7 — Audio
@@ -2577,3 +2593,24 @@ project's source of truth.
 - Twenty-one automated tests pass across repositories, storage containment and MIME
   spoofing, resolver behavior, multipart API delivery, manifests, prior milestones,
   and end-to-end Visual Bible coverage.
+
+### Phase 4A — Image Generation Pipeline (2026-09-10)
+
+- A provider package isolates ComfyUI behind a typed image interface and validates
+  a loopback-only base URL, readable API-format workflow, mandatory substitution
+  tokens, prompt submission, history polling, reference upload, and output download.
+- SQLite stores durable generation jobs, immutable attempt provenance, review state,
+  structured failure details, and generated-asset metadata. Transactional claims
+  prevent duplicate local work and startup recovery requeues interrupted jobs.
+- Storyboard files use project-contained generated paths, content-derived MIME type,
+  SHA-256, byte size, and available dimensions. Manual imports follow the identical
+  history/review path and record zero provider cost.
+- The Storyboard workspace reports provider readiness, continuity blockers, warning
+  references, job progress, image alternatives, seed/model/time/cost/error facts,
+  and explicit approve/reject controls with one selected frame per shot.
+- Thirty-one automated tests pass across all four milestones, including attempt history,
+  single-selection invariants, crash recovery, storage containment and spoofing,
+  ComfyUI request/response behavior, manual import, asset delivery, manifest sync,
+  review, and precise offline/configuration errors.
+- Live ComfyUI generation remains pending because no reachable configured local
+  runtime, selected model, or exported workflow was available during acceptance.

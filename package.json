@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "pnpm -r --if-present build",
-    "build:packages": "pnpm --filter @ai-film-studio/contracts --filter @ai-film-studio/database --filter @ai-film-studio/storage --filter @ai-film-studio/film-engine build",
+    "build:packages": "pnpm --filter @ai-film-studio/contracts --filter @ai-film-studio/database --filter @ai-film-studio/storage --filter @ai-film-studio/film-engine --filter @ai-film-studio/providers build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "db:migrate": "pnpm --filter @ai-film-studio/database migrate",
     "dev": "pnpm build:packages && pnpm --parallel --filter @ai-film-studio/api --filter @ai-film-studio/web dev",

@@ -3,6 +3,8 @@ import path from "node:path";
 
 import type {
   Character,
+  GeneratedAsset,
+  ImageAttempt,
   Location,
   Project,
   Prop,
@@ -20,7 +22,8 @@ export type ProjectManifestContent = {
   characters?: Character[];
   locations?: Location[];
   props?: Prop[];
-  assets?: unknown[];
+  assets?: GeneratedAsset[];
+  generationAttempts?: ImageAttempt[];
 };
 
 export type ProjectManifestV1 = {
@@ -34,7 +37,8 @@ export type ProjectManifestV1 = {
   props: Prop[];
   scenes: Scene[];
   shots: Shot[];
-  assets: unknown[];
+  assets: GeneratedAsset[];
+  generationAttempts: ImageAttempt[];
 };
 
 export class ProjectManifestStore {
@@ -60,6 +64,7 @@ export class ProjectManifestStore {
       scenes: content.scenes ?? [],
       shots: content.shots ?? [],
       assets: content.assets ?? [],
+      generationAttempts: content.generationAttempts ?? [],
     };
     await writeFile(temporary, `${JSON.stringify(manifest, null, 2)}\n`, {
       encoding: "utf8",

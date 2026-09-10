@@ -26,6 +26,9 @@ importers:
       '@ai-film-studio/film-engine':
         specifier: workspace:*
         version: link:../../packages/film-engine
+      '@ai-film-studio/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       '@ai-film-studio/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -178,6 +181,28 @@ importers:
       '@ai-film-studio/tooling':
         specifier: workspace:*
         version: link:../tooling
+      eslint:
+        specifier: ^9.34.0
+        version: 9.39.5(jiti@2.7.0)
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@24.13.4)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)
+
+  packages/providers:
+    dependencies:
+      '@ai-film-studio/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+    devDependencies:
+      '@ai-film-studio/tooling':
+        specifier: workspace:*
+        version: link:../tooling
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.13.4
       eslint:
         specifier: ^9.34.0
         version: 9.39.5(jiti@2.7.0)

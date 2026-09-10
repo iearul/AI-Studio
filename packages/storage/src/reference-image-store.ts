@@ -4,7 +4,7 @@ import path from "node:path";
 
 import type { ReferenceOwnerType } from "@ai-film-studio/contracts";
 
-type SupportedImage = {
+export type SupportedImage = {
   mimeType: "image/jpeg" | "image/png" | "image/webp";
   extension: ".jpg" | ".png" | ".webp";
 };
@@ -16,7 +16,7 @@ export type StoredReferenceImage = SupportedImage & {
   sha256: string;
 };
 
-function detectImage(buffer: Buffer): SupportedImage | undefined {
+export function detectImage(buffer: Buffer): SupportedImage | undefined {
   if (
     buffer.length >= 8 &&
     buffer
@@ -77,11 +77,16 @@ export class ReferenceImageStore {
     const destination = this.absolutePath(input.projectId, relativePath);
     await mkdir(path.dirname(destination), { recursive: true });
     const temporary = `${destination}.${process.pid}.tmp`;
-    await writeFile(temporary, input.buffer, { flag: "wx", mode: 0o600 });
-    await rename(temporary, destination);
+    try {
+      await writeFile(temporary, input.buffer, { flag: "wx", mode: 0o600 });
+      await rename(temporary, destination);
+    } catch (error) {
+      await rm(temporary, { force: true });
+      throw error;
+    }
     return {
       ...detected,
-      originalFilename: this.safeFilename(input.originalFilename),
+      originalFilename: safeImageFilename(input.originalFilename),
       relativePath,
       byteSize: input.buffer.length,
       sha256: createHash("sha256").update(input.buffer).digest("hex"),
@@ -111,16 +116,16 @@ export class ReferenceImageStore {
   async remove(projectId: string, relativePath: string): Promise<void> {
     await rm(this.absolutePath(projectId, relativePath), { force: true });
   }
+}
 
-  private safeFilename(filename: string): string {
-    const basename = Array.from(path.basename(filename))
-      .filter((character) => {
-        const code = character.charCodeAt(0);
-        return code >= 32 && code !== 127;
-      })
-      .join("");
-    return basename.slice(0, 255) || "reference-image";
-  }
+export function safeImageFilename(filename: string): string {
+  const basename = Array.from(path.basename(filename))
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join("");
+  return basename.slice(0, 255) || "image";
 }
 
 export class ReferenceImageValidationError extends Error {

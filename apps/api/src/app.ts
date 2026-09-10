@@ -7,6 +7,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { ApiConfig } from "./config.js";
 import { registerErrorHandler } from "./errors.js";
 import { registerBibleRoutes } from "./routes/bible.js";
+import { registerGenerationRoutes } from "./routes/generations.js";
 import { registerProjectRoutes } from "./routes/projects.js";
 import { registerSystemRoutes } from "./routes/system.js";
 import { registerStoryPlanRoutes } from "./routes/story-plans.js";
@@ -67,9 +68,16 @@ export async function buildApp(
       registerProjectRoutes(api, services);
       registerStoryPlanRoutes(api, services);
       registerBibleRoutes(api, services);
+      registerGenerationRoutes(api, services);
       registerSystemRoutes(api, services);
     },
     { prefix: "/api/v1" },
   );
+  if (config.environment !== "test") {
+    services.imageGenerations.start();
+    app.addHook("onClose", () => {
+      services.imageGenerations.stop();
+    });
+  }
   return app;
 }

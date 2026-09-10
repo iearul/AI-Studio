@@ -14,6 +14,7 @@ import {
   Sparkles,
   Users,
   WandSparkles,
+  Images,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -45,6 +46,12 @@ const workflow = [
     description: "Turn scenes into deliberate camera decisions.",
     icon: Film,
     path: "story",
+  },
+  {
+    title: "Storyboard",
+    description: "Generate, compare and approve one image per shot.",
+    icon: Images,
+    path: "storyboard",
   },
 ];
 

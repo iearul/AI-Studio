@@ -5,9 +5,15 @@ import {
   BibleConflictError,
   BibleEntityNotFoundError,
   BibleProjectNotFoundError,
+  GenerationNotFoundError,
+  GenerationStateError,
   StoryPlanDurationError,
   StoryPlanProjectNotFoundError,
 } from "@ai-film-studio/database";
+import {
+  ImageProviderConfigurationError,
+  ImageProviderUnavailableError,
+} from "@ai-film-studio/providers";
 import {
   BackupIntegrityError,
   BackupNotFoundError,
@@ -61,12 +67,43 @@ export function registerErrorHandler(app: FastifyInstance): void {
       error instanceof BackupNotFoundError ||
       error instanceof BibleProjectNotFoundError ||
       error instanceof BibleEntityNotFoundError ||
+      error instanceof GenerationNotFoundError ||
       error instanceof StoryPlanProjectNotFoundError
     ) {
       void reply.status(404).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/not-found",
         title: "Not found",
         status: 404,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof GenerationStateError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/generation-state",
+        title: "Generation state conflict",
+        status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof ImageProviderConfigurationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/provider-configuration",
+        title: "Provider is not configured",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof ImageProviderUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/provider-unavailable",
+        title: "Provider is unavailable",
+        status: 503,
         detail: error.message,
         instance: request.url,
       });
@@ -128,7 +165,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
           status,
           detail:
             status === 413
-              ? "Reference images may be at most 8 MB."
+              ? "Images may be at most 8 MB."
               : "The request could not be processed.",
           instance: request.url,
         });

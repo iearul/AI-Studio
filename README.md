@@ -49,6 +49,15 @@ shown instead of guessed. Each resolved shot receives a provider-neutral continu
 prompt combining the creative brief, cinematography, Bible facts, and reference
 paths.
 
+## Storyboard generation and review
+
+The Storyboard workspace keeps an immutable attempt history for every shot. It can
+submit a configured local ComfyUI API-format workflow or import an existing
+JPEG/PNG/WebP frame when ComfyUI is unavailable. Each attempt records its prompt,
+reference snapshot, provider, model, seed, settings, timing, error, and cost; an
+explicit review selects exactly one approved image per shot. See
+[`config/comfyui/README.md`](config/comfyui/README.md) for local workflow setup.
+
 ## Quality checks
 
 ```bash
