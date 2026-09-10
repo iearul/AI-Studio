@@ -60,11 +60,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="phase-card">
           <Sparkles size={16} />
           <p>
-            <strong>Foundation</strong>
+            <strong>Story system</strong>
             <br />
-            Project planning &amp; backup
+            Structured scenes &amp; shots
           </p>
-          <span>Phase 1</span>
+          <span>Phase 2</span>
         </div>
       </aside>
       <div className="content-frame">

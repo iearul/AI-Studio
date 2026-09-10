@@ -1,11 +1,17 @@
 import type { ManifestOutboxRepository } from "@ai-film-studio/database";
 
-import type { ProjectManifestStore } from "./project-manifest-store.js";
+import type {
+  ProjectManifestContent,
+  ProjectManifestStore,
+} from "./project-manifest-store.js";
 
 export class ManifestSynchronizer {
   constructor(
     private readonly outbox: ManifestOutboxRepository,
     private readonly manifests: ProjectManifestStore,
+    private readonly loadContent: (
+      projectId: string,
+    ) => ProjectManifestContent | Promise<ProjectManifestContent> = () => ({}),
   ) {}
 
   async drain(limit = 100): Promise<{ completed: number; failed: number }> {
@@ -13,7 +19,8 @@ export class ManifestSynchronizer {
     let failed = 0;
     for (const item of this.outbox.list(limit)) {
       try {
-        await this.manifests.write(item.project);
+        const content = await this.loadContent(item.projectId);
+        await this.manifests.write(item.project, content);
         this.outbox.complete(item.projectId);
         completed += 1;
       } catch (error) {

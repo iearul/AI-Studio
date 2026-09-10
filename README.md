@@ -32,6 +32,14 @@ data/backups/            verified SQLite backups
 cache/                   disposable working files
 ```
 
+## Story planning workflow
+
+Open a project and select **Build story plan**. The Story Room exports a
+project-specific prompt for manual use in ChatGPT, validates the returned JSON,
+shows scene/shot/duration totals, and imports the approved plan transactionally.
+The resulting story, script, scenes, and shots are stored in SQLite and mirrored
+into the portable `project.json` manifest.
+
 ## Quality checks
 
 ```bash

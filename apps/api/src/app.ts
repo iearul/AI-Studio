@@ -7,6 +7,7 @@ import type { ApiConfig } from "./config.js";
 import { registerErrorHandler } from "./errors.js";
 import { registerProjectRoutes } from "./routes/projects.js";
 import { registerSystemRoutes } from "./routes/system.js";
+import { registerStoryPlanRoutes } from "./routes/story-plans.js";
 import type { Services } from "./services.js";
 
 export async function buildApp(
@@ -29,7 +30,7 @@ export async function buildApp(
   });
   await app.register(cors, {
     credentials: false,
-    methods: ["GET", "POST", "PATCH", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "OPTIONS"],
     origin(origin, callback) {
       if (!origin) {
         callback(null, true);
@@ -59,6 +60,7 @@ export async function buildApp(
   await app.register(
     (api) => {
       registerProjectRoutes(api, services);
+      registerStoryPlanRoutes(api, services);
       registerSystemRoutes(api, services);
     },
     { prefix: "/api/v1" },

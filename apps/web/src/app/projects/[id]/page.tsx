@@ -122,20 +122,41 @@ export default function ProjectPage() {
             </div>
           </div>
           <div className="workflow-list">
-            {workflow.map(({ title, description, icon: Icon }, index) => (
-              <div className="workflow-row" key={title}>
-                <span className="workflow-icon">
-                  <Icon size={19} />
-                </span>
-                <div>
-                  <small>Step {index + 1}</small>
-                  <strong>{title}</strong>
-                  <p>{description}</p>
+            {workflow.map(({ title, description, icon: Icon }, index) => {
+              const content = (
+                <>
+                  <span className="workflow-icon">
+                    <Icon size={19} />
+                  </span>
+                  <div>
+                    <small>Step {index + 1}</small>
+                    <strong>{title}</strong>
+                    <p>{description}</p>
+                  </div>
+                  <span
+                    className={
+                      index === 0 ? "coming-soon ready" : "coming-soon"
+                    }
+                  >
+                    {index === 0 ? "Open" : "Next phase"}
+                  </span>
+                  <ArrowRight size={17} />
+                </>
+              );
+              return index === 0 ? (
+                <Link
+                  className="workflow-row enabled"
+                  href={`/projects/${project.id}/story`}
+                  key={title}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <div className="workflow-row" key={title}>
+                  {content}
                 </div>
-                <span className="coming-soon">Next phase</span>
-                <ArrowRight size={17} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
         <aside className="brief-panel">

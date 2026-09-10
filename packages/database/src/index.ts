@@ -4,3 +4,4 @@ export * from "./manifest-outbox-repository.js";
 export * from "./paths.js";
 export * from "./project-repository.js";
 export * from "./settings-repository.js";
+export * from "./story-plan-repository.js";

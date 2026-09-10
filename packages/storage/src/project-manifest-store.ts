@@ -1,23 +1,44 @@
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { Project } from "@ai-film-studio/contracts";
+import type {
+  Project,
+  Scene,
+  Script,
+  Shot,
+  Story,
+} from "@ai-film-studio/contracts";
+
+export type ProjectManifestContent = {
+  story?: Story | null;
+  script?: Script | null;
+  scenes?: Scene[];
+  shots?: Shot[];
+  characters?: unknown[];
+  locations?: unknown[];
+  assets?: unknown[];
+};
 
 export type ProjectManifestV1 = {
   projectVersion: 1;
   exportedAt: string;
   project: Project;
+  story: Story | null;
+  script: Script | null;
   characters: unknown[];
   locations: unknown[];
-  scenes: unknown[];
-  shots: unknown[];
+  scenes: Scene[];
+  shots: Shot[];
   assets: unknown[];
 };
 
 export class ProjectManifestStore {
   constructor(private readonly projectsRoot: string) {}
 
-  async write(project: Project): Promise<string> {
+  async write(
+    project: Project,
+    content: ProjectManifestContent = {},
+  ): Promise<string> {
     const directory = this.projectDirectory(project.id);
     await mkdir(directory, { recursive: true });
     const destination = path.join(directory, "project.json");
@@ -26,11 +47,13 @@ export class ProjectManifestStore {
       projectVersion: 1,
       exportedAt: new Date().toISOString(),
       project,
-      characters: [],
-      locations: [],
-      scenes: [],
-      shots: [],
-      assets: [],
+      story: content.story ?? null,
+      script: content.script ?? null,
+      characters: content.characters ?? [],
+      locations: content.locations ?? [],
+      scenes: content.scenes ?? [],
+      shots: content.shots ?? [],
+      assets: content.assets ?? [],
     };
     await writeFile(temporary, `${JSON.stringify(manifest, null, 2)}\n`, {
       encoding: "utf8",

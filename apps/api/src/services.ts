@@ -4,6 +4,7 @@ import {
   ManifestOutboxRepository,
   ProjectRepository,
   SettingsRepository,
+  StoryPlanRepository,
 } from "@ai-film-studio/database";
 import {
   BackupService,
@@ -24,12 +25,24 @@ export async function createServices() {
 
   const projects = new ProjectRepository(database);
   const settings = new SettingsRepository(database);
+  const storyPlans = new StoryPlanRepository(database, projects);
   const backupRecords = new BackupRepository(database);
   const manifestOutbox = new ManifestOutboxRepository(database);
   const manifestStore = new ProjectManifestStore(storage.projectsPath);
   const manifestSynchronizer = new ManifestSynchronizer(
     manifestOutbox,
     manifestStore,
+    (projectId) => {
+      const plan = storyPlans.get(projectId);
+      return plan
+        ? {
+            story: plan.story,
+            script: plan.script,
+            scenes: plan.scenes,
+            shots: plan.scenes.flatMap((scene) => scene.shots),
+          }
+        : {};
+    },
   );
   const backups = new BackupService(
     database,
@@ -46,6 +59,7 @@ export async function createServices() {
     database,
     projects,
     settings,
+    storyPlans,
     backupRecords,
     manifestOutbox,
     manifestSynchronizer,

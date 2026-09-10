@@ -1999,6 +1999,15 @@ Success criterion:
 
 ## Phase 2 — Story System
 
+> **Implementation status — 2026-09-10:** Complete. A project-specific manual
+> ChatGPT request can be exported, its JSON response is validated without being
+> saved, and the filmmaker sees scene, shot, and duration totals before import.
+> An accepted plan is written transactionally as a versioned story and script
+> with ordered scenes and globally identified shots, then synchronized into the
+> portable project manifest. Re-import replaces the prior scene/shot hierarchy
+> only after an explicit UI confirmation; generation history remains a Phase 4+
+> concern and will protect generated assets independently.
+
 Build:
 
 ```text
@@ -2480,13 +2489,15 @@ project's source of truth.
 | 2026-09-10 | Local AI | ComfyUI adapter boundary | Accepted for Phase 4+ |
 | 2026-09-10 | Cloud video | Select one provider during Phase 6 after explicit cost/region review | Deferred |
 | 2026-09-10 | Project content in Git | Excluded; Git contains application source and safe templates only | Accepted |
+| 2026-09-10 | Story AI workflow | Manual ChatGPT prompt export and validated JSON import; no subscription automation or API charge | Accepted |
+| 2026-09-10 | Story-plan persistence | Transactional replacement with story/script version increments, ordered scenes, and globally unique shot codes | Accepted |
 
 ## Milestone progress
 
 - [x] Architecture foundation and decision register
 - [x] Phase 1A — Local Project Manager, portable manifests, backup and restore
 - [ ] Phase 1B — Google Drive OAuth connection and verified backup upload
-- [ ] Phase 2 — Story System
+- [x] Phase 2 — Story System
 - [ ] Phase 3 — Character & Location Bible
 - [ ] Phase 4 — Image Generation
 - [ ] Phase 5 — Local Video
@@ -2515,3 +2526,22 @@ project's source of truth.
 - Repository checks passed: formatting, ESLint, strict TypeScript, seven automated
   tests, production Next.js/API builds, compiled API boot, and production dependency
   audit with no known vulnerabilities.
+
+### Phase 2 — Story System (2026-09-10)
+
+- The Story Room exports a creative-brief-specific ChatGPT request containing an
+  exact provider-independent JSON contract and explicit prompt-injection boundary.
+- JSON can be parsed and server-validated before any write; the review step shows
+  story metadata, scene and shot counts, total shot duration, and target-duration
+  drift before import.
+- Story, script, scenes, and shots use strict shared schemas, database constraints,
+  a versioned SQLite migration, transactional replacement, deterministic ordering,
+  generated global shot codes, and Reel/long-video maximum-duration enforcement.
+- The project workspace renders the resulting story arc, hook/twist/cliffhanger,
+  screenplay scenes, and cinematography details for each shot. A real Reel idea was
+  imported and reopened through the live browser workflow.
+- Portable manifests now include story, script, scenes, and a flattened shot index;
+  acceptance verification confirmed that the database write and manifest sync agree.
+- Repository checks passed with thirteen automated tests covering contracts through
+  API behavior, duplicate identifiers, duration limits, preflight support for PUT,
+  persistence/versioning, manifest synchronization, and story-request construction.

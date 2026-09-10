@@ -192,6 +192,11 @@ export class ProjectRepository {
     })();
   }
 
+  markManifestDirty(projectId: string): void {
+    const project = this.getById(projectId);
+    if (project) this.queueManifest(project);
+  }
+
   private queueManifest(project: Project): void {
     this.manager.connection
       .prepare(

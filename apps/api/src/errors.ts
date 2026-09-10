@@ -2,6 +2,10 @@ import type { FastifyError, FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 
 import {
+  StoryPlanDurationError,
+  StoryPlanProjectNotFoundError,
+} from "@ai-film-studio/database";
+import {
   BackupIntegrityError,
   BackupNotFoundError,
 } from "@ai-film-studio/storage";
@@ -50,12 +54,23 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (
       error instanceof NotFoundError ||
-      error instanceof BackupNotFoundError
+      error instanceof BackupNotFoundError ||
+      error instanceof StoryPlanProjectNotFoundError
     ) {
       void reply.status(404).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/not-found",
         title: "Not found",
         status: 404,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof StoryPlanDurationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/plan-duration",
+        title: "Shot plan is too long",
+        status: 422,
         detail: error.message,
         instance: request.url,
       });
