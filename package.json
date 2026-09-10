@@ -10,12 +10,16 @@
   },
   "scripts": {
     "build": "pnpm -r --if-present build",
+    "build:packages": "pnpm --filter @ai-film-studio/contracts --filter @ai-film-studio/database --filter @ai-film-studio/storage build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
-    "dev": "pnpm --parallel --filter @ai-film-studio/api --filter @ai-film-studio/web dev",
+    "db:migrate": "pnpm --filter @ai-film-studio/database migrate",
+    "dev": "pnpm build:packages && pnpm --parallel --filter @ai-film-studio/api --filter @ai-film-studio/web dev",
+    "dev:api": "pnpm build:packages && pnpm --filter @ai-film-studio/api dev",
+    "dev:web": "pnpm build:packages && pnpm --filter @ai-film-studio/web dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test",
+    "test": "pnpm build:packages && pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {

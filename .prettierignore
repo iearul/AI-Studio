@@ -1,0 +1,7 @@
+AI_Film_Studio_Development_Blueprint.md
+.next
+coverage
+data
+dist
+node_modules
+pnpm-lock.yaml

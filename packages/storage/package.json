@@ -1,0 +1,31 @@
+{
+  "name": "@ai-film-studio/storage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-film-studio/contracts": "workspace:*",
+    "@ai-film-studio/database": "workspace:*"
+  },
+  "devDependencies": {
+    "@ai-film-studio/tooling": "workspace:*",
+    "@types/node": "^24.3.0",
+    "eslint": "^9.34.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

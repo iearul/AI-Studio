@@ -1973,6 +1973,13 @@ Do not build everything at once.
 
 ## Phase 1 — Project Manager
 
+> **Implementation status — 2026-09-10:** The local Phase 1 success criterion is
+> complete. The application creates, persists, closes/reopens, manifests, backs
+> up, verifies, and restores projects. Settings includes Google Drive credential
+> readiness and the intended remote folder, but authenticated Drive OAuth/upload
+> is tracked separately as Phase 1B because it requires user-supplied Google OAuth
+> credentials for a real acceptance test. No remote-backup claim is made yet.
+
 Build:
 
 ```text
@@ -2477,7 +2484,8 @@ project's source of truth.
 ## Milestone progress
 
 - [x] Architecture foundation and decision register
-- [ ] Phase 1 — Project Manager
+- [x] Phase 1A — Local Project Manager, portable manifests, backup and restore
+- [ ] Phase 1B — Google Drive OAuth connection and verified backup upload
 - [ ] Phase 2 — Story System
 - [ ] Phase 3 — Character & Location Bible
 - [ ] Phase 4 — Image Generation
@@ -2486,3 +2494,24 @@ project's source of truth.
 - [ ] Phase 7 — Audio
 - [ ] Phase 8 — Draft Renderer
 - [ ] Phase 9 — Long Video Features
+
+## Completed milestone evidence
+
+### Phase 1A — Local Project Manager (2026-09-10)
+
+- Next.js dashboard, project library, creative-brief form, project workspace, and
+  storage/settings interface are implemented and visually checked in a live browser.
+- Fastify is loopback-only, uses an origin allow-list, conservative payload/rate
+  limits, security headers, runtime validation, and RFC 9457-style problem responses.
+- SQLite uses WAL, foreign keys, busy timeouts, constraints, repositories, and a
+  versioned migration ledger.
+- Project creation/update writes a versioned `project.json` through a persistent
+  transactional outbox; failures remain retryable and never discard database state.
+- Backups use SQLite's online backup API, record size and SHA-256, verify integrity
+  before restore, and create a rollback snapshot before replacing the active database.
+- Automated tests cover persistence across reopen, search/filter/update, manifest
+  containment and synchronization, create-to-restore API flow, validation problems,
+  and untrusted browser origins.
+- Repository checks passed: formatting, ESLint, strict TypeScript, seven automated
+  tests, production Next.js/API builds, compiled API boot, and production dependency
+  audit with no known vulnerabilities.
