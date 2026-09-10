@@ -2027,6 +2027,14 @@ Success criterion:
 
 ## Phase 3 — Character & Location Bible
 
+> **Implementation status — 2026-09-10:** Complete. Characters, locations, and
+> recurring props have stable generated codes, structured editable records, and
+> project-local reference images. Shot labels resolve deterministically by exact
+> case-insensitive name or stable code; unresolved labels are surfaced rather than
+> guessed. Each shot receives a provider-neutral continuity prompt containing the
+> resolved Bible facts and every available reference path. See
+> `docs/architecture/0002-visual-bible.md`.
+
 Build:
 
 ```text
@@ -2491,6 +2499,9 @@ project's source of truth.
 | 2026-09-10 | Project content in Git | Excluded; Git contains application source and safe templates only | Accepted |
 | 2026-09-10 | Story AI workflow | Manual ChatGPT prompt export and validated JSON import; no subscription automation or API charge | Accepted |
 | 2026-09-10 | Story-plan persistence | Transactional replacement with story/script version increments, ordered scenes, and globally unique shot codes | Accepted |
+| 2026-09-10 | Bible identity matching | Exact case-insensitive name or stable generated code; missing labels are unresolved and never fuzzy-guessed | Accepted |
+| 2026-09-10 | Reference image storage | Project-local generated paths; JPEG/PNG/WebP only, 8 MB limit, MIME magic-byte verification, SHA-256 metadata | Accepted |
+| 2026-09-10 | Shot prompt builder | Deterministic provider-neutral composition from project, shot, Bible, and reference records | Accepted |
 
 ## Milestone progress
 
@@ -2498,7 +2509,7 @@ project's source of truth.
 - [x] Phase 1A — Local Project Manager, portable manifests, backup and restore
 - [ ] Phase 1B — Google Drive OAuth connection and verified backup upload
 - [x] Phase 2 — Story System
-- [ ] Phase 3 — Character & Location Bible
+- [x] Phase 3 — Character & Location Bible
 - [ ] Phase 4 — Image Generation
 - [ ] Phase 5 — Local Video
 - [ ] Phase 6 — Cloud Video
@@ -2545,3 +2556,24 @@ project's source of truth.
 - Repository checks passed with thirteen automated tests covering contracts through
   API behavior, duplicate identifiers, duration limits, preflight support for PUT,
   persistence/versioning, manifest synchronization, and story-request construction.
+
+### Phase 3 — Character & Location Bible (2026-09-10)
+
+- Character, location, and prop records use project-scoped stable codes, strict
+  shared schemas, case-insensitive name uniqueness, database constraints, and a
+  versioned migration. Existing shots gain a backward-compatible prop-label list.
+- The Visual Bible workspace supports creating and editing structured continuity
+  records, browsing their stable codes, attaching view-labelled reference images,
+  and reviewing per-shot reference coverage and composed prompts.
+- Reference uploads use bounded multipart parsing and project-contained generated
+  paths. JPEG, PNG, and WebP contents are magic-byte checked against the declared
+  MIME type, filenames are sanitized, and SHA-256/size metadata is recorded.
+- Shot inheritance resolves only exact names or stable codes across character,
+  location, and prop Bibles. Missing records are visible and provider-neutral prompts
+  automatically include all resolved facts and reference paths.
+- The live test Reel now has Rahim and the abandoned station as Bible records; closing
+  and reopening the workspace reports both shots resolved and displays their full
+  inherited continuity prompts.
+- Twenty-one automated tests pass across repositories, storage containment and MIME
+  spoofing, resolver behavior, multipart API delivery, manifests, prior milestones,
+  and end-to-end Visual Bible coverage.

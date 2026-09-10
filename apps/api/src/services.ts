@@ -1,5 +1,6 @@
 import {
   BackupRepository,
+  BibleRepository,
   DatabaseManager,
   ManifestOutboxRepository,
   ProjectRepository,
@@ -11,6 +12,7 @@ import {
   ensureStorageDirectories,
   ManifestSynchronizer,
   ProjectManifestStore,
+  ReferenceImageStore,
   resolveStorageConfig,
   type StorageConfig,
 } from "@ai-film-studio/storage";
@@ -26,22 +28,28 @@ export async function createServices() {
   const projects = new ProjectRepository(database);
   const settings = new SettingsRepository(database);
   const storyPlans = new StoryPlanRepository(database, projects);
+  const bible = new BibleRepository(database, projects);
   const backupRecords = new BackupRepository(database);
   const manifestOutbox = new ManifestOutboxRepository(database);
   const manifestStore = new ProjectManifestStore(storage.projectsPath);
+  const referenceImages = new ReferenceImageStore(storage.projectsPath);
   const manifestSynchronizer = new ManifestSynchronizer(
     manifestOutbox,
     manifestStore,
     (projectId) => {
       const plan = storyPlans.get(projectId);
-      return plan
-        ? {
-            story: plan.story,
-            script: plan.script,
-            scenes: plan.scenes,
-            shots: plan.scenes.flatMap((scene) => scene.shots),
-          }
-        : {};
+      const visualBible = bible.list(projectId);
+      return {
+        ...(plan
+          ? {
+              story: plan.story,
+              script: plan.script,
+              scenes: plan.scenes,
+              shots: plan.scenes.flatMap((scene) => scene.shots),
+            }
+          : {}),
+        ...visualBible,
+      };
     },
   );
   const backups = new BackupService(
@@ -60,9 +68,11 @@ export async function createServices() {
     projects,
     settings,
     storyPlans,
+    bible,
     backupRecords,
     manifestOutbox,
     manifestSynchronizer,
+    referenceImages,
     backups,
   };
 }

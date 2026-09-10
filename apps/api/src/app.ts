@@ -1,10 +1,12 @@
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import type { ApiConfig } from "./config.js";
 import { registerErrorHandler } from "./errors.js";
+import { registerBibleRoutes } from "./routes/bible.js";
 import { registerProjectRoutes } from "./routes/projects.js";
 import { registerSystemRoutes } from "./routes/system.js";
 import { registerStoryPlanRoutes } from "./routes/story-plans.js";
@@ -55,12 +57,16 @@ export async function buildApp(
     max: 300,
     timeWindow: "1 minute",
   });
+  await app.register(multipart, {
+    limits: { files: 1, fileSize: 8 * 1024 * 1024, parts: 1 },
+  });
 
   registerErrorHandler(app);
   await app.register(
     (api) => {
       registerProjectRoutes(api, services);
       registerStoryPlanRoutes(api, services);
+      registerBibleRoutes(api, services);
       registerSystemRoutes(api, services);
     },
     { prefix: "/api/v1" },

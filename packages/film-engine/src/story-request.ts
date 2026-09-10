@@ -46,6 +46,7 @@ const responseTemplate = {
           code: "SHOT_001",
           durationSeconds: 4,
           characters: ["Character name"],
+          props: ["Recurring prop name, or an empty array"],
           location: "Specific location",
           shotType: "medium-close-up",
           cameraAngle: "eye-level",
@@ -104,6 +105,7 @@ Requirements:
 - Make the sum of shot durations approximately ${project.targetDurationSeconds} seconds and never exceed ${project.type === "reel" ? 90 : 1500} seconds.
 - Give every scene at least one shot and number shots globally as SHOT_001, SHOT_002, and so on.
 - Each shot action must describe a single visible action suitable for image-first generation.
+- Use the same exact character, location, and prop names throughout so Bible records can be inherited automatically.
 - Avoid silently presenting legends, mythology, or disputed claims as verified facts.
 - Return JSON only: no Markdown fence, commentary, or keys outside the schema.
 - Use only these exact cinematography values:

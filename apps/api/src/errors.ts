@@ -2,12 +2,16 @@ import type { FastifyError, FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 
 import {
+  BibleConflictError,
+  BibleEntityNotFoundError,
+  BibleProjectNotFoundError,
   StoryPlanDurationError,
   StoryPlanProjectNotFoundError,
 } from "@ai-film-studio/database";
 import {
   BackupIntegrityError,
   BackupNotFoundError,
+  ReferenceImageValidationError,
 } from "@ai-film-studio/storage";
 
 export class NotFoundError extends Error {
@@ -55,12 +59,24 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (
       error instanceof NotFoundError ||
       error instanceof BackupNotFoundError ||
+      error instanceof BibleProjectNotFoundError ||
+      error instanceof BibleEntityNotFoundError ||
       error instanceof StoryPlanProjectNotFoundError
     ) {
       void reply.status(404).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/not-found",
         title: "Not found",
         status: 404,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof BibleConflictError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/conflict",
+        title: "Record already exists",
+        status: 409,
         detail: error.message,
         instance: request.url,
       });
@@ -84,6 +100,38 @@ export function registerErrorHandler(app: FastifyInstance): void {
         detail: error.message,
         instance: request.url,
       });
+      return;
+    }
+    if (error instanceof ReferenceImageValidationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/reference-image",
+        title: "Invalid reference image",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (
+      "statusCode" in error &&
+      typeof error.statusCode === "number" &&
+      error.statusCode >= 400 &&
+      error.statusCode < 500
+    ) {
+      const status = error.statusCode;
+      void reply
+        .status(status)
+        .type("application/problem+json")
+        .send({
+          type: "https://ai-film-studio.local/problems/request",
+          title: status === 413 ? "Upload is too large" : "Invalid request",
+          status,
+          detail:
+            status === 413
+              ? "Reference images may be at most 8 MB."
+              : "The request could not be processed.",
+          instance: request.url,
+        });
       return;
     }
 

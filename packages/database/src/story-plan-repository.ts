@@ -79,6 +79,7 @@ type ShotRow = {
   code: string;
   duration_seconds: number;
   characters_json: string;
+  props_json: string;
   location: string;
   shot_type: string;
   camera_angle: string;
@@ -151,6 +152,7 @@ function mapShot(row: ShotRow): Shot {
     code: row.code,
     durationSeconds: row.duration_seconds,
     characters: parseStringArray(row.characters_json),
+    props: parseStringArray(row.props_json),
     location: row.location,
     shotType: row.shot_type,
     cameraAngle: row.camera_angle,
@@ -353,11 +355,11 @@ export class StoryPlanRepository {
       const insertShot = this.manager.connection.prepare(
         `INSERT INTO shots (
           id, project_id, scene_id, position, code, duration_seconds,
-          characters_json, location, shot_type, camera_angle, lens,
+          characters_json, props_json, location, shot_type, camera_angle, lens,
           camera_movement, action, lighting, emotion, status, created_at, updated_at
         ) VALUES (
           @id, @projectId, @sceneId, @position, @code, @durationSeconds,
-          @charactersJson, @location, @shotType, @cameraAngle, @lens,
+          @charactersJson, @propsJson, @location, @shotType, @cameraAngle, @lens,
           @cameraMovement, @action, @lighting, @emotion, @status,
           @createdAt, @updatedAt
         )`,
@@ -391,6 +393,7 @@ export class StoryPlanRepository {
               `SHOT_${String(globalShotPosition).padStart(3, "0")}`,
             status: shot.status ?? "draft",
             charactersJson: JSON.stringify(shot.characters),
+            propsJson: JSON.stringify(shot.props),
             createdAt: timestamp,
             updatedAt: timestamp,
           });

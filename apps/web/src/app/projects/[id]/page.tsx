@@ -26,21 +26,25 @@ const workflow = [
     title: "Story",
     description: "Develop the premise, hook and narrative shape.",
     icon: BookOpen,
+    path: "story",
   },
   {
     title: "Characters",
     description: "Define appearance, personality and references.",
     icon: Users,
+    path: "bible?tab=characters",
   },
   {
     title: "Locations",
     description: "Build consistent spaces and visual anchors.",
     icon: MapPin,
+    path: "bible?tab=locations",
   },
   {
     title: "Shot plan",
     description: "Turn scenes into deliberate camera decisions.",
     icon: Film,
+    path: "story",
   },
 ];
 
@@ -122,7 +126,7 @@ export default function ProjectPage() {
             </div>
           </div>
           <div className="workflow-list">
-            {workflow.map(({ title, description, icon: Icon }, index) => {
+            {workflow.map(({ title, description, icon: Icon, path }, index) => {
               const content = (
                 <>
                   <span className="workflow-icon">
@@ -133,28 +137,18 @@ export default function ProjectPage() {
                     <strong>{title}</strong>
                     <p>{description}</p>
                   </div>
-                  <span
-                    className={
-                      index === 0 ? "coming-soon ready" : "coming-soon"
-                    }
-                  >
-                    {index === 0 ? "Open" : "Next phase"}
-                  </span>
+                  <span className="coming-soon ready">Open</span>
                   <ArrowRight size={17} />
                 </>
               );
-              return index === 0 ? (
+              return (
                 <Link
                   className="workflow-row enabled"
-                  href={`/projects/${project.id}/story`}
+                  href={`/projects/${project.id}/${path}`}
                   key={title}
                 >
                   {content}
                 </Link>
-              ) : (
-                <div className="workflow-row" key={title}>
-                  {content}
-                </div>
               );
             })}
           </div>

@@ -40,6 +40,15 @@ shows scene/shot/duration totals, and imports the approved plan transactionally.
 The resulting story, script, scenes, and shots are stored in SQLite and mirrored
 into the portable `project.json` manifest.
 
+## Visual Bible and continuity
+
+The project workspace also provides character, location, and prop Bibles with
+stable generated IDs, editable structured details, and local JPEG/PNG/WebP reference
+uploads. Shot labels resolve only by exact name or stable code; unresolved labels are
+shown instead of guessed. Each resolved shot receives a provider-neutral continuity
+prompt combining the creative brief, cinematography, Bible facts, and reference
+paths.
+
 ## Quality checks
 
 ```bash

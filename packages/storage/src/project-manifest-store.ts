@@ -2,7 +2,10 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type {
+  Character,
+  Location,
   Project,
+  Prop,
   Scene,
   Script,
   Shot,
@@ -14,8 +17,9 @@ export type ProjectManifestContent = {
   script?: Script | null;
   scenes?: Scene[];
   shots?: Shot[];
-  characters?: unknown[];
-  locations?: unknown[];
+  characters?: Character[];
+  locations?: Location[];
+  props?: Prop[];
   assets?: unknown[];
 };
 
@@ -25,8 +29,9 @@ export type ProjectManifestV1 = {
   project: Project;
   story: Story | null;
   script: Script | null;
-  characters: unknown[];
-  locations: unknown[];
+  characters: Character[];
+  locations: Location[];
+  props: Prop[];
   scenes: Scene[];
   shots: Shot[];
   assets: unknown[];
@@ -51,6 +56,7 @@ export class ProjectManifestStore {
       script: content.script ?? null,
       characters: content.characters ?? [],
       locations: content.locations ?? [],
+      props: content.props ?? [],
       scenes: content.scenes ?? [],
       shots: content.shots ?? [],
       assets: content.assets ?? [],

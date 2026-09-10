@@ -82,6 +82,7 @@ export const shotInputSchema = z.object({
     .optional(),
   durationSeconds: z.number().min(0.5).max(30),
   characters: z.array(z.string().trim().min(1).max(160)).max(20),
+  props: z.array(z.string().trim().min(1).max(160)).max(30).default([]),
   location: z.string().trim().min(1).max(240),
   shotType: z.enum(shotTypes),
   cameraAngle: z.enum(cameraAngles),
