@@ -2782,6 +2782,16 @@ textarea:focus-visible {
     align-items: flex-start;
     flex-direction: column;
   }
+  .storyboard-shot > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .shot-identity {
+    width: 100%;
+  }
+  .shot-identity h2 {
+    white-space: normal;
+  }
   .attempt-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
