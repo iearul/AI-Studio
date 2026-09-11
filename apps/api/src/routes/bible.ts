@@ -235,6 +235,7 @@ export function registerBibleRoutes(
         .type(reference.mimeType)
         .header("Content-Length", reference.byteSize)
         .header("Cache-Control", "private, max-age=3600")
+        .header("Cross-Origin-Resource-Policy", "cross-origin")
         .send(createReadStream(absolutePath));
     },
   );

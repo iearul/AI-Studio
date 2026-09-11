@@ -81,6 +81,7 @@ export function registerGenerationRoutes(
         .type(asset.mimeType)
         .header("Content-Length", asset.byteSize)
         .header("Cache-Control", "private, max-age=3600, immutable")
+        .header("Cross-Origin-Resource-Policy", "cross-origin")
         .send(createReadStream(absolutePath));
     },
   );
