@@ -5,6 +5,7 @@ import {
   FolderKanban,
   Gauge,
   HardDrive,
+  MessageSquare,
   Settings,
   Sparkles,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import type { ReactNode } from "react";
 const navigation = [
   { href: "/", label: "Studio", icon: Gauge },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

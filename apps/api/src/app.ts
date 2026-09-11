@@ -7,6 +7,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { ApiConfig } from "./config.js";
 import { registerErrorHandler } from "./errors.js";
 import { registerBibleRoutes } from "./routes/bible.js";
+import { registerChatRoutes } from "./routes/chat.js";
 import { registerGenerationRoutes } from "./routes/generations.js";
 import { registerProjectRoutes } from "./routes/projects.js";
 import { registerSystemRoutes } from "./routes/system.js";
@@ -70,6 +71,7 @@ export async function buildApp(
       registerBibleRoutes(api, services);
       registerGenerationRoutes(api, services);
       registerSystemRoutes(api, services);
+      registerChatRoutes(api);
     },
     { prefix: "/api/v1" },
   );
