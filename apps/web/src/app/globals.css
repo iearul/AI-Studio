@@ -2204,6 +2204,15 @@ textarea:focus-visible {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+.character-prompt-button {
+  width: 100%;
+  min-height: 34px;
+  margin: 0 0 12px;
+  border-color: #dfc4b7;
+  color: #8c4f38;
+  background: #fff8f4;
+  font-size: 9px;
+}
 .reference-grid {
   margin-bottom: 12px;
   display: grid;
@@ -2428,6 +2437,51 @@ textarea:focus-visible {
 .bible-modal {
   max-height: min(86vh, 760px);
   overflow-y: auto;
+}
+.reference-prompt-modal {
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(90vh, 820px);
+  overflow-y: auto;
+}
+.reference-prompt-warning {
+  margin: 14px 0 0;
+}
+.reference-prompt-steps {
+  margin: 16px 0;
+  padding: 12px 14px 12px 32px;
+  border: 1px solid #e6e0d5;
+  border-radius: 9px;
+  color: #6e6b63;
+  background: #faf8f2;
+  font-size: 10px;
+  line-height: 1.8;
+}
+.reference-prompt-text {
+  width: 100%;
+  min-height: 360px;
+  resize: vertical;
+  padding: 16px;
+  border: 1px solid #3d3d37;
+  border-radius: 10px;
+  color: #e5e3da;
+  background: #252520;
+  font:
+    10px/1.65 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+.reference-prompt-footer {
+  margin-top: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.reference-prompt-footer span {
+  overflow-wrap: anywhere;
+  color: #858279;
+  font-size: 9px;
 }
 .bible-form {
   display: grid;
@@ -3366,8 +3420,16 @@ textarea:focus-visible {
   animation-delay: 0.3s;
 }
 @keyframes chat-typing-bounce {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-  40% { transform: translateY(-4px); opacity: 1; }
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 .chat-composer {
   display: flex;

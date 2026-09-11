@@ -3,6 +3,7 @@
 import type {
   Bible,
   Character,
+  CharacterReferencePrompt,
   Location,
   Project,
   Prop,
@@ -208,6 +209,10 @@ function BibleWorkspace() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<BibleEntity>();
   const [busy, setBusy] = useState(false);
+  const [promptBusy, setPromptBusy] = useState<string>();
+  const [referencePrompt, setReferencePrompt] =
+    useState<CharacterReferencePrompt>();
+  const [referencePromptCopied, setReferencePromptCopied] = useState(false);
   const [error, setError] = useState("");
   const [copiedShot, setCopiedShot] = useState<string>();
 
@@ -341,6 +346,39 @@ function BibleWorkspace() {
     window.setTimeout(() => setCopiedShot(undefined), 1500);
   }
 
+  async function openCharacterPrompt(character: Character) {
+    setPromptBusy(character.id);
+    setError("");
+    try {
+      const result = await apiFetch<CharacterReferencePrompt>(
+        `/projects/${id}/characters/${character.id}/reference-prompt`,
+      );
+      setReferencePromptCopied(false);
+      setReferencePrompt(result);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Could not prepare the character reference prompt.",
+      );
+    } finally {
+      setPromptBusy(undefined);
+    }
+  }
+
+  async function copyCharacterPrompt() {
+    if (!referencePrompt) return;
+    try {
+      await navigator.clipboard.writeText(referencePrompt.prompt);
+      setReferencePromptCopied(true);
+      window.setTimeout(() => setReferencePromptCopied(false), 1500);
+    } catch {
+      setError(
+        "The prompt could not be copied. Select the prompt text and copy it manually.",
+      );
+    }
+  }
+
   if (!project || !bible || !coverage) {
     return (
       <div className="page">
@@ -451,6 +489,23 @@ function BibleWorkspace() {
                 </header>
                 <h3>{entity.name}</h3>
                 <p>{entitySummary(kind, entity)}</p>
+                {kind === "characters" && (
+                  <button
+                    className="button secondary character-prompt-button"
+                    disabled={Boolean(promptBusy)}
+                    onClick={() =>
+                      void openCharacterPrompt(entity as Character)
+                    }
+                  >
+                    {promptBusy === entity.id ? (
+                      "Preparing…"
+                    ) : (
+                      <>
+                        <Sparkles size={14} /> ChatGPT reference prompt
+                      </>
+                    )}
+                  </button>
+                )}
                 {entity.references.length > 0 ? (
                   <div className="reference-grid">
                     {entity.references.map((reference) => (
@@ -592,6 +647,76 @@ function BibleWorkspace() {
               busy={busy}
               onSubmit={saveEntity}
             />
+          </section>
+        </div>
+      )}
+
+      {referencePrompt && (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            className="story-modal reference-prompt-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reference-prompt-title"
+          >
+            <header>
+              <span className="settings-icon">
+                <Sparkles size={19} />
+              </span>
+              <div>
+                <h2 id="reference-prompt-title">Character reference prompt</h2>
+                <p>
+                  Copy this into ChatGPT image creation, download the result,
+                  then attach it to the character below.
+                </p>
+              </div>
+              <button
+                className="icon-button"
+                aria-label="Close character reference prompt"
+                onClick={() => setReferencePrompt(undefined)}
+              >
+                <X size={19} />
+              </button>
+            </header>
+
+            {!referencePrompt.ready && (
+              <div className="notice warning reference-prompt-warning">
+                <span>
+                  Better consistency needs:{" "}
+                  {referencePrompt.missingDetails.join(", ")}. You can still use
+                  this prompt; ChatGPT will choose the missing details and the
+                  uploaded image becomes their source of truth.
+                </span>
+              </div>
+            )}
+
+            <ol className="reference-prompt-steps">
+              <li>Copy the detailed prompt.</li>
+              <li>Create one image in ChatGPT and download it.</li>
+              <li>Close this window and attach it as the full-body view.</li>
+            </ol>
+
+            <textarea
+              className="reference-prompt-text"
+              aria-label="Character reference prompt text"
+              readOnly
+              value={referencePrompt.prompt}
+            />
+
+            <footer className="reference-prompt-footer">
+              <span>Suggested filename: {referencePrompt.filename}</span>
+              <button
+                className="button primary"
+                onClick={() => void copyCharacterPrompt()}
+              >
+                {referencePromptCopied ? (
+                  <Check size={15} />
+                ) : (
+                  <Copy size={15} />
+                )}
+                {referencePromptCopied ? "Copied" : "Copy for ChatGPT"}
+              </button>
+            </footer>
           </section>
         </div>
       )}

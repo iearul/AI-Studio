@@ -11,7 +11,10 @@ import {
   referenceViews,
   type ReferenceOwnerType,
 } from "@ai-film-studio/contracts";
-import { buildReferenceCoverage } from "@ai-film-studio/film-engine";
+import {
+  buildCharacterReferencePrompt,
+  buildReferenceCoverage,
+} from "@ai-film-studio/film-engine";
 import { ReferenceImageValidationError } from "@ai-film-studio/storage";
 
 import { NotFoundError } from "../errors.js";
@@ -68,6 +71,20 @@ export function registerBibleRoutes(
         services.storyPlans.get(id),
         services.bible.list(id),
       );
+    },
+  );
+
+  app.get<{ Params: { id: string; entityId: string } }>(
+    "/projects/:id/characters/:entityId/reference-prompt",
+    (request) => {
+      const { id, entityId } = entityParamsSchema.parse(request.params);
+      const project = services.projects.getById(id);
+      if (!project) throw new NotFoundError("Project");
+      const character = services.bible
+        .list(id)
+        .characters.find((candidate) => candidate.id === entityId);
+      if (!character) throw new NotFoundError("Character");
+      return buildCharacterReferencePrompt(project, character);
     },
   );
 

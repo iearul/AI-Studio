@@ -139,6 +139,15 @@ export const referenceCoverageSchema = z.object({
   }),
 });
 
+export const characterReferencePromptSchema = z.object({
+  characterId: z.uuid(),
+  characterCode: z.string(),
+  filename: z.string().min(1).max(255),
+  prompt: z.string().min(1).max(30000),
+  ready: z.boolean(),
+  missingDetails: z.array(z.string()),
+});
+
 export type CharacterInput = z.input<typeof characterInputSchema>;
 export type LocationInput = z.input<typeof locationInputSchema>;
 export type PropInput = z.input<typeof propInputSchema>;
@@ -154,3 +163,6 @@ export type CreateReferenceImage = z.infer<typeof createReferenceImageSchema>;
 export type Bible = z.infer<typeof bibleSchema>;
 export type ShotReferenceContext = z.infer<typeof shotReferenceContextSchema>;
 export type ReferenceCoverage = z.infer<typeof referenceCoverageSchema>;
+export type CharacterReferencePrompt = z.infer<
+  typeof characterReferencePromptSchema
+>;

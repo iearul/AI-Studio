@@ -238,4 +238,27 @@ describe("Phase 3 API", () => {
       services.bible.list(projectId).characters[0]?.references,
     ).toHaveLength(1);
   });
+
+  it("returns a detailed ChatGPT-ready character reference prompt", async () => {
+    const character = await createCharacter();
+    const characterId = character.json<{ id: string }>().id;
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${projectId}/characters/${characterId}/reference-prompt`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      characterId,
+      characterCode: "CHAR_RAHIM_001",
+      filename: "rahim-master-reference.png",
+      ready: false,
+    });
+    expect(response.json<{ prompt: string }>().prompt).toContain(
+      "Exactly one person",
+    );
+    expect(response.json<{ prompt: string }>().prompt).toContain(
+      "Long face with a short trimmed beard",
+    );
+  });
 });
