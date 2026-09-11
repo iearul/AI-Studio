@@ -11,6 +11,7 @@ adapters.
 - pnpm 9 or newer
 - Ollama with `qwen3.5:9b-q4_K_M` for free local story generation
 - ChatGPT access for manually creating character references and storyboard frames
+- Optional Kling or BytePlus Seedance API key for paid image-to-video generation
 - FFmpeg for later media-rendering phases
 
 ## Start locally
@@ -63,6 +64,20 @@ continuity-safe prompt into ChatGPT, create the image there, and import the resu
 JPEG/PNG/WebP frame. Each import records its prompt and reference snapshot; explicit
 review selects exactly one approved image per shot. No local image model is started
 by AI Film Studio, which avoids the memory pressure observed on the 18 GB M3 Pro.
+
+## Video production
+
+Open **Video** after approving a storyboard image. Every shot recommends that exact
+approved image as its first frame and supplies a motion-specific continuity prompt.
+You can create the clip manually and import MP4/MOV/WebM, or choose Kling 3.0 or
+BytePlus Seedance 2.0. Cloud submission always shows the provider duration and an
+available USD estimate in a native confirmation dialog; cancelling it makes no API
+request. Cloud jobs run asynchronously, survive restarts, and successful results are
+streamed into local project storage before provider links expire.
+
+To enable cloud video, add `KLING_API_KEY` and/or `SEEDANCE_API_KEY` to the ignored
+`.env.local` file and restart the API. Seedance's documented restriction on direct
+real-human face reference images is displayed in the workspace.
 
 ## Quality checks
 

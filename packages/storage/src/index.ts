@@ -4,3 +4,4 @@ export * from "./project-manifest-store.js";
 export * from "./reference-image-store.js";
 export * from "./storage-config.js";
 export * from "./storyboard-asset-store.js";
+export * from "./video-asset-store.js";

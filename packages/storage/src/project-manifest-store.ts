@@ -12,6 +12,8 @@ import type {
   Script,
   Shot,
   Story,
+  VideoAsset,
+  VideoAttempt,
 } from "@ai-film-studio/contracts";
 
 export type ProjectManifestContent = {
@@ -24,6 +26,8 @@ export type ProjectManifestContent = {
   props?: Prop[];
   assets?: GeneratedAsset[];
   generationAttempts?: ImageAttempt[];
+  videoAssets?: VideoAsset[];
+  videoAttempts?: VideoAttempt[];
 };
 
 export type ProjectManifestV1 = {
@@ -39,6 +43,8 @@ export type ProjectManifestV1 = {
   shots: Shot[];
   assets: GeneratedAsset[];
   generationAttempts: ImageAttempt[];
+  videoAssets: VideoAsset[];
+  videoAttempts: VideoAttempt[];
 };
 
 export class ProjectManifestStore {
@@ -65,6 +71,8 @@ export class ProjectManifestStore {
       shots: content.shots ?? [],
       assets: content.assets ?? [],
       generationAttempts: content.generationAttempts ?? [],
+      videoAssets: content.videoAssets ?? [],
+      videoAttempts: content.videoAttempts ?? [],
     };
     await writeFile(temporary, `${JSON.stringify(manifest, null, 2)}\n`, {
       encoding: "utf8",

@@ -2516,7 +2516,9 @@ project's source of truth.
 | 2026-09-10 | Database | SQLite with repository boundaries and versioned SQL migrations | Accepted |
 | 2026-09-10 | Background jobs | Persistent local runner first; BullMQ/Redis only when scaling evidence exists | Accepted |
 | 2026-09-10 | Local image AI | ComfyUI adapter boundary | Superseded 2026-09-11 |
-| 2026-09-10 | Cloud video | Select one provider during Phase 6 after explicit cost/region review | Deferred |
+| 2026-09-11 | Video workflow | Use the approved storyboard image as the recommended first frame; offer zero-API-cost manual import plus optional Kling 3.0 and BytePlus Seedance 2.0 | Accepted |
+| 2026-09-11 | Cloud video safety | Asynchronous provider adapters, persistent attempts, local result download, provider-domain allow-list, and literal server-validated confirmation after cost review | Accepted |
+| 2026-09-11 | Local video runtime | Do not install or start a local video model on the 18 GB M3 Pro; retain manual creation and opt-in cloud providers | Accepted |
 | 2026-09-10 | Project content in Git | Excluded; Git contains application source and safe templates only | Accepted |
 | 2026-09-11 | Story AI workflow | Selectable OpenAI API, local Ollama, and manual ChatGPT; every result is preview-only until explicit import | Accepted |
 | 2026-09-11 | Story-to-Bible workflow | Generated plans include complete structured character, location, and prop definitions; import creates missing records, fills only blank fields, and preserves filmmaker edits | Accepted |
@@ -2552,8 +2554,10 @@ project's source of truth.
 - [x] Phase 4B2 — Add character-reference and per-shot ChatGPT prompt workflows
 - [x] Phase 4B3 — Angle-specific prompts plus drag-and-drop/clipboard image intake
 - [ ] Phase 4C — Accept one manually generated image and upload assets to Google Drive
-- [ ] Phase 5 — Local Video
-- [ ] Phase 6 — Cloud Video
+- [x] Phase 5A — Approved-frame manual video import and review
+- [ ] Phase 5B — Local Video (intentionally not installed on this Mac)
+- [x] Phase 6A — Kling and Seedance cloud-video adapters and UI
+- [ ] Phase 6B — Live paid-provider acceptance test (requires user API key/credit)
 - [ ] Phase 7 — Audio
 - [ ] Phase 8 — Draft Renderer
 - [ ] Phase 9 — Long Video Features
@@ -2661,3 +2665,20 @@ project's source of truth.
   five-request-per-minute route limit, and an explicit billing warning in the UI.
 - Ollama is restricted to loopback, disables hidden thinking in structured output,
   records token/timing metadata, and unloads the model after story generation.
+
+### Phase 5A / 6A — Video Production (2026-09-11)
+
+- The Video workspace recommends the selected approved storyboard image for each
+  shot, builds a motion-specific continuity prompt, and supports streamed manual
+  MP4/MOV/WebM import with explicit review and one selected result per shot.
+- Kling 3.0 and BytePlus Seedance 2.0 use current asynchronous image-to-video API
+  contracts behind one provider boundary. Missing keys are reported honestly and
+  never disable the manual workflow.
+- Before a paid submission, the UI shows provider, duration, resolution, audio, and
+  an available USD estimate, and the API independently requires an exact billing
+  authorization token. A cancelled dialog sends no request.
+- SQLite preserves attempt/job/cost/error provenance. A persistent local poller
+  resumes active work, and successful provider output is immediately streamed from
+  an allow-listed HTTPS host into project storage before its remote URL expires.
+- Videos are magic-byte checked, limited to 512 MB, hashed with SHA-256, included in
+  portable manifests, and served with HTTP byte ranges for efficient review.

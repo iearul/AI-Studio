@@ -4,3 +4,4 @@ export * from "./project.js";
 export * from "./story-plan.js";
 export * from "./story-generation.js";
 export * from "./system.js";
+export * from "./video.js";

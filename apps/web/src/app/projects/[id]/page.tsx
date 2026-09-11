@@ -15,6 +15,7 @@ import {
   Users,
   WandSparkles,
   Images,
+  Video,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -52,6 +53,12 @@ const workflow = [
     description: "Create in ChatGPT, import and approve one image per shot.",
     icon: Images,
     path: "storyboard",
+  },
+  {
+    title: "Video",
+    description: "Animate an approved frame manually or with Kling / Seedance.",
+    icon: Video,
+    path: "video",
   },
 ];
 

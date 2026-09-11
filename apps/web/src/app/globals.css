@@ -3293,6 +3293,313 @@ textarea:focus-visible {
   }
 }
 
+/* Shot video production */
+.video-page {
+  max-width: 1260px;
+}
+.video-provider-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.video-provider-grid .provider-banner {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+}
+.video-provider-grid .provider-state {
+  grid-column: 2;
+  justify-self: start;
+}
+.video-notice {
+  margin-top: 12px;
+}
+.video-shot-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 15px;
+}
+.video-shot {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: var(--surface);
+  box-shadow: 0 8px 30px rgba(42, 39, 29, 0.04);
+}
+.video-shot > header {
+  padding: 19px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #ebe8df;
+}
+.video-shot-workspace {
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 18px;
+  background: #f8f7f2;
+  border-bottom: 1px solid #ebe8df;
+}
+.video-source-panel > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #77746b;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.video-source-image,
+.video-source-missing {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #dedbd2;
+  border-radius: 11px;
+  color: #e8e7df;
+  background: #292923;
+}
+.video-source-image img {
+  object-fit: cover;
+}
+.video-source-image > span {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 8px;
+  padding: 5px 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  color: white;
+  background: rgba(20, 20, 18, 0.74);
+  font-size: 8px;
+  backdrop-filter: blur(8px);
+}
+.video-source-missing {
+  padding: 20px;
+  gap: 8px;
+  color: #8b6549;
+  border-style: dashed;
+  background: #f6ece3;
+  text-align: center;
+  font-size: 9px;
+}
+.video-control-panel {
+  min-width: 0;
+}
+.video-control-panel > .field select {
+  background: white;
+}
+.manual-video-controls {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(200px, 1fr) auto;
+  gap: 8px;
+}
+.manual-video-controls .button,
+.manual-video-controls .storyboard-file {
+  min-height: 39px;
+  font-size: 10px;
+}
+.cloud-video-controls {
+  margin-top: 10px;
+  padding: 13px;
+  border: 1px solid #e1ddd2;
+  border-radius: 11px;
+  background: white;
+}
+.cloud-settings-row {
+  display: grid;
+  grid-template-columns: 130px auto auto auto;
+  align-items: end;
+  gap: 13px;
+}
+.cloud-audio-toggle {
+  min-height: 39px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #dedbd2;
+  border-radius: 9px;
+  color: #625f57;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.cloud-estimate {
+  min-height: 39px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cloud-estimate small {
+  color: #929087;
+  font-size: 7px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cloud-estimate strong {
+  margin-top: 3px;
+  color: #3d3b36;
+  font-size: 10px;
+}
+.cloud-video-controls > .button {
+  margin-top: 11px;
+}
+.cloud-provider-warning {
+  margin: 10px 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #8e5f2d;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.cloud-provider-warning svg {
+  flex: 0 0 auto;
+}
+.provider-setup-hint {
+  display: block;
+  margin-top: 8px;
+  color: #88857d;
+  font-size: 8px;
+}
+.provider-setup-hint code {
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #ece9e0;
+}
+.video-prompt-details {
+  margin-top: 10px;
+  border: 1px solid #e2ded4;
+  border-radius: 9px;
+  background: white;
+}
+.video-prompt-details summary {
+  padding: 9px 11px;
+  color: #77746b;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+}
+.video-prompt-details pre {
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  padding: 13px;
+  color: #d7d5c9;
+  background: #252520;
+  font:
+    9px/1.65 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
+}
+.video-attempt-grid {
+  padding: 16px 20px 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 11px;
+}
+.video-attempt {
+  overflow: hidden;
+  border: 1px solid #e1ded5;
+  border-radius: 12px;
+  background: white;
+}
+.video-attempt.selected {
+  border-color: #829b6d;
+  box-shadow: 0 0 0 2px rgba(111, 143, 86, 0.13);
+}
+.video-attempt-preview {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #aaa89e;
+  background: #292923;
+}
+.video-attempt-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: black;
+}
+.video-attempt-preview > span {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  font-size: 9px;
+  text-transform: capitalize;
+}
+.video-attempt-preview > b {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 8px;
+  padding: 5px 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  color: #324b26;
+  background: #dcebd2;
+  font-size: 8px;
+}
+.refresh-video {
+  width: 100%;
+  margin-top: 11px;
+}
+
+@media (max-width: 1050px) {
+  .video-provider-grid {
+    grid-template-columns: 1fr;
+  }
+  .video-provider-grid .provider-banner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .video-provider-grid .provider-state {
+    grid-column: auto;
+  }
+  .cloud-settings-row {
+    grid-template-columns: 130px 1fr 1fr;
+  }
+  .cloud-audio-toggle {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .video-shot > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .video-shot-workspace {
+    grid-template-columns: 1fr;
+  }
+  .video-source-image,
+  .video-source-missing {
+    max-width: 360px;
+  }
+  .manual-video-controls,
+  .cloud-settings-row,
+  .video-attempt-grid {
+    grid-template-columns: 1fr;
+  }
+  .cloud-audio-toggle {
+    grid-column: auto;
+  }
+  .manual-video-controls .button {
+    width: 100%;
+  }
+}
+
 /* Ollama chat page */
 .chat-page .chat-toolbar {
   display: flex;

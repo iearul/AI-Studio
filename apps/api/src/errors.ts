@@ -14,11 +14,15 @@ import {
   TextProviderConfigurationError,
   TextProviderResponseError,
   TextProviderUnavailableError,
+  VideoProviderConfigurationError,
+  VideoProviderResponseError,
+  VideoProviderUnavailableError,
 } from "@ai-film-studio/providers";
 import {
   BackupIntegrityError,
   BackupNotFoundError,
   ReferenceImageValidationError,
+  VideoAssetValidationError,
 } from "@ai-film-studio/storage";
 
 export class NotFoundError extends Error {
@@ -110,6 +114,16 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
+    if (error instanceof VideoProviderConfigurationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/video-provider-configuration",
+        title: "Video provider is not configured",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
     if (error instanceof TextProviderUnavailableError) {
       void reply.status(503).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/provider-unavailable",
@@ -120,10 +134,30 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
+    if (error instanceof VideoProviderUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/video-provider-unavailable",
+        title: "Video provider is unavailable",
+        status: 503,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
     if (error instanceof TextProviderResponseError) {
       void reply.status(502).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/provider-response",
         title: "Provider returned an invalid response",
+        status: 502,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof VideoProviderResponseError) {
+      void reply.status(502).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/video-provider-response",
+        title: "Video provider returned an invalid response",
         status: 502,
         detail: error.message,
         instance: request.url,
@@ -160,14 +194,23 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
-    if (error instanceof ReferenceImageValidationError) {
-      void reply.status(422).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/reference-image",
-        title: "Invalid reference image",
-        status: 422,
-        detail: error.message,
-        instance: request.url,
-      });
+    if (
+      error instanceof ReferenceImageValidationError ||
+      error instanceof VideoAssetValidationError
+    ) {
+      void reply
+        .status(422)
+        .type("application/problem+json")
+        .send({
+          type: "https://ai-film-studio.local/problems/reference-image",
+          title:
+            error instanceof VideoAssetValidationError
+              ? "Invalid video asset"
+              : "Invalid reference image",
+          status: 422,
+          detail: error.message,
+          instance: request.url,
+        });
       return;
     }
     if (
@@ -186,7 +229,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
           status,
           detail:
             status === 413
-              ? "Images may be at most 8 MB."
+              ? "The uploaded file exceeds this route's size limit."
               : "The request could not be processed.",
           instance: request.url,
         });

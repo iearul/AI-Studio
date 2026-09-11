@@ -12,6 +12,7 @@ import { registerGenerationRoutes } from "./routes/generations.js";
 import { registerProjectRoutes } from "./routes/projects.js";
 import { registerSystemRoutes } from "./routes/system.js";
 import { registerStoryPlanRoutes } from "./routes/story-plans.js";
+import { registerVideoRoutes } from "./routes/videos.js";
 import type { Services } from "./services.js";
 
 export async function buildApp(
@@ -72,8 +73,20 @@ export async function buildApp(
       registerGenerationRoutes(api, services);
       registerSystemRoutes(api, services);
       registerChatRoutes(api);
+      registerVideoRoutes(api, services);
     },
     { prefix: "/api/v1" },
   );
+  if (config.environment !== "test") {
+    const interval = setInterval(
+      () => void services.videoGenerations.refreshPending(),
+      15_000,
+    );
+    interval.unref();
+    app.addHook("onClose", () => clearInterval(interval));
+    app.addHook("onReady", () => {
+      void services.videoGenerations.refreshPending();
+    });
+  }
   return app;
 }
