@@ -21,24 +21,6 @@ export const attemptStatuses = [
 ] as const;
 export const reviewStatuses = ["pending", "approved", "rejected"] as const;
 
-export const imageGenerationInputSchema = z
-  .object({
-    provider: z.literal("comfyui").default("comfyui"),
-    negativePrompt: z.string().trim().max(4000).default(""),
-    seed: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
-    width: z.number().int().min(256).max(4096).multipleOf(8).optional(),
-    height: z.number().int().min(256).max(4096).multipleOf(8).optional(),
-  })
-  .superRefine((input, context) => {
-    if ((input.width === undefined) !== (input.height === undefined)) {
-      context.addIssue({
-        code: "custom",
-        message: "Set both width and height, or leave both blank.",
-        path: input.width === undefined ? ["width"] : ["height"],
-      });
-    }
-  });
-
 export const generatedAssetSchema = z.object({
   id: z.uuid(),
   projectId: z.uuid(),
@@ -112,21 +94,8 @@ export const imageReviewInputSchema = z.object({
   decision: z.enum(["approve", "reject"]),
 });
 
-export const imageProviderStatusSchema = z.object({
-  id: z.literal("comfyui"),
-  name: z.string(),
-  configured: z.boolean(),
-  available: z.boolean(),
-  baseUrl: z.string(),
-  workflowPath: z.string().nullable(),
-  model: z.string().nullable(),
-  message: z.string(),
-});
-
-export type ImageGenerationInput = z.input<typeof imageGenerationInputSchema>;
 export type GeneratedAsset = z.infer<typeof generatedAssetSchema>;
 export type GenerationJob = z.infer<typeof generationJobSchema>;
 export type ImageAttempt = z.infer<typeof imageAttemptSchema>;
 export type ImageHistory = z.infer<typeof imageHistorySchema>;
 export type ImageReviewInput = z.infer<typeof imageReviewInputSchema>;
-export type ImageProviderStatus = z.infer<typeof imageProviderStatusSchema>;

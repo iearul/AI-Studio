@@ -9,13 +9,10 @@ import {
   StoryPlanRepository,
 } from "@ai-film-studio/database";
 import {
-  ComfyUiImageProvider,
   OllamaTextProvider,
   OpenAiTextProvider,
-  resolveComfyUiImageProviderConfig,
   resolveOllamaTextProviderConfig,
   resolveOpenAiTextProviderConfig,
-  type ImageProvider,
   type TextProvider,
 } from "@ai-film-studio/providers";
 import {
@@ -36,7 +33,6 @@ export type Services = Awaited<ReturnType<typeof createServices>>;
 
 export async function createServices(
   options: {
-    imageProvider?: ImageProvider;
     textProviders?: TextProvider[];
   } = {},
 ) {
@@ -55,10 +51,6 @@ export async function createServices(
   const manifestStore = new ProjectManifestStore(storage.projectsPath);
   const referenceImages = new ReferenceImageStore(storage.projectsPath);
   const storyboardAssets = new StoryboardAssetStore(storage.projectsPath);
-  const comfyUi = new ComfyUiImageProvider(
-    resolveComfyUiImageProviderConfig(storage.workspaceRoot),
-  );
-  const imageProvider = options.imageProvider ?? comfyUi;
   const textProviders = options.textProviders ?? [
     new OpenAiTextProvider(resolveOpenAiTextProviderConfig()),
     new OllamaTextProvider(resolveOllamaTextProviderConfig()),
@@ -99,9 +91,7 @@ export async function createServices(
     projects,
     storyPlans,
     bible,
-    referenceImages,
     storyboardAssets,
-    imageProvider,
     manifestSynchronizer,
   );
   const storyGenerations = new StoryGenerationService(projects, textProviders);
@@ -121,7 +111,6 @@ export async function createServices(
     manifestSynchronizer,
     referenceImages,
     storyboardAssets,
-    comfyUi,
     imageGenerations,
     storyGenerations,
     backups,

@@ -408,8 +408,8 @@ export default function StoryWorkspacePage() {
             </span>
             {mode === "ollama" && (
               <small>
-                Ollama unloads after generation to return memory to ComfyUI. Do
-                not run both models at the same time on this 18 GB Mac.
+                Ollama unloads after generation to return memory and keep this
+                18 GB Mac responsive.
               </small>
             )}
           </div>

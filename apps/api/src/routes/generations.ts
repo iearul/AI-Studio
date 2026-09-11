@@ -4,10 +4,7 @@ import { stat } from "node:fs/promises";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
-import {
-  imageGenerationInputSchema,
-  imageReviewInputSchema,
-} from "@ai-film-studio/contracts";
+import { imageReviewInputSchema } from "@ai-film-studio/contracts";
 import { StoryboardAssetValidationError } from "@ai-film-studio/storage";
 
 import { NotFoundError } from "../errors.js";
@@ -24,29 +21,11 @@ export function registerGenerationRoutes(
   app: FastifyInstance,
   services: Services,
 ): void {
-  app.get("/providers/images/comfyui", () =>
-    services.imageGenerations.getProviderStatus(),
-  );
-
   app.get<{ Params: { id: string } }>(
     "/projects/:id/image-history",
     (request) => {
       const { id } = projectParamsSchema.parse(request.params);
       return services.imageGenerations.getHistory(id);
-    },
-  );
-
-  app.post<{ Params: { id: string; shotId: string } }>(
-    "/projects/:id/shots/:shotId/image-generations",
-    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
-    async (request, reply) => {
-      const { id, shotId } = shotParamsSchema.parse(request.params);
-      const attempt = await services.imageGenerations.queue(
-        id,
-        shotId,
-        imageGenerationInputSchema.parse(request.body),
-      );
-      return reply.status(202).send(attempt);
     },
   );
 

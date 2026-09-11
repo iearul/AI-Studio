@@ -90,7 +90,7 @@ export type NewGeneratedAsset = {
 export type NewImageAttempt = {
   projectId: string;
   shotId: string;
-  provider: "comfyui" | "manual";
+  provider: "manual";
   model: string | null;
   prompt: string;
   negativePrompt: string;
@@ -224,42 +224,6 @@ export class GenerationRepository {
     );
   }
 
-  queueImage(input: NewImageAttempt): ImageAttempt {
-    if (input.provider !== "comfyui") {
-      throw new GenerationStateError("Only ComfyUI attempts can be queued.");
-    }
-    this.requireShot(input.projectId, input.shotId);
-    const timestamp = new Date().toISOString();
-    const attemptId = randomUUID();
-    const jobId = randomUUID();
-    this.manager.connection.transaction(() => {
-      const active = this.manager.connection
-        .prepare(
-          `SELECT 1 FROM generation_jobs
-           WHERE shot_id = ?
-             AND status IN ('queued', 'preparing', 'generating', 'downloading')
-           LIMIT 1`,
-        )
-        .get(input.shotId);
-      if (active) {
-        throw new GenerationStateError(
-          "An image generation is already active for this shot.",
-        );
-      }
-      this.insertAttempt(attemptId, timestamp, "queued", input);
-      this.manager.connection
-        .prepare(
-          `INSERT INTO generation_jobs (
-            id, project_id, shot_id, attempt_id, kind, provider,
-            status, progress, created_at
-          ) VALUES (?, ?, ?, ?, 'image', 'comfyui', 'queued', 0, ?)`,
-        )
-        .run(jobId, input.projectId, input.shotId, attemptId, timestamp);
-      this.projects.markManifestDirty(input.projectId);
-    })();
-    return this.requireAttempt(input.projectId, attemptId);
-  }
-
   beginManualImage(input: NewImageAttempt): ImageAttempt {
     if (input.provider !== "manual") {
       throw new GenerationStateError(
@@ -276,106 +240,11 @@ export class GenerationRepository {
     return this.requireAttempt(input.projectId, attemptId);
   }
 
-  claimNextImageJob(): ImageAttempt | undefined {
-    const claimed = this.manager.connection.transaction(() => {
-      const row = this.manager.connection
-        .prepare(
-          `SELECT id, project_id, attempt_id
-           FROM generation_jobs
-           WHERE status = 'queued'
-           ORDER BY created_at, id
-           LIMIT 1`,
-        )
-        .get() as
-        { id: string; project_id: string; attempt_id: string } | undefined;
-      if (!row) return undefined;
-      const timestamp = new Date().toISOString();
-      const result = this.manager.connection
-        .prepare(
-          `UPDATE generation_jobs
-           SET status = 'preparing', progress = 5, started_at = ?
-           WHERE id = ? AND status = 'queued'`,
-        )
-        .run(timestamp, row.id);
-      if (result.changes !== 1) return undefined;
-      this.manager.connection
-        .prepare(
-          `UPDATE generation_attempts
-           SET status = 'generating', updated_at = ? WHERE id = ?`,
-        )
-        .run(timestamp, row.attempt_id);
-      this.projects.markManifestDirty(row.project_id);
-      return row;
-    })();
-    return claimed
-      ? this.requireAttempt(claimed.project_id, claimed.attempt_id)
-      : undefined;
-  }
-
-  failInterruptedJobs(): number {
-    const timestamp = new Date().toISOString();
-    const message =
-      "The application restarted while ComfyUI was processing this image. Retry manually; automatic replay is disabled to prevent duplicate renders.";
-    const details = JSON.stringify({
-      code: "application_restart",
-      recoverable: true,
-    });
-    return this.manager.connection.transaction(() => {
-      const rows = this.manager.connection
-        .prepare(
-          `SELECT project_id, attempt_id FROM generation_jobs
-           WHERE status IN ('preparing', 'generating', 'downloading')`,
-        )
-        .all() as Array<{ project_id: string; attempt_id: string }>;
-      if (rows.length === 0) return 0;
-      this.manager.connection
-        .prepare(
-          `UPDATE generation_attempts SET
-            status = 'failed', error_message = ?, error_details_json = ?,
-            updated_at = ?
-           WHERE id IN (
-             SELECT attempt_id FROM generation_jobs
-             WHERE status IN ('preparing', 'generating', 'downloading')
-           ) AND status = 'generating'`,
-        )
-        .run(message, details, timestamp);
-      this.manager.connection
-        .prepare(
-          `UPDATE generation_jobs SET
-            status = 'failed', error_message = ?, error_details_json = ?,
-            completed_at = ?
-           WHERE status IN ('preparing', 'generating', 'downloading')`,
-        )
-        .run(message, details, timestamp);
-      for (const projectId of new Set(rows.map((row) => row.project_id))) {
-        this.projects.markManifestDirty(projectId);
-      }
-      return rows.length;
-    })();
-  }
-
-  updateJob(
-    projectId: string,
-    attemptId: string,
-    status: "preparing" | "generating" | "downloading",
-    progress: number,
-    providerJobId?: string,
-  ): void {
-    this.manager.connection
-      .prepare(
-        `UPDATE generation_jobs SET
-          status = ?, progress = ?, provider_job_id = COALESCE(?, provider_job_id)
-         WHERE project_id = ? AND attempt_id = ?`,
-      )
-      .run(status, progress, providerJobId ?? null, projectId, attemptId);
-  }
-
   completeAttempt(
     projectId: string,
     attemptId: string,
     asset: NewGeneratedAsset,
     generationTimeMs: number,
-    providerJobId?: string,
   ): ImageAttempt {
     const attempt = this.requireAttempt(projectId, attemptId);
     if (attempt.status !== "generating") {
@@ -412,14 +281,6 @@ export class GenerationRepository {
            WHERE id = ?`,
         )
         .run(generationTimeMs, timestamp, attemptId);
-      this.manager.connection
-        .prepare(
-          `UPDATE generation_jobs SET
-            status = 'completed', progress = 100,
-            provider_job_id = COALESCE(?, provider_job_id), completed_at = ?
-           WHERE attempt_id = ?`,
-        )
-        .run(providerJobId ?? null, timestamp, attemptId);
       this.projects.markManifestDirty(projectId);
     })();
     return this.requireAttempt(projectId, attemptId);

@@ -75,11 +75,5 @@ export async function buildApp(
     },
     { prefix: "/api/v1" },
   );
-  if (config.environment !== "test") {
-    services.imageGenerations.start();
-    app.addHook("onClose", () => {
-      services.imageGenerations.stop();
-    });
-  }
   return app;
 }

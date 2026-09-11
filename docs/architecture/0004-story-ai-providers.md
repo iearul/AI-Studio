@@ -21,10 +21,10 @@ shape and must not silently replace filmmaker-approved work.
 - OpenAI defaults to `gpt-5.4-mini`; any request requires a user confirmation that
   API tokens are billed separately. Manual ChatGPT preserves prompt export,
   validation, and JSON import without subscription automation.
-- Ollama uses the official `qwen3.5:9b-mlx` build selected for the M3 Pro with 18 GB
-  unified memory. It runs locally and has no per-token provider charge. The model is
-  unloaded after generation so ComfyUI can reclaim unified memory; local story and
-  image generation must not run concurrently on this machine.
+- Ollama uses `qwen3.5:9b-q4_K_M` on the M3 Pro with 18 GB unified memory. The MLX
+  build was rejected because the installed Ollama runtime returned HTTP 501 for
+  structured output, which the story contract requires. The Q4 model runs locally
+  with no per-token provider charge and unloads after generation.
 - Automatic provider output is validated twice: constrained generation against the
   shared JSON Schema and server-side Zod domain validation. The result is only a
   preview. Saving or replacing a plan remains a separate explicit action.

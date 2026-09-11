@@ -5,12 +5,6 @@ import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import type {
-  ImageProvider,
-  ImageProviderProgress,
-  ImageProviderRequest,
-} from "@ai-film-studio/providers";
-
 import { buildApp } from "../src/app.js";
 import { createServices, type Services } from "../src/services.js";
 
@@ -18,40 +12,6 @@ const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WlT5ZkAAAAASUVORK5CYII=",
   "base64",
 );
-
-class TestImageProvider implements ImageProvider {
-  available = false;
-
-  getStatus() {
-    return Promise.resolve({
-      id: "comfyui" as const,
-      name: "ComfyUI",
-      configured: this.available,
-      available: this.available,
-      baseUrl: "http://127.0.0.1:8188",
-      workflowPath: this.available ? "/test/workflow.json" : null,
-      model: this.available ? "test-model.safetensors" : null,
-      message: this.available ? "Ready" : "Configure the test provider.",
-    });
-  }
-
-  async generate(
-    _request: ImageProviderRequest,
-    onProgress: (progress: ImageProviderProgress) => void | Promise<void>,
-  ) {
-    await onProgress({
-      status: "generating",
-      progress: 55,
-      providerJobId: "test-prompt-1",
-    });
-    return {
-      buffer: png,
-      filename: "generated.png",
-      mimeType: "image/png",
-      providerJobId: "test-prompt-1",
-    };
-  }
-}
 
 function multipartImage(buffer: Buffer, mimeType = "image/png") {
   const boundary = "film-studio-storyboard-boundary";
@@ -73,7 +33,6 @@ describe("Phase 4 API", () => {
   let app: FastifyInstance;
   let projectId: string;
   let shotId: string;
-  let provider: TestImageProvider;
 
   beforeEach(async () => {
     directory = await mkdtemp(
@@ -83,10 +42,7 @@ describe("Phase 4 API", () => {
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");
-    process.env.COMFYUI_IMAGE_WORKFLOW_PATH = "";
-    process.env.COMFYUI_IMAGE_MODEL = "";
-    provider = new TestImageProvider();
-    services = await createServices({ imageProvider: provider });
+    services = await createServices();
     app = await buildApp(
       {
         environment: "test",
@@ -231,7 +187,7 @@ describe("Phase 4 API", () => {
     expect(manifest.generationAttempts).toHaveLength(1);
   });
 
-  it("blocks unresolved shots and reports unconfigured ComfyUI precisely", async () => {
+  it("blocks imports for shots with unresolved continuity records", async () => {
     const unresolved = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${projectId}/shots/${shotId}/image-imports`,
@@ -239,25 +195,6 @@ describe("Phase 4 API", () => {
       payload: multipartImage(png).payload,
     });
     expect(unresolved.statusCode).toBe(409);
-
-    await resolveShot();
-    const generated = await app.inject({
-      method: "POST",
-      url: `/api/v1/projects/${projectId}/shots/${shotId}/image-generations`,
-      payload: {},
-    });
-    expect(generated.statusCode).toBe(422);
-    expect(generated.json()).toMatchObject({
-      title: "Provider is not configured",
-    });
-    const status = await app.inject({
-      method: "GET",
-      url: "/api/v1/providers/images/comfyui",
-    });
-    expect(status.json()).toMatchObject({
-      configured: false,
-      available: false,
-    });
   });
 
   it("rejects spoofed manual images without leaving a successful attempt", async () => {
@@ -272,31 +209,5 @@ describe("Phase 4 API", () => {
     expect(response.statusCode).toBe(422);
     const history = services.generations.listProject(projectId);
     expect(history.totals).toMatchObject({ attempts: 1, failed: 1 });
-  });
-
-  it("runs a queued provider job through download and durable asset storage", async () => {
-    await resolveShot();
-    provider.available = true;
-    const queued = await app.inject({
-      method: "POST",
-      url: `/api/v1/projects/${projectId}/shots/${shotId}/image-generations`,
-      payload: { seed: 42, width: 768, height: 1344 },
-    });
-    expect(queued.statusCode).toBe(202);
-    expect(queued.json()).toMatchObject({ status: "queued", seed: 42 });
-
-    await expect(services.imageGenerations.runNext()).resolves.toBe(true);
-    const history = services.generations.listProject(projectId);
-    expect(history.attempts[0]).toMatchObject({
-      provider: "comfyui",
-      model: "test-model.safetensors",
-      status: "succeeded",
-      job: {
-        status: "completed",
-        progress: 100,
-        providerJobId: "test-prompt-1",
-      },
-      asset: { mimeType: "image/png", width: 1, height: 1 },
-    });
   });
 });

@@ -88,12 +88,12 @@ describe("GenerationRepository", () => {
     await rm(directory, { recursive: true, force: true });
   });
 
-  function queued() {
-    return repository.queueImage({
+  function started() {
+    return repository.beginManualImage({
       projectId,
       shotId,
-      provider: "comfyui",
-      model: "flux-dev.safetensors",
+      provider: "manual",
+      model: null,
       prompt: "A moonlit platform",
       negativePrompt: "blurred",
       references: [],
@@ -103,8 +103,7 @@ describe("GenerationRepository", () => {
   }
 
   it("preserves immutable attempts and selects only one approved image", () => {
-    const first = queued();
-    expect(repository.claimNextImageJob()?.id).toBe(first.id);
+    const first = started();
     const firstDone = repository.completeAttempt(
       projectId,
       first.id,
@@ -118,12 +117,10 @@ describe("GenerationRepository", () => {
         height: 1,
       },
       1200,
-      "comfy-1",
     );
     repository.review(projectId, firstDone.id, "approve");
 
-    const second = queued();
-    repository.claimNextImageJob();
+    const second = started();
     repository.completeAttempt(
       projectId,
       second.id,
@@ -137,7 +134,6 @@ describe("GenerationRepository", () => {
         height: 1,
       },
       900,
-      "comfy-2",
     );
     repository.review(projectId, second.id, "approve");
 
@@ -153,8 +149,7 @@ describe("GenerationRepository", () => {
   });
 
   it("records failures and rejects invalid reviews", () => {
-    const attempt = queued();
-    repository.claimNextImageJob();
+    const attempt = started();
     expect(() => repository.review(projectId, attempt.id, "approve")).toThrow(
       GenerationStateError,
     );
@@ -165,20 +160,5 @@ describe("GenerationRepository", () => {
     );
     expect(failed.status).toBe("failed");
     expect(failed.errorMessage).toContain("GPU allocation");
-  });
-
-  it("blocks duplicate active jobs and fails interrupted work without replay", () => {
-    const attempt = queued();
-    expect(() => queued()).toThrow(GenerationStateError);
-    expect(repository.claimNextImageJob()?.id).toBe(attempt.id);
-
-    expect(repository.failInterruptedJobs()).toBe(1);
-    expect(repository.claimNextImageJob()).toBeUndefined();
-    const interrupted = repository.getAttempt(projectId, attempt.id);
-    expect(interrupted?.status).toBe("failed");
-    expect(interrupted?.errorMessage).toContain("prevent duplicate renders");
-    expect(interrupted?.job?.status).toBe("failed");
-
-    expect(() => queued()).not.toThrow();
   });
 });

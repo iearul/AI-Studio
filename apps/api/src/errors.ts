@@ -11,8 +11,6 @@ import {
   StoryPlanProjectNotFoundError,
 } from "@ai-film-studio/database";
 import {
-  ImageProviderConfigurationError,
-  ImageProviderUnavailableError,
   TextProviderConfigurationError,
   TextProviderResponseError,
   TextProviderUnavailableError,
@@ -102,10 +100,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
-    if (
-      error instanceof ImageProviderConfigurationError ||
-      error instanceof TextProviderConfigurationError
-    ) {
+    if (error instanceof TextProviderConfigurationError) {
       void reply.status(422).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/provider-configuration",
         title: "Provider is not configured",
@@ -115,10 +110,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
-    if (
-      error instanceof ImageProviderUnavailableError ||
-      error instanceof TextProviderUnavailableError
-    ) {
+    if (error instanceof TextProviderUnavailableError) {
       void reply.status(503).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/provider-unavailable",
         title: "Provider is unavailable",

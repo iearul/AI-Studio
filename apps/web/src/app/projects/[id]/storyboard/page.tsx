@@ -3,7 +3,6 @@
 import type {
   ImageAttempt,
   ImageHistory,
-  ImageProviderStatus,
   Project,
   ReferenceCoverage,
 } from "@ai-film-studio/contracts";
@@ -12,10 +11,9 @@ import {
   ArrowLeft,
   Check,
   CheckCircle2,
-  Cpu,
+  Copy,
   ImagePlus,
   LoaderCircle,
-  RefreshCw,
   Sparkles,
   Upload,
   X,
@@ -48,23 +46,20 @@ function StoryboardWorkspace() {
   const [project, setProject] = useState<Project>();
   const [coverage, setCoverage] = useState<ReferenceCoverage>();
   const [history, setHistory] = useState<ImageHistory>();
-  const [provider, setProvider] = useState<ImageProviderStatus>();
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
   const [busy, setBusy] = useState<string>();
+  const [copiedShot, setCopiedShot] = useState<string>();
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const [nextProject, nextCoverage, nextHistory, nextProvider] =
-      await Promise.all([
-        apiFetch<Project>(`/projects/${id}`),
-        apiFetch<ReferenceCoverage>(`/projects/${id}/reference-coverage`),
-        apiFetch<ImageHistory>(`/projects/${id}/image-history`),
-        apiFetch<ImageProviderStatus>("/providers/images/comfyui"),
-      ]);
+    const [nextProject, nextCoverage, nextHistory] = await Promise.all([
+      apiFetch<Project>(`/projects/${id}`),
+      apiFetch<ReferenceCoverage>(`/projects/${id}/reference-coverage`),
+      apiFetch<ImageHistory>(`/projects/${id}/image-history`),
+    ]);
     setProject(nextProject);
     setCoverage(nextCoverage);
     setHistory(nextHistory);
-    setProvider(nextProvider);
   }, [id]);
 
   useEffect(() => {
@@ -86,17 +81,6 @@ function StoryboardWorkspace() {
     };
   }, [load]);
 
-  const activeJobs = history?.attempts.some(
-    (attempt) => attempt.status === "queued" || attempt.status === "generating",
-  );
-  useEffect(() => {
-    if (!activeJobs) return;
-    const interval = window.setInterval(() => {
-      void load().catch(() => undefined);
-    }, 1500);
-    return () => window.clearInterval(interval);
-  }, [activeJobs, load]);
-
   const attemptsByShot = useMemo(() => {
     const grouped = new Map<string, ImageAttempt[]>();
     for (const attempt of history?.attempts ?? []) {
@@ -108,23 +92,16 @@ function StoryboardWorkspace() {
     return grouped;
   }, [history]);
 
-  async function generate(shotId: string) {
-    setBusy(`generate-${shotId}`);
+  async function copyPrompt(shotId: string, prompt: string) {
     setError("");
     try {
-      await apiFetch(`/projects/${id}/shots/${shotId}/image-generations`, {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
-      await load();
-    } catch (reason) {
+      await navigator.clipboard.writeText(prompt);
+      setCopiedShot(shotId);
+      window.setTimeout(() => setCopiedShot(undefined), 1500);
+    } catch {
       setError(
-        reason instanceof Error
-          ? reason.message
-          : "The generation could not be queued.",
+        "The prompt could not be copied. Please copy it from the Visual Bible.",
       );
-    } finally {
-      setBusy(undefined);
     }
   }
 
@@ -171,7 +148,7 @@ function StoryboardWorkspace() {
     }
   }
 
-  if (!project || !coverage || !history || !provider) {
+  if (!project || !coverage || !history) {
     return error ? (
       <div className="page">
         <div className="notice error">
@@ -196,8 +173,8 @@ function StoryboardWorkspace() {
           </span>
           <h1>Storyboard review</h1>
           <p>
-            Generate or import alternatives, compare their recorded settings,
-            and approve exactly one frame per shot.
+            Copy each continuity-safe prompt into ChatGPT, import the generated
+            alternatives, and approve exactly one frame per shot.
           </p>
         </div>
         <div className="storyboard-metrics">
@@ -213,36 +190,21 @@ function StoryboardWorkspace() {
         </div>
       </header>
 
-      <section
-        className={`provider-banner ${provider.available ? "online" : "offline"}`}
-      >
+      <section className="provider-banner online">
         <span className="provider-icon">
-          <Cpu size={20} />
+          <ImagePlus size={20} />
         </span>
         <div>
-          <strong>{provider.name}</strong>
-          <p>{provider.message}</p>
-          {provider.model && <small>{provider.model}</small>}
+          <strong>ChatGPT image workflow</strong>
+          <p>
+            Copy the prepared prompt, create the image in ChatGPT, then upload
+            it here. AI Film Studio does not run a local image model.
+          </p>
+          <small>No local image-model memory usage</small>
         </div>
         <span className="provider-state">
-          {provider.available ? (
-            <CheckCircle2 size={14} />
-          ) : (
-            <AlertTriangle size={14} />
-          )}
-          {provider.available
-            ? "Ready"
-            : provider.configured
-              ? "Offline"
-              : "Setup needed"}
+          <CheckCircle2 size={14} /> Manual
         </span>
-        <button
-          className="icon-button"
-          aria-label="Refresh provider status"
-          onClick={() => void load()}
-        >
-          <RefreshCw size={16} />
-        </button>
       </section>
 
       {error && (
@@ -264,10 +226,6 @@ function StoryboardWorkspace() {
         <div className="storyboard-shot-list">
           {coverage.shots.map((shot) => {
             const attempts = attemptsByShot.get(shot.shotId) ?? [];
-            const hasActiveAttempt = attempts.some(
-              (attempt) =>
-                attempt.status === "queued" || attempt.status === "generating",
-            );
             const selected = attempts.find((attempt) => attempt.selected);
             const action =
               shot.prompt
@@ -309,22 +267,17 @@ function StoryboardWorkspace() {
                 <div className="storyboard-controls">
                   <button
                     className="button primary"
-                    disabled={
-                      !provider.available ||
-                      !shot.ready ||
-                      hasActiveAttempt ||
-                      Boolean(busy)
-                    }
-                    onClick={() => void generate(shot.shotId)}
+                    disabled={!shot.ready || Boolean(busy)}
+                    onClick={() => void copyPrompt(shot.shotId, shot.prompt)}
                   >
-                    {busy === `generate-${shot.shotId}` ? (
-                      <LoaderCircle className="spinner" size={15} />
+                    {copiedShot === shot.shotId ? (
+                      <Check size={15} />
                     ) : (
-                      <Sparkles size={15} />
+                      <Copy size={15} />
                     )}
-                    {hasActiveAttempt
-                      ? "Generation in progress"
-                      : "Generate with ComfyUI"}
+                    {copiedShot === shot.shotId
+                      ? "Prompt copied"
+                      : "Copy prompt for ChatGPT"}
                   </button>
                   <label className="storyboard-file">
                     <Upload size={15} />
@@ -361,8 +314,8 @@ function StoryboardWorkspace() {
 
                 {attempts.length === 0 ? (
                   <div className="attempts-empty">
-                    No attempts yet. Local imports remain available when the AI
-                    provider is offline.
+                    No attempts yet. Create an image in ChatGPT with the copied
+                    prompt, then import it above.
                   </div>
                 ) : (
                   <div className="attempt-grid">
@@ -408,7 +361,7 @@ function StoryboardWorkspace() {
                             <strong>
                               {attempt.provider === "manual"
                                 ? "Manual import"
-                                : attempt.model || "ComfyUI"}
+                                : "Legacy local attempt"}
                             </strong>
                             <small>
                               {new Date(attempt.createdAt).toLocaleString()}

@@ -104,8 +104,7 @@ TextProvider
 
 ImageProvider
 ├── OpenAI Images
-├── Local ComfyUI
-├── Flux-based workflow
+├── Manual ChatGPT creation + import
 └── Future provider
 
 VideoProvider
@@ -170,7 +169,9 @@ Models and prices will change. The application should survive those changes.
 > future PostgreSQL migration does not leak into domain or UI code. Long-running
 > work begins with a persistent, single-machine job abstraction; BullMQ/Redis is
 > deferred until generation concurrency or crash recovery proves it necessary.
-> Local AI will integrate through the ComfyUI API. Paid cloud-video provider
+> Local text AI integrates through the loopback-only Ollama API. Image creation
+> uses copyable prompts, manual ChatGPT generation, and verified local import; no
+> local diffusion runtime is started by the application. Paid cloud-video provider
 > selection remains deliberately open until Phase 6, when price, regional
 > availability, and credentials can be evaluated with an explicit user decision.
 > See `docs/architecture/0001-foundation.md` for the rationale and boundaries.
@@ -248,11 +249,15 @@ Long-term jobs include:
 
 ## Local AI
 
-Recommended integration layer:
+Selected local text integration layer:
 
 ```text
-ComfyUI
+Ollama
 ```
+
+Local image generation was evaluated and retired on 2026-09-11 because the
+ComfyUI/Z-Image runtime did not complete reliably and caused unacceptable memory
+pressure on the 18 GB M3 Pro. Image creation now happens manually in ChatGPT.
 
 Possible video engines:
 - LTX
@@ -970,31 +975,30 @@ Reasons:
 
 # 21. Local AI Setup
 
-Primary recommendation:
+Selected local AI scope:
 
 ```text
-ComfyUI
+Ollama for text only
 ```
 
-The Film Studio communicates with ComfyUI through its local API.
+The Film Studio communicates with Ollama through its loopback-only local API.
+Still images use a deliberate prompt-copy and verified-upload workflow.
 
 Architecture:
 
 ```text
 Film Studio
 ↓
-Local backend
+Detailed character or shot prompt
 ↓
-ComfyUI API
+ChatGPT image creation
 ↓
-Workflow
+Download image
 ↓
-LTX / Wan / other model
-↓
-Generated file
+Verified local upload and review
 ```
 
-The exact model can change without changing the Film Studio UI.
+No image-generation API key or local diffusion model is used.
 
 ---
 
@@ -1073,7 +1077,7 @@ Film Studio
 ↓
 Local Ollama on loopback
 ↓
-Qwen 3.5 9B MLX
+Qwen 3.5 9B Q4_K_M
 ↓
 Validated preview
 ```
@@ -1583,7 +1587,6 @@ generated videos
 images
 audio
 Google OAuth credentials
-ComfyUI models
 local AI model weights
 cache
 personal settings
@@ -1608,7 +1611,7 @@ Contains:
 ```text
 application code
 database migrations/schema
-ComfyUI workflow definitions
+prompt-building source and contracts
 configuration templates
 Docker files
 installation scripts
@@ -1758,7 +1761,7 @@ The setup process should:
 5. Connect Google Drive
 6. Download latest database backup
 7. Run migrations
-8. Configure ComfyUI
+8. Configure Ollama
 9. Detect missing AI models
 10. Offer to download models
 11. Start the application
@@ -1797,8 +1800,8 @@ Docker:
 - Redis
 
 Native macOS:
-- ComfyUI
-- local AI models
+- Ollama
+- local text model
 - FFmpeg
 - DaVinci Resolve
 ```
@@ -1829,10 +1832,6 @@ ai-film-studio/
 │   ├── storage/
 │   ├── database/
 │   └── shared/
-│
-├── comfyui/
-│   ├── workflows/
-│   └── model-manifest.yaml
 │
 ├── scripts/
 │   ├── setup.sh
@@ -1933,10 +1932,9 @@ When replacing the Mac:
 7. Reconnect Google account.
 8. Restore latest database.
 9. Add/recover API keys.
-10. Re-download local AI models.
-11. Start ComfyUI.
-12. Start Film Studio.
-13. Verify old projects.
+10. Re-download the Ollama text model.
+11. Start Film Studio.
+12. Verify old projects.
 ```
 
 After this, the new machine should contain the same logical Film Studio.
@@ -2068,25 +2066,23 @@ Success criterion:
 
 ---
 
-## Phase 4 — Image Generation
+## Phase 4 — Image Creation and Review
 
-> **Implementation status — 2026-09-11:** Phase 4A is complete. The application
-> now has a provider-neutral image interface, a loopback-only ComfyUI adapter for
-> API-format workflows, persistent crash-recoverable jobs, immutable attempt and
-> asset history, a manual-import fallback, and explicit per-shot approve/reject
-> review with exactly one selected frame. ComfyUI Desktop 1.0.47, ComfyUI 0.35.x,
-> and the free Z-Image Turbo model set are installed for Apple Silicon MPS. The
-> committed core-node API workflow is configured and its loopback health check is
-> green. A live project render is deliberately not claimed until the user runs the
-> first acceptance image. Google Drive asset upload remains blocked by the Phase 1B
-> OAuth credential milestone. See `docs/architecture/0003-image-generation.md`.
+> **Implementation status — 2026-09-11:** The local ComfyUI path was retired after
+> live attempts stalled and the runtime caused unacceptable memory pressure on the
+> 18 GB M3 Pro. The selected workflow creates detailed character-reference and shot
+> prompts, lets the filmmaker generate images manually in ChatGPT, verifies local
+> JPEG/PNG/WebP uploads, preserves immutable attempt history, and provides explicit
+> approve/reject review with exactly one selected frame per shot. Historical local
+> job records remain readable, but no ComfyUI adapter, worker, route, workflow, or UI
+> control remains. See `docs/architecture/0003-image-generation.md`.
 
 Build:
 
 ```text
-Image provider interface
-Local ComfyUI image workflow
-Optional cloud image provider
+Character-reference prompt builder
+Continuity-safe shot prompt builder
+Manual ChatGPT image creation and verified import
 Generation history
 Approve / reject
 Google Drive upload
@@ -2098,14 +2094,12 @@ Success criterion:
 
 ---
 
-## Phase 5 — Local Video
+## Phase 5 — Video Provider Decision
 
 Build:
 
 ```text
-ComfyUI API
-LTX workflow
-Optional Wan workflow
+Select a video provider after explicit cost/hardware review
 Image-to-video
 Job progress
 Generation attempts
@@ -2521,24 +2515,25 @@ project's source of truth.
 | 2026-09-10 | Backend | Separate Fastify API bound to loopback only | Accepted |
 | 2026-09-10 | Database | SQLite with repository boundaries and versioned SQL migrations | Accepted |
 | 2026-09-10 | Background jobs | Persistent local runner first; BullMQ/Redis only when scaling evidence exists | Accepted |
-| 2026-09-10 | Local AI | ComfyUI adapter boundary | Accepted for Phase 4+ |
+| 2026-09-10 | Local image AI | ComfyUI adapter boundary | Superseded 2026-09-11 |
 | 2026-09-10 | Cloud video | Select one provider during Phase 6 after explicit cost/region review | Deferred |
 | 2026-09-10 | Project content in Git | Excluded; Git contains application source and safe templates only | Accepted |
 | 2026-09-11 | Story AI workflow | Selectable OpenAI API, local Ollama, and manual ChatGPT; every result is preview-only until explicit import | Accepted |
 | 2026-09-11 | Cloud story model | OpenAI Responses API with `gpt-5.4-mini`, strict structured output, `store: false`, and per-request billing confirmation | Accepted |
-| 2026-09-11 | Local story model | Ollama with Apple-native `qwen3.5:9b-mlx`; loopback-only, thinking disabled, unloaded after use, no per-token provider fee | Accepted |
+| 2026-09-11 | Local story model | Ollama with `qwen3.5:9b-q4_K_M`; loopback-only, thinking disabled for structured stories, unloaded after use, no per-token provider fee. MLX was rejected because the installed runtime does not support required structured output | Accepted |
 | 2026-09-10 | Story-plan persistence | Transactional replacement with story/script version increments, ordered scenes, and globally unique shot codes | Accepted |
 | 2026-09-10 | Bible identity matching | Exact case-insensitive name or stable generated code; missing labels are unresolved and never fuzzy-guessed | Accepted |
 | 2026-09-10 | Reference image storage | Project-local generated paths; JPEG/PNG/WebP only, 8 MB limit, MIME magic-byte verification, SHA-256 metadata | Accepted |
 | 2026-09-10 | Shot prompt builder | Deterministic provider-neutral composition from project, shot, Bible, and reference records | Accepted |
 | 2026-09-10 | Image attempt history | Immutable attempt, job, prompt/reference/settings snapshot, error, timing, cost, review, and asset records | Accepted |
-| 2026-09-10 | Image job execution | Transactional SQLite queue with one local worker and startup recovery; Redis remains deferred | Accepted |
-| 2026-09-10 | ComfyUI workflow contract | API-format JSON with exact runtime tokens and loopback-only HTTP access | Accepted |
+| 2026-09-10 | Image job execution | Transactional SQLite queue with one local worker and startup recovery; Redis remains deferred | Superseded; historical records retained |
+| 2026-09-10 | ComfyUI workflow contract | API-format JSON with exact runtime tokens and loopback-only HTTP access | Superseded; adapter and workflow removed |
 | 2026-09-10 | Offline image workflow | Manual JPEG/PNG/WebP import enters the same zero-cost review history | Accepted |
 | 2026-09-10 | Cloud image provider | No provider selected and no automatic cloud spending | Deferred |
-| 2026-09-11 | Local image model | Z-Image Turbo INT8 ConvRot with FP8 mixed Qwen encoder and AE VAE; selected after the BF16 stack exceeded 18 GB unified memory | Accepted |
+| 2026-09-11 | Local image model | Z-Image Turbo INT8 ConvRot with FP8 mixed Qwen encoder and AE VAE | Rejected after unreliable live execution and unacceptable memory pressure |
 | 2026-09-11 | Image job restart safety | One active job per shot; interrupted external jobs fail visibly and require manual retry instead of automatic replay | Accepted |
-| 2026-09-11 | Local image runtime | ComfyUI Desktop on Apple Silicon MPS, loopback API, committed core-node workflow | Accepted; first project render pending |
+| 2026-09-11 | Local image runtime | Remove ComfyUI Desktop, models, adapters, workflows, worker, API routes, and UI controls | Accepted and completed |
+| 2026-09-11 | Character image workflow | Deterministic detailed reference-photo prompt, manual ChatGPT image creation, verified upload, and local continuity reuse | Accepted |
 
 ## Milestone progress
 
@@ -2548,9 +2543,10 @@ project's source of truth.
 - [x] Phase 2 — Story System
 - [x] Phase 2B — Selectable OpenAI, local Ollama, and manual ChatGPT story modes
 - [x] Phase 3 — Character & Location Bible
-- [x] Phase 4A — Image jobs, immutable history, manual fallback, and review UI
-- [x] Phase 4B1 — Install and configure local ComfyUI model/workflow
-- [ ] Phase 4B2 — Accept one live project render and upload assets to Google Drive
+- [x] Phase 4A — Manual image import, immutable history, and review UI
+- [x] Phase 4B1 — Retire local ComfyUI and remove its disk/memory footprint
+- [x] Phase 4B2 — Add character-reference and per-shot ChatGPT prompt workflows
+- [ ] Phase 4C — Accept one manually generated image and upload assets to Google Drive
 - [ ] Phase 5 — Local Video
 - [ ] Phase 6 — Cloud Video
 - [ ] Phase 7 — Audio
@@ -2618,47 +2614,33 @@ project's source of truth.
   spoofing, resolver behavior, multipart API delivery, manifests, prior milestones,
   and end-to-end Visual Bible coverage.
 
-### Phase 4A — Image Generation Pipeline (2026-09-10)
+### Phase 4A — Image Creation and Review (revised 2026-09-11)
 
-- A provider package isolates ComfyUI behind a typed image interface and validates
-  a loopback-only base URL, readable API-format workflow, mandatory substitution
-  tokens, prompt submission, history polling, reference upload, and output download.
-- SQLite stores durable generation jobs, immutable attempt provenance, review state,
-  structured failure details, and generated-asset metadata. Transactional claims
-  prevent duplicate local work and startup recovery requeues interrupted jobs.
+- AI Film Studio builds detailed prompts but does not call an image provider. The
+  filmmaker creates each image in ChatGPT and imports the downloaded result.
+- SQLite retains immutable attempt provenance, review state, structured failure
+  details, and generated-asset metadata. Historical local jobs remain readable.
 - Storyboard files use project-contained generated paths, content-derived MIME type,
   SHA-256, byte size, and available dimensions. Manual imports follow the identical
   history/review path and record zero provider cost.
-- The Storyboard workspace reports provider readiness, continuity blockers, warning
-  references, job progress, image alternatives, seed/model/time/cost/error facts,
-  and explicit approve/reject controls with one selected frame per shot.
-- Thirty-one automated tests pass across all four milestones, including attempt history,
-  single-selection invariants, crash recovery, storage containment and spoofing,
-  ComfyUI request/response behavior, manual import, asset delivery, manifest sync,
-  review, and precise offline/configuration errors.
-- At Phase 4A acceptance, live ComfyUI generation remained pending because no
-  configured runtime, selected model, or exported workflow was yet available;
-  Phase 4B1 below now closes that setup gap.
+- The Storyboard workspace exposes a copyable continuity-safe prompt for every shot,
+  image alternatives, timing/cost/error facts, and explicit approve/reject controls
+  with one selected frame per shot.
+- Automated tests cover attempt history, single-selection invariants, storage
+  containment and spoofing, manual import, asset delivery, manifest sync, and review.
 
-### Phase 4B1 — Local ComfyUI Runtime (2026-09-11)
+### Phase 4B1/B2 — Retired Local Runtime and ChatGPT Prompts (2026-09-11)
 
-- ComfyUI Desktop 1.0.47 installed the stable ComfyUI 0.35.x standalone runtime
-  and selected Apple's MPS device on the local M3 Pro with 18 GB unified memory.
-- The first BF16 acceptance render exhausted the Mac's 18 GB unified-memory
-  headroom. The selected replacement uses the official INT8 ConvRot diffusion
-  model, FP8 mixed Qwen encoder, and AE VAE at roughly 12 GB combined. No account,
-  credits, or paid image API is required for generation.
-- `config/comfyui/image-workflow.json` contains a safe API-format graph using only
-  ComfyUI core nodes, eight sampling steps, deterministic runtime seeds, requested
-  dimensions, and project-safe output prefixes. Model weights remain untracked.
-- The provider accepts Z-Image's official zeroed negative-conditioning graph while
-  retaining negative prompts in immutable attempt history for provider portability.
-- Automated provider tests pass, the workflow node inputs were checked against the
-  installed ComfyUI API, and AI Film Studio reports the provider configured and
-  available at the loopback-only endpoint.
-- The first real storyboard render and approval remain Phase 4B2 acceptance work,
-  deferred at the user's request. Google Drive upload still requires the separate
-  OAuth credential milestone.
+- ComfyUI Desktop, approximately 36 GB of shared models/data, its workflow, adapter,
+  worker, provider route, tests, and generation controls were removed. The temporary
+  download helper was also uninstalled.
+- Character cards now build a detailed master reference-photo prompt from every
+  structured identity field. The prompt specifies identity, wardrobe, composition,
+  lens, lighting, anatomy, exclusions, and consistent handling of missing details.
+- Storyboard shots expose their complete inherited continuity prompt directly beside
+  verified upload and review controls.
+- ChatGPT is used manually for image creation. The OpenAI API remains a text-only,
+  explicit option for story generation and is never charged for image requests.
 
 ### Phase 2B — Selectable Story AI (2026-09-11)
 
@@ -2671,5 +2653,4 @@ project's source of truth.
 - OpenAI uses the Responses API with `store: false`, server-only credentials, a
   five-request-per-minute route limit, and an explicit billing warning in the UI.
 - Ollama is restricted to loopback, disables hidden thinking in structured output,
-  records token/timing metadata, and unloads the model after generation so ComfyUI
-  can reclaim unified memory.
+  records token/timing metadata, and unloads the model after story generation.
