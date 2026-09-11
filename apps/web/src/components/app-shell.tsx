@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <p>
             <strong>Storyboard review</strong>
             <br />
-            Generate · compare · approve
+            Copy · import · approve
           </p>
           <span>Phase 4</span>
         </div>

@@ -110,8 +110,7 @@ export default function ChatPage() {
   }
 
   const availableModels = status?.models ?? [];
-  const hasCustomModel =
-    model.length > 0 && !availableModels.includes(model);
+  const hasCustomModel = model.length > 0 && !availableModels.includes(model);
 
   return (
     <div className="page chat-page">

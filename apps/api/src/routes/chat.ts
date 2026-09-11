@@ -118,9 +118,7 @@ export function registerChatRoutes(app: FastifyInstance): void {
             title: "Ollama is not configured",
             status: 422,
             detail:
-              error instanceof Error
-                ? error.message
-                : "Ollama URL is invalid.",
+              error instanceof Error ? error.message : "Ollama URL is invalid.",
             instance: request.url,
           });
       }
@@ -173,20 +171,16 @@ export function registerChatRoutes(app: FastifyInstance): void {
       }
 
       const body = (await response.json().catch(() => undefined)) as
-        | OllamaChatResponse
-        | undefined;
+        OllamaChatResponse | undefined;
       const content = body?.message?.content;
       if (!body || typeof content !== "string" || content.length === 0) {
-        return reply
-          .status(502)
-          .type("application/problem+json")
-          .send({
-            type: "https://ai-film-studio.local/problems/provider-response",
-            title: "Ollama returned an empty message",
-            status: 502,
-            detail: "The model replied without any text.",
-            instance: request.url,
-          });
+        return reply.status(502).type("application/problem+json").send({
+          type: "https://ai-film-studio.local/problems/provider-response",
+          title: "Ollama returned an empty message",
+          status: 502,
+          detail: "The model replied without any text.",
+          instance: request.url,
+        });
       }
 
       return {

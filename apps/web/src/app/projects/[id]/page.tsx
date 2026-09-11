@@ -49,7 +49,7 @@ const workflow = [
   },
   {
     title: "Storyboard",
-    description: "Generate, compare and approve one image per shot.",
+    description: "Create in ChatGPT, import and approve one image per shot.",
     icon: Images,
     path: "storyboard",
   },
