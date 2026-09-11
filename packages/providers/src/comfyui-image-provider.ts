@@ -281,7 +281,6 @@ export class ComfyUiImageProvider implements ImageProvider {
       const serialized = JSON.stringify(workflow);
       const requiredTokens = [
         "{{PROMPT}}",
-        "{{NEGATIVE_PROMPT}}",
         "{{SEED}}",
         "{{WIDTH}}",
         "{{HEIGHT}}",

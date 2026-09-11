@@ -149,4 +149,46 @@ describe("ComfyUiImageProvider", () => {
       available: false,
     });
   });
+
+  it("accepts workflows that use zeroed negative conditioning", async () => {
+    directory = await mkdtemp(path.join(tmpdir(), "film-studio-comfy-"));
+    const workflowPath = path.join(directory, "workflow.json");
+    await writeFile(
+      workflowPath,
+      JSON.stringify({
+        "1": {
+          class_type: "TestNode",
+          inputs: {
+            prompt: "{{PROMPT}}",
+            seed: "{{SEED}}",
+            width: "{{WIDTH}}",
+            height: "{{HEIGHT}}",
+            prefix: "{{FILENAME_PREFIX}}",
+            model: "{{MODEL}}",
+          },
+        },
+      }),
+    );
+    const provider = new ComfyUiImageProvider(
+      {
+        baseUrl: "http://127.0.0.1:8188",
+        workflowPath,
+        model: "z-image.safetensors",
+        timeoutMs: 10_000,
+        pollIntervalMs: 1,
+      },
+      {
+        fetch: vi.fn<typeof fetch>(() =>
+          Promise.resolve(Response.json({ system: {} })),
+        ),
+        readFile: (await import("node:fs/promises")).readFile,
+        sleep: () => Promise.resolve(),
+      },
+    );
+
+    await expect(provider.getStatus()).resolves.toMatchObject({
+      configured: true,
+      available: true,
+    });
+  });
 });

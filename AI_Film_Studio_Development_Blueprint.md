@@ -2054,14 +2054,15 @@ Success criterion:
 
 ## Phase 4 — Image Generation
 
-> **Implementation status — 2026-09-10:** Phase 4A is complete. The application
+> **Implementation status — 2026-09-11:** Phase 4A is complete. The application
 > now has a provider-neutral image interface, a loopback-only ComfyUI adapter for
 > API-format workflows, persistent crash-recoverable jobs, immutable attempt and
 > asset history, a manual-import fallback, and explicit per-shot approve/reject
-> review with exactly one selected frame. The installed ComfyUI endpoint was
-> checked and is currently offline/unconfigured, so a live local-model render is
-> not claimed. Phase 4B tracks selection of an installed model/workflow plus a real
-> render acceptance test; Google Drive asset upload remains blocked by the Phase 1B
+> review with exactly one selected frame. ComfyUI Desktop 1.0.47, ComfyUI 0.35.x,
+> and the free Z-Image Turbo model set are installed for Apple Silicon MPS. The
+> committed core-node API workflow is configured and its loopback health check is
+> green. A live project render is deliberately not claimed until the user runs the
+> first acceptance image. Google Drive asset upload remains blocked by the Phase 1B
 > OAuth credential milestone. See `docs/architecture/0003-image-generation.md`.
 
 Build:
@@ -2514,9 +2515,11 @@ project's source of truth.
 | 2026-09-10 | Shot prompt builder | Deterministic provider-neutral composition from project, shot, Bible, and reference records | Accepted |
 | 2026-09-10 | Image attempt history | Immutable attempt, job, prompt/reference/settings snapshot, error, timing, cost, review, and asset records | Accepted |
 | 2026-09-10 | Image job execution | Transactional SQLite queue with one local worker and startup recovery; Redis remains deferred | Accepted |
-| 2026-09-10 | ComfyUI workflow contract | API-format JSON with exact runtime tokens and loopback-only HTTP access | Accepted; live workflow pending |
+| 2026-09-10 | ComfyUI workflow contract | API-format JSON with exact runtime tokens and loopback-only HTTP access | Accepted |
 | 2026-09-10 | Offline image workflow | Manual JPEG/PNG/WebP import enters the same zero-cost review history | Accepted |
 | 2026-09-10 | Cloud image provider | No provider selected and no automatic cloud spending | Deferred |
+| 2026-09-11 | Local image model | Z-Image Turbo BF16 with Qwen 3 4B encoder and AE VAE; Apache-2.0 model family, no per-generation provider fee | Accepted |
+| 2026-09-11 | Local image runtime | ComfyUI Desktop on Apple Silicon MPS, loopback API, committed core-node workflow | Accepted; first project render pending |
 
 ## Milestone progress
 
@@ -2526,7 +2529,8 @@ project's source of truth.
 - [x] Phase 2 — Story System
 - [x] Phase 3 — Character & Location Bible
 - [x] Phase 4A — Image jobs, immutable history, manual fallback, and review UI
-- [ ] Phase 4B — Live ComfyUI model/workflow render and Google Drive asset upload
+- [x] Phase 4B1 — Install and configure local ComfyUI model/workflow
+- [ ] Phase 4B2 — Accept one live project render and upload assets to Google Drive
 - [ ] Phase 5 — Local Video
 - [ ] Phase 6 — Cloud Video
 - [ ] Phase 7 — Audio
@@ -2612,5 +2616,25 @@ project's source of truth.
   single-selection invariants, crash recovery, storage containment and spoofing,
   ComfyUI request/response behavior, manual import, asset delivery, manifest sync,
   review, and precise offline/configuration errors.
-- Live ComfyUI generation remains pending because no reachable configured local
-  runtime, selected model, or exported workflow was available during acceptance.
+- At Phase 4A acceptance, live ComfyUI generation remained pending because no
+  configured runtime, selected model, or exported workflow was yet available;
+  Phase 4B1 below now closes that setup gap.
+
+### Phase 4B1 — Local ComfyUI Runtime (2026-09-11)
+
+- ComfyUI Desktop 1.0.47 installed the stable ComfyUI 0.35.x standalone runtime
+  and selected Apple's MPS device on the local M3 Pro with 18 GB unified memory.
+- The free Z-Image Turbo starter is installed outside the repository: the BF16
+  diffusion model, Qwen 3 4B text encoder, and AE VAE total roughly 19 GB. No
+  account, credits, or paid image API is required for generation.
+- `config/comfyui/image-workflow.json` contains a safe API-format graph using only
+  ComfyUI core nodes, eight sampling steps, deterministic runtime seeds, requested
+  dimensions, and project-safe output prefixes. Model weights remain untracked.
+- The provider accepts Z-Image's official zeroed negative-conditioning graph while
+  retaining negative prompts in immutable attempt history for provider portability.
+- Automated provider tests pass, the workflow node inputs were checked against the
+  installed ComfyUI API, and AI Film Studio reports the provider configured and
+  available at the loopback-only endpoint.
+- The first real storyboard render and approval remain Phase 4B2 acceptance work,
+  deferred at the user's request. Google Drive upload still requires the separate
+  OAuth credential milestone.

@@ -9,6 +9,7 @@ adapters.
 
 - Node.js 22 or newer (Node 24 LTS is recommended)
 - pnpm 9 or newer
+- ComfyUI Desktop with the Z-Image Turbo starter for free local image generation
 - FFmpeg for later media-rendering phases
 
 ## Start locally
@@ -20,8 +21,10 @@ pnpm db:migrate
 pnpm dev
 ```
 
-Open <http://localhost:3000>. The API listens only on
-<http://127.0.0.1:4100> by default.
+Before generating storyboard images, open **Comfy Desktop** and start its local
+`ComfyUI` instance. Then open the URL printed by `pnpm dev` (normally
+<http://localhost:3000>, or <http://localhost:3001> when port 3000 is occupied).
+The API listens only on <http://127.0.0.1:4100> by default.
 
 All runtime data is excluded from Git:
 
@@ -57,6 +60,8 @@ JPEG/PNG/WebP frame when ComfyUI is unavailable. Each attempt records its prompt
 reference snapshot, provider, model, seed, settings, timing, error, and cost; an
 explicit review selects exactly one approved image per shot. See
 [`config/comfyui/README.md`](config/comfyui/README.md) for local workflow setup.
+The committed Z-Image Turbo workflow runs entirely on the Mac with no per-image
+provider fee; the first render is slower while the model is loaded into memory.
 
 ## Quality checks
 
