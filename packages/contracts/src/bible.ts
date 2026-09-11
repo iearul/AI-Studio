@@ -3,6 +3,9 @@ import { z } from "zod";
 const shortText = z.string().trim().max(240).default("");
 const descriptiveText = z.string().trim().max(4000).default("");
 const textList = z.array(z.string().trim().min(1).max(240)).max(50).default([]);
+const generatedShortText = z.string().trim().max(240);
+const generatedDescriptiveText = z.string().trim().max(4000);
+const generatedTextList = z.array(z.string().trim().min(1).max(240)).max(50);
 
 export const referenceOwnerTypes = ["character", "location", "prop"] as const;
 export const referenceViews = [
@@ -59,6 +62,60 @@ export const propInputSchema = z.object({
   colors: textList,
   significance: descriptiveText,
   continuityNotes: descriptiveText,
+});
+
+export const characterGenerationInputSchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  age: z.number().int().min(0).max(150).nullable(),
+  gender: generatedShortText,
+  culturalAppearance: generatedDescriptiveText,
+  faceDescription: generatedDescriptiveText,
+  hair: generatedDescriptiveText,
+  eyes: generatedDescriptiveText,
+  skin: generatedDescriptiveText,
+  height: generatedShortText,
+  bodyType: generatedShortText,
+  defaultClothing: generatedTextList,
+  alternativeClothing: generatedTextList,
+  accessories: generatedTextList,
+  personality: generatedDescriptiveText,
+  voice: generatedDescriptiveText,
+  speechStyle: generatedDescriptiveText,
+});
+
+export const locationGenerationInputSchema = z.object({
+  name: z.string().trim().min(2).max(200),
+  countryCulture: generatedShortText,
+  type: generatedShortText,
+  description: generatedDescriptiveText,
+  architecture: generatedDescriptiveText,
+  materials: generatedTextList,
+  furniture: generatedTextList,
+  defaultLighting: generatedDescriptiveText,
+  colorPalette: generatedTextList,
+  nearbyEnvironment: generatedDescriptiveText,
+  periodDetails: generatedDescriptiveText,
+});
+
+export const propGenerationInputSchema = z.object({
+  name: z.string().trim().min(2).max(200),
+  description: generatedDescriptiveText,
+  materials: generatedTextList,
+  colors: generatedTextList,
+  significance: generatedDescriptiveText,
+  continuityNotes: generatedDescriptiveText,
+});
+
+export const storyVisualBibleInputSchema = z.object({
+  characters: z.array(characterInputSchema).max(50).default([]),
+  locations: z.array(locationInputSchema).max(100).default([]),
+  props: z.array(propInputSchema).max(150).default([]),
+});
+
+export const storyVisualBibleGenerationSchema = z.object({
+  characters: z.array(characterGenerationInputSchema).max(50),
+  locations: z.array(locationGenerationInputSchema).max(100),
+  props: z.array(propGenerationInputSchema).max(150),
 });
 
 export const referenceImageSchema = z.object({
@@ -151,6 +208,7 @@ export const characterReferencePromptSchema = z.object({
 export type CharacterInput = z.input<typeof characterInputSchema>;
 export type LocationInput = z.input<typeof locationInputSchema>;
 export type PropInput = z.input<typeof propInputSchema>;
+export type StoryVisualBibleInput = z.input<typeof storyVisualBibleInputSchema>;
 export type Character = z.infer<typeof characterSchema>;
 export type Location = z.infer<typeof locationSchema>;
 export type Prop = z.infer<typeof propSchema>;

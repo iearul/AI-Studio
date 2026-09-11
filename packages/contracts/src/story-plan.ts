@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  storyVisualBibleGenerationSchema,
+  storyVisualBibleInputSchema,
+} from "./bible.js";
+
 export const shotTypes = [
   "extreme-wide",
   "wide",
@@ -110,6 +115,7 @@ export const sceneInputSchema = z.object({
 
 export const storyPlanInputSchema = z
   .object({
+    visualBible: storyVisualBibleInputSchema.optional(),
     story: storyInputSchema,
     script: scriptInputSchema,
     scenes: z.array(sceneInputSchema).min(1).max(200),
@@ -118,6 +124,7 @@ export const storyPlanInputSchema = z
 
 export const storyPlanGenerationSchema = z
   .object({
+    visualBible: storyVisualBibleGenerationSchema,
     story: storyInputSchema.extend({
       hook: generatedNarrativeText,
       twist: generatedNarrativeText,

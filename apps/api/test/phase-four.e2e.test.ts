@@ -128,21 +128,7 @@ describe("Phase 4 API", () => {
     await rm(directory, { recursive: true, force: true });
   });
 
-  async function resolveShot() {
-    await app.inject({
-      method: "POST",
-      url: `/api/v1/projects/${projectId}/characters`,
-      payload: { name: "Rahim" },
-    });
-    await app.inject({
-      method: "POST",
-      url: `/api/v1/projects/${projectId}/locations`,
-      payload: { name: "Abandoned platform" },
-    });
-  }
-
   it("imports, serves, approves, and manifests a storyboard image", async () => {
-    await resolveShot();
     const multipart = multipartImage(png);
     const imported = await app.inject({
       method: "POST",
@@ -188,6 +174,9 @@ describe("Phase 4 API", () => {
   });
 
   it("blocks imports for shots with unresolved continuity records", async () => {
+    services.database.connection
+      .prepare("DELETE FROM locations WHERE project_id = ?")
+      .run(projectId);
     const unresolved = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${projectId}/shots/${shotId}/image-imports`,
@@ -198,7 +187,6 @@ describe("Phase 4 API", () => {
   });
 
   it("rejects spoofed manual images without leaving a successful attempt", async () => {
-    await resolveShot();
     const spoofed = multipartImage(png, "image/jpeg");
     const response = await app.inject({
       method: "POST",

@@ -18,6 +18,44 @@ import { buildApp } from "../src/app.js";
 import { createServices, type Services } from "../src/services.js";
 
 const planInput: StoryPlanInput = {
+  visualBible: {
+    characters: [
+      {
+        name: "Rahim",
+        age: 34,
+        gender: "man",
+        culturalAppearance: "Bangladeshi railway keeper",
+        faceDescription: "Long face with a short trimmed beard",
+        hair: "Short black hair with a slight wave",
+        eyes: "Dark brown, deep set",
+        skin: "Warm medium-brown skin with natural texture",
+        height: "175 cm",
+        bodyType: "Lean, weathered build",
+        defaultClothing: ["faded beige railway shirt", "charcoal trousers"],
+        alternativeClothing: [],
+        accessories: ["worn brown leather watch"],
+        personality: "Watchful and restrained",
+        voice: "Low, tired baritone",
+        speechStyle: "Measured Bangla with long pauses",
+      },
+    ],
+    locations: [
+      {
+        name: "Abandoned railway platform",
+        countryCulture: "Rural Bangladesh",
+        type: "Exterior railway platform",
+        description: "A narrow disused platform beside a single track",
+        architecture: "Weathered colonial-era brick station building",
+        materials: ["mossy red brick", "rusted steel"],
+        furniture: ["splintered timber bench"],
+        defaultLighting: "Cold moonlight with one green signal lamp",
+        colorPalette: ["slate blue", "rust brown", "signal green"],
+        nearbyEnvironment: "Overgrown grass and dark rice fields",
+        periodDetails: "Present day with decades of neglect",
+      },
+    ],
+    props: [],
+  },
   story: {
     title: "The Last Train",
     logline: "A station keeper sees a train that vanished twenty years ago.",
@@ -201,10 +239,25 @@ describe("Phase 2 API", () => {
         path.join(directory, "projects", projectId, "project.json"),
         "utf8",
       ),
-    ) as { story: { title: string }; scenes: unknown[]; shots: unknown[] };
+    ) as {
+      story: { title: string };
+      scenes: unknown[];
+      shots: unknown[];
+      characters: Array<{ name: string; faceDescription: string }>;
+      locations: Array<{ name: string }>;
+    };
     expect(manifest.story.title).toBe("The Last Train");
     expect(manifest.scenes).toHaveLength(1);
     expect(manifest.shots).toHaveLength(2);
+    expect(manifest.characters).toContainEqual(
+      expect.objectContaining({
+        name: "Rahim",
+        faceDescription: "Long face with a short trimmed beard",
+      }),
+    );
+    expect(manifest.locations).toContainEqual(
+      expect.objectContaining({ name: "Abandoned railway platform" }),
+    );
   });
 
   it("rejects duplicate shot codes during preview without changing state", async () => {

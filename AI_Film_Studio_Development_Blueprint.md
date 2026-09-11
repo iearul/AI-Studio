@@ -2519,6 +2519,7 @@ project's source of truth.
 | 2026-09-10 | Cloud video | Select one provider during Phase 6 after explicit cost/region review | Deferred |
 | 2026-09-10 | Project content in Git | Excluded; Git contains application source and safe templates only | Accepted |
 | 2026-09-11 | Story AI workflow | Selectable OpenAI API, local Ollama, and manual ChatGPT; every result is preview-only until explicit import | Accepted |
+| 2026-09-11 | Story-to-Bible workflow | Generated plans include complete structured character, location, and prop definitions; import creates missing records, fills only blank fields, and preserves filmmaker edits | Accepted |
 | 2026-09-11 | Cloud story model | OpenAI Responses API with `gpt-5.4-mini`, strict structured output, `store: false`, and per-request billing confirmation | Accepted |
 | 2026-09-11 | Local story model | Ollama with `qwen3.5:9b-q4_K_M`; loopback-only, thinking disabled for structured stories, unloaded after use, no per-token provider fee. MLX was rejected because the installed runtime does not support required structured output | Accepted |
 | 2026-09-11 | Ollama story schema | Send the required JSON object structure without grammar keywords rejected by Ollama/llama.cpp; retain full Zod validation before preview or import | Accepted |
@@ -2543,6 +2544,7 @@ project's source of truth.
 - [ ] Phase 1B — Google Drive OAuth connection and verified backup upload
 - [x] Phase 2 — Story System
 - [x] Phase 2B — Selectable OpenAI, local Ollama, and manual ChatGPT story modes
+- [x] Phase 2C — Automatic Visual Bible population from accepted story plans
 - [x] Phase 3 — Character & Location Bible
 - [x] Phase 4A — Manual image import, immutable history, and review UI
 - [x] Phase 4B1 — Retire local ComfyUI and remove its disk/memory footprint

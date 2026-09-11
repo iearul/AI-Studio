@@ -10,6 +10,7 @@ import {
   propInputSchema,
   propSchema,
   referenceImageSchema,
+  storyPlanInputSchema,
   type Bible,
   type Character,
   type CharacterInput,
@@ -20,6 +21,7 @@ import {
   type PropInput,
   type ReferenceImage,
   type ReferenceOwnerType,
+  type StoryPlanInput,
 } from "@ai-film-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
@@ -97,6 +99,11 @@ type ReferenceRow = {
 };
 
 type EntityTable = "characters" | "locations" | "props";
+
+export type BibleSyncSummary = {
+  created: { characters: number; locations: number; props: number };
+  enriched: { characters: number; locations: number; props: number };
+};
 
 function parseStringArray(json: string): string[] {
   const parsed = JSON.parse(json) as unknown;
@@ -208,6 +215,96 @@ function referencesByOwner(
   return result;
 }
 
+function nameKey(value: string): string {
+  return value.trim().toLocaleLowerCase("en-US");
+}
+
+function addNamed<T extends { name: string }>(
+  values: Map<string, T>,
+  value: T,
+): void {
+  const key = nameKey(value.name);
+  if (key && !values.has(key)) values.set(key, value);
+}
+
+function fillText(current: string, generated: string): string {
+  return current.trim() ? current : generated;
+}
+
+function fillList(current: string[], generated: string[]): string[] {
+  return current.length > 0 ? current : generated;
+}
+
+function mergeCharacter(
+  current: Character,
+  generated: CharacterInput,
+): CharacterInput {
+  const next = characterInputSchema.parse(generated);
+  return {
+    name: current.name,
+    age: current.age ?? next.age,
+    gender: fillText(current.gender, next.gender),
+    culturalAppearance: fillText(
+      current.culturalAppearance,
+      next.culturalAppearance,
+    ),
+    faceDescription: fillText(current.faceDescription, next.faceDescription),
+    hair: fillText(current.hair, next.hair),
+    eyes: fillText(current.eyes, next.eyes),
+    skin: fillText(current.skin, next.skin),
+    height: fillText(current.height, next.height),
+    bodyType: fillText(current.bodyType, next.bodyType),
+    defaultClothing: fillList(current.defaultClothing, next.defaultClothing),
+    alternativeClothing: fillList(
+      current.alternativeClothing,
+      next.alternativeClothing,
+    ),
+    accessories: fillList(current.accessories, next.accessories),
+    personality: fillText(current.personality, next.personality),
+    voice: fillText(current.voice, next.voice),
+    speechStyle: fillText(current.speechStyle, next.speechStyle),
+  };
+}
+
+function mergeLocation(
+  current: Location,
+  generated: LocationInput,
+): LocationInput {
+  const next = locationInputSchema.parse(generated);
+  return {
+    name: current.name,
+    countryCulture: fillText(current.countryCulture, next.countryCulture),
+    type: fillText(current.type, next.type),
+    description: fillText(current.description, next.description),
+    architecture: fillText(current.architecture, next.architecture),
+    materials: fillList(current.materials, next.materials),
+    furniture: fillList(current.furniture, next.furniture),
+    defaultLighting: fillText(current.defaultLighting, next.defaultLighting),
+    colorPalette: fillList(current.colorPalette, next.colorPalette),
+    nearbyEnvironment: fillText(
+      current.nearbyEnvironment,
+      next.nearbyEnvironment,
+    ),
+    periodDetails: fillText(current.periodDetails, next.periodDetails),
+  };
+}
+
+function mergeProp(current: Prop, generated: PropInput): PropInput {
+  const next = propInputSchema.parse(generated);
+  return {
+    name: current.name,
+    description: fillText(current.description, next.description),
+    materials: fillList(current.materials, next.materials),
+    colors: fillList(current.colors, next.colors),
+    significance: fillText(current.significance, next.significance),
+    continuityNotes: fillText(current.continuityNotes, next.continuityNotes),
+  };
+}
+
+function changed<T>(current: T, next: T): boolean {
+  return JSON.stringify(current) !== JSON.stringify(next);
+}
+
 export class BibleRepository {
   constructor(
     private readonly manager: DatabaseManager,
@@ -248,6 +345,123 @@ export class BibleRepository {
         .all(projectId) as PropRow[]
     ).map((row) => mapProp(row, references.get(`prop:${row.id}`) ?? []));
     return bibleSchema.parse({ characters, locations, props });
+  }
+
+  syncStoryEntities(
+    projectId: string,
+    input: StoryPlanInput,
+  ): BibleSyncSummary {
+    this.assertProject(projectId);
+    const plan = storyPlanInputSchema.parse(input);
+    const supplied = plan.visualBible ?? {
+      characters: [],
+      locations: [],
+      props: [],
+    };
+    const characters = new Map<string, CharacterInput>();
+    const locations = new Map<string, LocationInput>();
+    const props = new Map<string, PropInput>();
+
+    supplied.characters.forEach((value) =>
+      addNamed(characters, characterInputSchema.parse(value)),
+    );
+    supplied.locations.forEach((value) =>
+      addNamed(locations, locationInputSchema.parse(value)),
+    );
+    supplied.props.forEach((value) =>
+      addNamed(props, propInputSchema.parse(value)),
+    );
+
+    const addCharacterName = (name: string) => {
+      if (name.trim().length < 2) return;
+      const value = characterInputSchema.parse({ name });
+      const existing = characters.get(nameKey(name));
+      if (!existing) addNamed(characters, value);
+    };
+    const addLocationName = (name: string) => {
+      if (name.trim().length < 2) return;
+      const value = locationInputSchema.parse({ name });
+      const existing = locations.get(nameKey(name));
+      if (!existing) addNamed(locations, value);
+    };
+    const addPropName = (name: string) => {
+      if (name.trim().length < 2) return;
+      const value = propInputSchema.parse({ name });
+      const existing = props.get(nameKey(name));
+      if (!existing) addNamed(props, value);
+    };
+
+    addCharacterName(plan.story.mainCharacter);
+    plan.story.supportingCharacters.forEach(addCharacterName);
+    for (const scene of plan.scenes) {
+      addLocationName(scene.location);
+      scene.characters.forEach(addCharacterName);
+      for (const shot of scene.shots) {
+        addLocationName(shot.location);
+        shot.characters.forEach(addCharacterName);
+        shot.props.forEach(addPropName);
+      }
+    }
+
+    const summary: BibleSyncSummary = {
+      created: { characters: 0, locations: 0, props: 0 },
+      enriched: { characters: 0, locations: 0, props: 0 },
+    };
+    const current = this.list(projectId);
+    const currentCharacters = new Map(
+      current.characters.map((entity) => [nameKey(entity.name), entity]),
+    );
+    const currentLocations = new Map(
+      current.locations.map((entity) => [nameKey(entity.name), entity]),
+    );
+    const currentProps = new Map(
+      current.props.map((entity) => [nameKey(entity.name), entity]),
+    );
+
+    for (const value of characters.values()) {
+      const existing = currentCharacters.get(nameKey(value.name));
+      if (!existing) {
+        this.createCharacter(projectId, value);
+        summary.created.characters += 1;
+        continue;
+      }
+      const currentInput = characterInputSchema.parse(existing);
+      const merged = mergeCharacter(existing, value);
+      if (changed(currentInput, merged)) {
+        this.updateCharacter(projectId, existing.id, merged);
+        summary.enriched.characters += 1;
+      }
+    }
+    for (const value of locations.values()) {
+      const existing = currentLocations.get(nameKey(value.name));
+      if (!existing) {
+        this.createLocation(projectId, value);
+        summary.created.locations += 1;
+        continue;
+      }
+      const currentInput = locationInputSchema.parse(existing);
+      const merged = mergeLocation(existing, value);
+      if (changed(currentInput, merged)) {
+        this.updateLocation(projectId, existing.id, merged);
+        summary.enriched.locations += 1;
+      }
+    }
+    for (const value of props.values()) {
+      const existing = currentProps.get(nameKey(value.name));
+      if (!existing) {
+        this.createProp(projectId, value);
+        summary.created.props += 1;
+        continue;
+      }
+      const currentInput = propInputSchema.parse(existing);
+      const merged = mergeProp(existing, value);
+      if (changed(currentInput, merged)) {
+        this.updateProp(projectId, existing.id, merged);
+        summary.enriched.props += 1;
+      }
+    }
+
+    return summary;
   }
 
   createCharacter(projectId: string, input: CharacterInput): Character {

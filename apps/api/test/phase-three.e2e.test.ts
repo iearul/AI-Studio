@@ -127,9 +127,12 @@ describe("Phase 3 API", () => {
   });
 
   async function createCharacter() {
+    const character = services.bible
+      .list(projectId)
+      .characters.find((candidate) => candidate.name === "Rahim")!;
     return app.inject({
-      method: "POST",
-      url: `/api/v1/projects/${projectId}/characters`,
+      method: "PUT",
+      url: `/api/v1/projects/${projectId}/characters/${character.id}`,
       payload: {
         name: "Rahim",
         age: 34,
@@ -147,31 +150,45 @@ describe("Phase 3 API", () => {
     });
     expect(
       before.json<{ totals: { unresolved: number } }>().totals.unresolved,
-    ).toBe(3);
+    ).toBe(0);
 
-    expect((await createCharacter()).statusCode).toBe(201);
+    expect((await createCharacter()).statusCode).toBe(200);
+    const locationId = services.bible
+      .list(projectId)
+      .locations.find(
+        (candidate) => candidate.name === "Abandoned railway platform",
+      )!.id;
     const location = await app.inject({
-      method: "POST",
-      url: `/api/v1/projects/${projectId}/locations`,
+      method: "PUT",
+      url: `/api/v1/projects/${projectId}/locations/${locationId}`,
       payload: {
         name: "Abandoned railway platform",
         type: "Rural railway station",
         materials: ["weathered brick", "rusted steel"],
       },
     });
-    expect(location.statusCode).toBe(201);
+    expect(location.statusCode).toBe(200);
+    const propId = services.bible
+      .list(projectId)
+      .props.find((candidate) => candidate.name === "Signal key")!.id;
     const prop = await app.inject({
-      method: "POST",
-      url: `/api/v1/projects/${projectId}/props`,
+      method: "PUT",
+      url: `/api/v1/projects/${projectId}/props/${propId}`,
       payload: {
         name: "Signal key",
         description: "A worn brass key on a red cord",
       },
     });
-    expect(prop.statusCode).toBe(201);
+    expect(prop.statusCode).toBe(200);
 
     const duplicate = await createCharacter();
-    expect(duplicate.statusCode).toBe(409);
+    expect(duplicate.statusCode).toBe(200);
+    const actualDuplicate = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${projectId}/characters`,
+      payload: { name: "rahim" },
+    });
+    expect(actualDuplicate.statusCode).toBe(409);
 
     const after = await app.inject({
       method: "GET",

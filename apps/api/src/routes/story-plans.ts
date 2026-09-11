@@ -28,9 +28,29 @@ export function registerStoryPlanRoutes(
     async (request, reply) => {
       const input = storyPlanInputSchema.parse(request.body);
       const plan = services.storyPlans.save(request.params.id, input);
+      const bibleSync = services.bible.syncStoryEntities(
+        request.params.id,
+        input,
+      );
       const sync = await services.manifestSynchronizer.drain();
       return reply
         .header("x-manifest-sync", sync.failed === 0 ? "synced" : "pending")
+        .header(
+          "x-bible-sync-created",
+          String(
+            bibleSync.created.characters +
+              bibleSync.created.locations +
+              bibleSync.created.props,
+          ),
+        )
+        .header(
+          "x-bible-sync-enriched",
+          String(
+            bibleSync.enriched.characters +
+              bibleSync.enriched.locations +
+              bibleSync.enriched.props,
+          ),
+        )
         .send(plan);
     },
   );

@@ -122,6 +122,11 @@ export default function StoryWorkspacePage() {
       scenes: preview.scenes.length,
       shots: shots.length,
       duration: shots.reduce((total, shot) => total + shot.durationSeconds, 0),
+      bibleRecords: preview.visualBible
+        ? (preview.visualBible.characters?.length ?? 0) +
+          (preview.visualBible.locations?.length ?? 0) +
+          (preview.visualBible.props?.length ?? 0)
+        : 0,
     };
   }, [preview]);
   const automaticMode = mode === "manual" ? undefined : mode;
@@ -753,6 +758,10 @@ export default function StoryWorkspacePage() {
                       </span>
                       <span>
                         <strong>{previewTotals?.duration}s</strong> duration
+                      </span>
+                      <span>
+                        <strong>{previewTotals?.bibleRecords}</strong> Bible
+                        records
                       </span>
                     </div>
                     {generated && (
