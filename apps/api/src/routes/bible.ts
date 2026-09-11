@@ -29,6 +29,19 @@ const referenceOwnerParamsSchema = entityParamsSchema.extend({
   ownerType: z.enum(["characters", "locations", "props"]),
 });
 const uploadQuerySchema = z.object({ view: z.enum(referenceViews) });
+const characterPromptQuerySchema = z.object({
+  view: z
+    .enum([
+      "front",
+      "three-quarter",
+      "profile",
+      "full-body",
+      "neutral",
+      "expression",
+      "other",
+    ])
+    .default("three-quarter"),
+});
 
 function ownerType(
   value: "characters" | "locations" | "props",
@@ -74,19 +87,20 @@ export function registerBibleRoutes(
     },
   );
 
-  app.get<{ Params: { id: string; entityId: string } }>(
-    "/projects/:id/characters/:entityId/reference-prompt",
-    (request) => {
-      const { id, entityId } = entityParamsSchema.parse(request.params);
-      const project = services.projects.getById(id);
-      if (!project) throw new NotFoundError("Project");
-      const character = services.bible
-        .list(id)
-        .characters.find((candidate) => candidate.id === entityId);
-      if (!character) throw new NotFoundError("Character");
-      return buildCharacterReferencePrompt(project, character);
-    },
-  );
+  app.get<{
+    Params: { id: string; entityId: string };
+    Querystring: { view?: string };
+  }>("/projects/:id/characters/:entityId/reference-prompt", (request) => {
+    const { id, entityId } = entityParamsSchema.parse(request.params);
+    const { view } = characterPromptQuerySchema.parse(request.query);
+    const project = services.projects.getById(id);
+    if (!project) throw new NotFoundError("Project");
+    const character = services.bible
+      .list(id)
+      .characters.find((candidate) => candidate.id === entityId);
+    if (!character) throw new NotFoundError("Character");
+    return buildCharacterReferencePrompt(project, character, view);
+  });
 
   app.post<{ Params: { id: string } }>(
     "/projects/:id/characters",

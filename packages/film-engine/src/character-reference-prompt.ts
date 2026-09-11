@@ -3,6 +3,7 @@ import {
   type Character,
   type CharacterReferencePrompt,
   type Project,
+  type ReferenceView,
 } from "@ai-film-studio/contracts";
 
 function detail(label: string, value: string | number | null): string | null {
@@ -18,15 +19,32 @@ function compact(values: Array<string | null | undefined>): string[] {
   return values.filter((value): value is string => Boolean(value));
 }
 
-function safeFilename(value: string): string {
+function safeFilename(value: string, view: ReferenceView): string {
   const stem = value
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
-  return `${stem || "character"}-master-reference.png`;
+  return `${stem || "character"}-${view}-reference.png`;
 }
+
+const compositionByView: Partial<Record<ReferenceView, string>> = {
+  front:
+    "- Direct front view at eye level; face, shoulders, hips, knees, and feet square to camera\n- Head-to-toe neutral standing pose with both hands visible\n- No body turn, face turn, tilt, or three-quarter angle",
+  "three-quarter":
+    "- Three-quarter front view at eye level, with body and face turned exactly 45 degrees from camera\n- Head-to-toe neutral standing pose with both hands visible\n- Near and far facial features remain readable; do not drift toward a front or profile view",
+  profile:
+    "- Exact 90-degree left-side profile at eye level\n- Head, nose, shoulders, hips, knees, and feet all remain in true side profile\n- Head-to-toe neutral standing pose with the silhouette and both feet fully visible; do not use a three-quarter angle",
+  "full-body":
+    "- Direct front, head-to-toe full-body view at eye level\n- Neutral anatomical standing pose with arms relaxed and separated from the torso, both hands and shoes fully visible\n- Camera far enough away to leave clean space above the hair and below the feet",
+  neutral:
+    "- Direct front head-and-shoulders identity portrait at eye level\n- Neutral resting expression, closed mouth, relaxed brow, direct gaze into camera\n- Crop at mid-chest while keeping all hair, ears, jawline, and shoulders visible",
+  expression:
+    "- Three-quarter head-and-shoulders portrait at eye level\n- Show the character's signature story-appropriate expression based on the personality description, while keeping identity fully recognizable\n- Crop at mid-chest; preserve facial proportions and avoid theatrical exaggeration",
+  other:
+    "- Single clear production reference view at eye level\n- Use a neutral pose and unobstructed framing that reveals identity, wardrobe, and proportions\n- Do not combine multiple angles or panels in one image",
+};
 
 function missingDetails(character: Character): string[] {
   return compact([
@@ -42,6 +60,7 @@ function missingDetails(character: Character): string[] {
 export function buildCharacterReferencePrompt(
   project: Project,
   character: Character,
+  view: ReferenceView = "three-quarter",
 ): CharacterReferencePrompt {
   const missing = missingDetails(character);
   const projectStyle =
@@ -67,12 +86,12 @@ export function buildCharacterReferencePrompt(
   ]);
 
   const prompt = [
-    "Create one high-detail master character reference image for a film production. Render it as a realistic production photograph unless the project visual style below explicitly requires another medium.",
+    `Create one high-detail ${view.replaceAll("-", " ")} character reference image for a film production. Render it as a realistic production photograph unless the project visual style below explicitly requires another medium.`,
     `PROJECT: ${project.title}\nPROJECT VISUAL STYLE: ${projectStyle}\nPROJECT COUNTRY / CULTURE: ${projectCulture}`,
     `CHARACTER IDENTITY — treat every supplied detail as fixed:\n${identity.join("\n")}`,
-    "COMPOSITION AND CAMERA:\n- Exactly one person, shown head-to-toe in one continuous image\n- Three-quarter front view at eye level, looking toward the camera\n- Neutral, relaxed standing pose; both hands visible and naturally separated from the torso\n- 50mm full-frame lens look with natural perspective and no wide-angle distortion\n- Camera far enough away that hair, shoes, hands, and clothing are not cropped\n- Face remains large and sharp enough to identify eyes, skin texture, and facial structure\n- Vertical 4:5 composition with generous clean space around the subject",
+    `COMPOSITION AND CAMERA — ${view.toUpperCase()} VIEW:\n- Exactly one person in one continuous image\n${compositionByView[view] ?? compositionByView.other}\n- 50mm full-frame lens look with natural perspective and no wide-angle distortion\n- Face remains sharp enough to identify eyes, skin texture, and facial structure\n- Vertical 4:5 composition with clean space around the subject`,
     "LIGHTING AND BACKGROUND:\n- Soft, even studio key and fill lighting with accurate skin color\n- Plain warm-gray seamless background, no location or environmental storytelling\n- Minimal soft contact shadow under the feet\n- High detail, realistic anatomy, natural fabric texture, restrained color grading",
-    "CONTINUITY RULES:\n- Preserve the exact face, apparent age, body proportions, skin, hair, wardrobe, and accessories described above\n- The image will be reused as the identity reference for every later shot\n- Do not redesign, beautify, age, de-age, or change ethnicity, body shape, hairstyle, clothing, or accessories\n- Keep expression neutral and readable; no dramatic action or cinematic pose",
+    `CONTINUITY RULES:\n- Preserve the exact face, apparent age, body proportions, skin, hair, wardrobe, and accessories described above\n- This ${view.replaceAll("-", " ")} image will be reused as an identity reference for later shots\n- Do not redesign, beautify, age, de-age, or change ethnicity, body shape, hairstyle, clothing, or accessories\n- Do not add dramatic action or a cinematic pose unless the requested view is expression`,
     "DO NOT INCLUDE:\n- Additional people, duplicate views, split panels, contact sheets, mirrors, or reflections of the subject\n- Text, labels, captions, logos, signatures, borders, or watermarks\n- Scene props unless explicitly listed as an accessory\n- Cropped limbs, hidden hands, extra fingers, extra limbs, distorted anatomy, blurred face, heavy makeup, or extreme depth of field",
     missing.length > 0
       ? `UNSPECIFIED DETAILS: Choose natural, understated values for ${missing.join(", ")} and keep those choices internally consistent within this image. This generated image will become the final source of truth for those details.`
@@ -85,7 +104,8 @@ export function buildCharacterReferencePrompt(
   return characterReferencePromptSchema.parse({
     characterId: character.id,
     characterCode: character.code,
-    filename: safeFilename(character.name),
+    view,
+    filename: safeFilename(character.name, view),
     prompt,
     ready: missing.length === 0,
     missingDetails: missing,

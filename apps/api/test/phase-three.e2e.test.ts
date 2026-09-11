@@ -261,18 +261,19 @@ describe("Phase 3 API", () => {
     const characterId = character.json<{ id: string }>().id;
     const response = await app.inject({
       method: "GET",
-      url: `/api/v1/projects/${projectId}/characters/${characterId}/reference-prompt`,
+      url: `/api/v1/projects/${projectId}/characters/${characterId}/reference-prompt?view=profile`,
     });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       characterId,
       characterCode: "CHAR_RAHIM_001",
-      filename: "rahim-master-reference.png",
+      view: "profile",
+      filename: "rahim-profile-reference.png",
       ready: false,
     });
     expect(response.json<{ prompt: string }>().prompt).toContain(
-      "Exactly one person",
+      "Exact 90-degree left-side profile",
     );
     expect(response.json<{ prompt: string }>().prompt).toContain(
       "Long face with a short trimmed beard",

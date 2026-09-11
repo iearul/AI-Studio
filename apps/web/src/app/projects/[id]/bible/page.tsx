@@ -30,7 +30,15 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { type FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  type ClipboardEvent,
+  type DragEvent,
+  type FormEvent,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { apiBaseUrl, apiFetch } from "@/lib/api";
 
@@ -108,18 +116,48 @@ function ReferenceUploader({
   projectId,
   kind,
   entity,
+  view,
+  onViewChange,
   onSaved,
   onError,
 }: {
   projectId: string;
   kind: BibleKind;
   entity: BibleEntity;
+  view: ReferenceView;
+  onViewChange: (view: ReferenceView) => void;
   onSaved: () => Promise<void>;
   onError: (message: string) => void;
 }) {
   const [file, setFile] = useState<File>();
-  const [view, setView] = useState<ReferenceView>(viewsByKind[kind][0]!);
   const [busy, setBusy] = useState(false);
+
+  function chooseFile(candidate: File | undefined) {
+    if (!candidate) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(candidate.type)) {
+      onError("Use a PNG, JPEG, or WebP image.");
+      return;
+    }
+    onError("");
+    setFile(candidate);
+  }
+
+  function drop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    chooseFile(event.dataTransfer.files[0]);
+  }
+
+  function paste(event: ClipboardEvent<HTMLLabelElement>) {
+    const candidate = [...event.clipboardData.items]
+      .find((item) => item.kind === "file" && item.type.startsWith("image/"))
+      ?.getAsFile();
+    if (!candidate) {
+      onError("The clipboard does not contain an image.");
+      return;
+    }
+    event.preventDefault();
+    chooseFile(candidate);
+  }
 
   async function upload() {
     if (!file) return;
@@ -150,7 +188,7 @@ function ReferenceUploader({
       <select
         aria-label={`Reference view for ${entity.name}`}
         value={view}
-        onChange={(event) => setView(event.target.value as ReferenceView)}
+        onChange={(event) => onViewChange(event.target.value as ReferenceView)}
       >
         {viewsByKind[kind].map((value) => (
           <option key={value} value={value}>
@@ -158,13 +196,19 @@ function ReferenceUploader({
           </option>
         ))}
       </select>
-      <label className="reference-file">
+      <label
+        className="reference-file"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={drop}
+        onPaste={paste}
+        tabIndex={0}
+      >
         <ImagePlus size={15} />
-        <span>{file?.name ?? "Choose image"}</span>
+        <span>{file?.name ?? "Choose, drop, or paste image"}</span>
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
-          onChange={(event) => setFile(event.target.files?.[0])}
+          onChange={(event) => chooseFile(event.target.files?.[0])}
         />
       </label>
       <button
@@ -213,6 +257,9 @@ function BibleWorkspace() {
   const [referencePrompt, setReferencePrompt] =
     useState<CharacterReferencePrompt>();
   const [referencePromptCopied, setReferencePromptCopied] = useState(false);
+  const [selectedViews, setSelectedViews] = useState<
+    Record<string, ReferenceView>
+  >({});
   const [error, setError] = useState("");
   const [copiedShot, setCopiedShot] = useState<string>();
 
@@ -346,12 +393,15 @@ function BibleWorkspace() {
     window.setTimeout(() => setCopiedShot(undefined), 1500);
   }
 
-  async function openCharacterPrompt(character: Character) {
+  async function openCharacterPrompt(
+    character: Character,
+    view: ReferenceView,
+  ) {
     setPromptBusy(character.id);
     setError("");
     try {
       const result = await apiFetch<CharacterReferencePrompt>(
-        `/projects/${id}/characters/${character.id}/reference-prompt`,
+        `/projects/${id}/characters/${character.id}/reference-prompt?view=${encodeURIComponent(view)}`,
       );
       setReferencePromptCopied(false);
       setReferencePrompt(result);
@@ -475,68 +525,83 @@ function BibleWorkspace() {
           </div>
         ) : (
           <div className="bible-card-grid">
-            {entities.map((entity) => (
-              <article className="bible-card" key={entity.id}>
-                <header>
-                  <span className="entity-code">{entity.code}</span>
-                  <button
-                    className="icon-button"
-                    aria-label={`Edit ${entity.name}`}
-                    onClick={() => openEdit(entity)}
-                  >
-                    <PencilLine size={15} />
-                  </button>
-                </header>
-                <h3>{entity.name}</h3>
-                <p>{entitySummary(kind, entity)}</p>
-                {kind === "characters" && (
-                  <button
-                    className="button secondary character-prompt-button"
-                    disabled={Boolean(promptBusy)}
-                    onClick={() =>
-                      void openCharacterPrompt(entity as Character)
+            {entities.map((entity) => {
+              const selectedView =
+                selectedViews[entity.id] ?? viewsByKind[kind][0]!;
+              return (
+                <article className="bible-card" key={entity.id}>
+                  <header>
+                    <span className="entity-code">{entity.code}</span>
+                    <button
+                      className="icon-button"
+                      aria-label={`Edit ${entity.name}`}
+                      onClick={() => openEdit(entity)}
+                    >
+                      <PencilLine size={15} />
+                    </button>
+                  </header>
+                  <h3>{entity.name}</h3>
+                  <p>{entitySummary(kind, entity)}</p>
+                  {kind === "characters" && (
+                    <button
+                      className="button secondary character-prompt-button"
+                      disabled={Boolean(promptBusy)}
+                      onClick={() =>
+                        void openCharacterPrompt(
+                          entity as Character,
+                          selectedView,
+                        )
+                      }
+                    >
+                      {promptBusy === entity.id ? (
+                        "Preparing…"
+                      ) : (
+                        <>
+                          <Sparkles size={14} /> Prompt for{" "}
+                          {selectedView.replaceAll("-", " ")}
+                        </>
+                      )}
+                    </button>
+                  )}
+                  {entity.references.length > 0 ? (
+                    <div className="reference-grid">
+                      {entity.references.map((reference) => (
+                        <figure key={reference.id}>
+                          <Image
+                            unoptimized
+                            src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
+                            alt={`${entity.name} ${reference.view} reference`}
+                            width={112}
+                            height={82}
+                          />
+                          <figcaption>
+                            {reference.view.replaceAll("-", " ")}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="reference-placeholder">
+                      <ImagePlus size={17} /> No image references yet
+                    </div>
+                  )}
+                  <ReferenceUploader
+                    projectId={project.id}
+                    kind={kind}
+                    entity={entity}
+                    view={selectedView}
+                    onViewChange={(view) =>
+                      setSelectedViews((current) => ({
+                        ...current,
+                        [entity.id]: view,
+                      }))
                     }
-                  >
-                    {promptBusy === entity.id ? (
-                      "Preparing…"
-                    ) : (
-                      <>
-                        <Sparkles size={14} /> ChatGPT reference prompt
-                      </>
-                    )}
-                  </button>
-                )}
-                {entity.references.length > 0 ? (
-                  <div className="reference-grid">
-                    {entity.references.map((reference) => (
-                      <figure key={reference.id}>
-                        <Image
-                          unoptimized
-                          src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
-                          alt={`${entity.name} ${reference.view} reference`}
-                          width={112}
-                          height={82}
-                        />
-                        <figcaption>
-                          {reference.view.replaceAll("-", " ")}
-                        </figcaption>
-                      </figure>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="reference-placeholder">
-                    <ImagePlus size={17} /> No image references yet
-                  </div>
-                )}
-                <ReferenceUploader
-                  projectId={project.id}
-                  kind={kind}
-                  entity={entity}
-                  onSaved={loadBible}
-                  onError={setError}
-                />
-              </article>
-            ))}
+                    onSaved={loadBible}
+                    onError={setError}
+                  />
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
@@ -666,8 +731,9 @@ function BibleWorkspace() {
               <div>
                 <h2 id="reference-prompt-title">Character reference prompt</h2>
                 <p>
-                  Copy this into ChatGPT image creation, download the result,
-                  then attach it to the character below.
+                  Copy this into ChatGPT or Gemini image creation, then attach
+                  the result as the {referencePrompt.view.replaceAll("-", " ")}{" "}
+                  view.
                 </p>
               </div>
               <button
@@ -692,8 +758,12 @@ function BibleWorkspace() {
 
             <ol className="reference-prompt-steps">
               <li>Copy the detailed prompt.</li>
-              <li>Create one image in ChatGPT and download it.</li>
-              <li>Close this window and attach it as the full-body view.</li>
+              <li>Create one image in ChatGPT or Gemini.</li>
+              <li>
+                Close this window, choose the same{" "}
+                {referencePrompt.view.replaceAll("-", " ")} view, then drop or
+                paste the image into its card.
+              </li>
             </ol>
 
             <textarea
@@ -714,7 +784,7 @@ function BibleWorkspace() {
                 ) : (
                   <Copy size={15} />
                 )}
-                {referencePromptCopied ? "Copied" : "Copy for ChatGPT"}
+                {referencePromptCopied ? "Copied" : "Copy image prompt"}
               </button>
             </footer>
           </section>

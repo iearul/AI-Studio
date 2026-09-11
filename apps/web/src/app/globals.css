@@ -2297,6 +2297,11 @@ textarea:focus-visible {
   height: 1px;
   opacity: 0;
 }
+.reference-file:focus-visible,
+.storyboard-file:focus-visible {
+  outline: 2px solid #778d60;
+  outline-offset: 2px;
+}
 .reference-upload-button {
   min-height: 34px;
   padding: 0 10px;
@@ -2724,6 +2729,47 @@ textarea:focus-visible {
   color: #886029;
   background: #f5ead5;
   font-size: 8px;
+}
+.shot-reference-strip {
+  padding: 12px 20px 2px;
+}
+.shot-reference-strip > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #77746b;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.shot-reference-strip > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.shot-reference-strip figure {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shot-reference-strip img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border: 1px solid #dedbd2;
+  border-radius: 8px;
+}
+.shot-reference-strip figcaption {
+  max-width: 120px;
+  color: #4d4b45;
+  font-size: 9px;
+}
+.shot-reference-strip figcaption small {
+  display: block;
+  margin-top: 2px;
+  color: #96938a;
+  font-size: 8px;
+  text-transform: capitalize;
 }
 .storyboard-controls {
   padding: 13px 20px;

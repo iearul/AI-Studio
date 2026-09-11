@@ -2536,6 +2536,7 @@ project's source of truth.
 | 2026-09-11 | Image job restart safety | One active job per shot; interrupted external jobs fail visibly and require manual retry instead of automatic replay | Accepted |
 | 2026-09-11 | Local image runtime | Remove ComfyUI Desktop, models, adapters, workflows, worker, API routes, and UI controls | Accepted and completed |
 | 2026-09-11 | Character image workflow | Deterministic detailed reference-photo prompt, manual ChatGPT image creation, verified upload, and local continuity reuse | Accepted |
+| 2026-09-11 | Manual image intake | The selected character angle controls its prompt; character and storyboard inputs accept picker, file drop, or clipboard image paste; shot prompts target ChatGPT Images or Gemini | Accepted |
 
 ## Milestone progress
 
@@ -2549,6 +2550,7 @@ project's source of truth.
 - [x] Phase 4A — Manual image import, immutable history, and review UI
 - [x] Phase 4B1 — Retire local ComfyUI and remove its disk/memory footprint
 - [x] Phase 4B2 — Add character-reference and per-shot ChatGPT prompt workflows
+- [x] Phase 4B3 — Angle-specific prompts plus drag-and-drop/clipboard image intake
 - [ ] Phase 4C — Accept one manually generated image and upload assets to Google Drive
 - [ ] Phase 5 — Local Video
 - [ ] Phase 6 — Cloud Video

@@ -23,45 +23,70 @@ const project = projectSchema.parse({
   updatedAt: timestamp,
 });
 
+function characterWithDetails() {
+  return bibleSchema.parse({
+    characters: [
+      {
+        id: "0c5a1a4e-b64d-4b30-ab1a-11f2498f96ad",
+        projectId,
+        code: "CHAR_RAHIM_001",
+        name: "Rahim",
+        age: 34,
+        gender: "man",
+        culturalAppearance: "Bangladeshi",
+        faceDescription: "Long face with a short trimmed beard",
+        hair: "short, black, slightly wavy",
+        eyes: "dark brown",
+        skin: "medium-brown with natural texture",
+        height: "178 cm",
+        bodyType: "lean",
+        defaultClothing: ["beige cotton shirt", "dark trousers"],
+        accessories: ["brown leather watch"],
+        personality: "quiet and observant",
+        references: [],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      },
+    ],
+    locations: [],
+    props: [],
+  }).characters[0]!;
+}
+
 describe("buildCharacterReferencePrompt", () => {
   it("uses structured identity details and production-safe constraints", () => {
-    const character = bibleSchema.parse({
-      characters: [
-        {
-          id: "0c5a1a4e-b64d-4b30-ab1a-11f2498f96ad",
-          projectId,
-          code: "CHAR_RAHIM_001",
-          name: "Rahim",
-          age: 34,
-          gender: "man",
-          culturalAppearance: "Bangladeshi",
-          faceDescription: "Long face with a short trimmed beard",
-          hair: "short, black, slightly wavy",
-          eyes: "dark brown",
-          skin: "medium-brown with natural texture",
-          height: "178 cm",
-          bodyType: "lean",
-          defaultClothing: ["beige cotton shirt", "dark trousers"],
-          accessories: ["brown leather watch"],
-          personality: "quiet and observant",
-          references: [],
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        },
-      ],
-      locations: [],
-      props: [],
-    }).characters[0]!;
+    const character = characterWithDetails();
 
     const result = buildCharacterReferencePrompt(project, character);
     expect(result.ready).toBe(true);
-    expect(result.filename).toBe("rahim-master-reference.png");
+    expect(result.filename).toBe("rahim-three-quarter-reference.png");
+    expect(result.view).toBe("three-quarter");
     expect(result.prompt).toContain("CHAR_RAHIM_001");
     expect(result.prompt).toContain("Long face with a short trimmed beard");
     expect(result.prompt).toContain("brown leather watch");
     expect(result.prompt).toContain("Exactly one person");
     expect(result.prompt).toContain("50mm full-frame lens");
     expect(result.prompt).toContain("extra fingers");
+  });
+
+  it("changes composition and filename for the selected reference angle", () => {
+    const character = characterWithDetails();
+    const profile = buildCharacterReferencePrompt(
+      project,
+      character,
+      "profile",
+    );
+    const neutral = buildCharacterReferencePrompt(
+      project,
+      character,
+      "neutral",
+    );
+
+    expect(profile.filename).toBe("rahim-profile-reference.png");
+    expect(profile.prompt).toContain("Exact 90-degree left-side profile");
+    expect(profile.prompt).not.toContain("body and face turned exactly 45");
+    expect(neutral.prompt).toContain("head-and-shoulders identity portrait");
+    expect(neutral.prompt).toContain("Neutral resting expression");
   });
 
   it("reports details that should be completed before generation", () => {

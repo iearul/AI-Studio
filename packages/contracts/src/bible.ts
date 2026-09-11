@@ -199,6 +199,7 @@ export const referenceCoverageSchema = z.object({
 export const characterReferencePromptSchema = z.object({
   characterId: z.uuid(),
   characterCode: z.string(),
+  view: z.enum(referenceViews),
   filename: z.string().min(1).max(255),
   prompt: z.string().min(1).max(30000),
   ready: z.boolean(),

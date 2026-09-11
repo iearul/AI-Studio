@@ -5,6 +5,8 @@ import type {
   ImageHistory,
   Project,
   ReferenceCoverage,
+  ReferenceImage,
+  ShotReferenceContext,
 } from "@ai-film-studio/contracts";
 import {
   AlertTriangle,
@@ -21,9 +23,50 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type ClipboardEvent,
+  type DragEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { apiBaseUrl, apiFetch } from "@/lib/api";
+
+const referencePreference = [
+  "three-quarter",
+  "front",
+  "full-body",
+  "neutral",
+  "interior",
+  "exterior-day",
+  "profile",
+  "detail",
+  "expression",
+  "exterior-night",
+  "other",
+];
+
+function recommendedReferences(shot: ShotReferenceContext): Array<{
+  entityName: string;
+  reference: ReferenceImage;
+}> {
+  const entities = [
+    ...shot.characters,
+    ...(shot.location ? [shot.location] : []),
+    ...shot.props,
+  ];
+  return entities.flatMap((entity) => {
+    const reference = [...entity.references].sort(
+      (left, right) =>
+        referencePreference.indexOf(left.view) -
+        referencePreference.indexOf(right.view),
+    )[0];
+    return reference ? [{ entityName: entity.name, reference }] : [];
+  });
+}
 
 export default function StoryboardPage() {
   return (
@@ -130,6 +173,33 @@ function StoryboardWorkspace() {
     }
   }
 
+  function chooseFrame(shotId: string, candidate: File | undefined) {
+    if (!candidate) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(candidate.type)) {
+      setError("Use a PNG, JPEG, or WebP image.");
+      return;
+    }
+    setError("");
+    setFiles((current) => ({ ...current, [shotId]: candidate }));
+  }
+
+  function dropFrame(shotId: string, event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    chooseFrame(shotId, event.dataTransfer.files[0]);
+  }
+
+  function pasteFrame(shotId: string, event: ClipboardEvent<HTMLLabelElement>) {
+    const candidate = [...event.clipboardData.items]
+      .find((item) => item.kind === "file" && item.type.startsWith("image/"))
+      ?.getAsFile();
+    if (!candidate) {
+      setError("The clipboard does not contain an image.");
+      return;
+    }
+    event.preventDefault();
+    chooseFrame(shotId, candidate);
+  }
+
   async function review(attemptId: string, decision: "approve" | "reject") {
     setBusy(`${decision}-${attemptId}`);
     setError("");
@@ -173,8 +243,9 @@ function StoryboardWorkspace() {
           </span>
           <h1>Storyboard review</h1>
           <p>
-            Copy each continuity-safe prompt into ChatGPT, import the generated
-            alternatives, and approve exactly one frame per shot.
+            Copy each continuity-safe prompt into ChatGPT or Gemini, paste or
+            drop the generated alternatives here, and approve one frame per
+            shot.
           </p>
         </div>
         <div className="storyboard-metrics">
@@ -195,10 +266,11 @@ function StoryboardWorkspace() {
           <ImagePlus size={20} />
         </span>
         <div>
-          <strong>ChatGPT image workflow</strong>
+          <strong>ChatGPT / Gemini image workflow</strong>
           <p>
-            Copy the prepared prompt, create the image in ChatGPT, then upload
-            it here. AI Film Studio does not run a local image model.
+            Copy the prepared prompt, create the image externally, then paste,
+            drop, or choose it here. AI Film Studio does not run a local image
+            model.
           </p>
           <small>No local image-model memory usage</small>
         </div>
@@ -227,6 +299,7 @@ function StoryboardWorkspace() {
           {coverage.shots.map((shot) => {
             const attempts = attemptsByShot.get(shot.shotId) ?? [];
             const selected = attempts.find((attempt) => attempt.selected);
+            const suggestedReferences = recommendedReferences(shot);
             const action =
               shot.prompt
                 .split("\n")
@@ -264,6 +337,29 @@ function StoryboardWorkspace() {
                   </div>
                 )}
 
+                {suggestedReferences.length > 0 && (
+                  <div className="shot-reference-strip">
+                    <strong>Recommended continuity photos to attach</strong>
+                    <div>
+                      {suggestedReferences.map(({ entityName, reference }) => (
+                        <figure key={reference.id}>
+                          <Image
+                            unoptimized
+                            width={62}
+                            height={62}
+                            src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
+                            alt={`${entityName} ${reference.view} reference`}
+                          />
+                          <figcaption>
+                            {entityName}
+                            <small>{reference.view.replaceAll("-", " ")}</small>
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="storyboard-controls">
                   <button
                     className="button primary"
@@ -277,22 +373,26 @@ function StoryboardWorkspace() {
                     )}
                     {copiedShot === shot.shotId
                       ? "Prompt copied"
-                      : "Copy prompt for ChatGPT"}
+                      : "Copy image prompt"}
                   </button>
-                  <label className="storyboard-file">
+                  <label
+                    className="storyboard-file"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => dropFrame(shot.shotId, event)}
+                    onPaste={(event) => pasteFrame(shot.shotId, event)}
+                    tabIndex={shot.ready && !busy ? 0 : -1}
+                  >
                     <Upload size={15} />
                     <span>
-                      {files[shot.shotId]?.name ?? "Choose local frame"}
+                      {files[shot.shotId]?.name ??
+                        "Choose, drop, or paste frame"}
                     </span>
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
                       disabled={!shot.ready || Boolean(busy)}
                       onChange={(event) =>
-                        setFiles((current) => ({
-                          ...current,
-                          [shot.shotId]: event.target.files?.[0],
-                        }))
+                        chooseFrame(shot.shotId, event.target.files?.[0])
                       }
                     />
                   </label>

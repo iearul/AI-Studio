@@ -165,7 +165,10 @@ describe("buildReferenceCoverage", () => {
     expect(coverage.shots[0]?.prompt).toContain("CHAR_RAHIM_001");
     expect(coverage.shots[0]?.prompt).toContain("weathered brick");
     expect(coverage.shots[0]?.prompt).toContain("worn brass key");
-    expect(coverage.shots[0]?.prompt).toContain("front.png");
+    expect(coverage.shots[0]?.prompt).toContain("rahim.png");
+    expect(coverage.shots[0]?.prompt).toContain("ChatGPT Images or Gemini");
+    expect(coverage.shots[0]?.prompt).toContain("9:16 aspect ratio");
+    expect(coverage.shots[0]?.prompt).toContain("return a sharp still frame");
   });
 
   it("reports unresolved shot labels instead of guessing", () => {

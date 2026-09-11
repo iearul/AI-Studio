@@ -108,7 +108,7 @@ function referencePaths(entities: NamedEntity[]): string[] {
   return entities.flatMap((entity) =>
     entity.references.map(
       (reference) =>
-        `${entity.code}/${reference.view}: ${reference.relativePath}`,
+        `${entity.name} (${entity.code}) — ${reference.view} view — upload ${reference.originalFilename}`,
     ),
   );
 }
@@ -127,9 +127,11 @@ function buildPrompt(input: {
     ...props,
   ]);
   return compact([
+    "Create exactly one finished still image for this film shot. This prompt is ready for ChatGPT Images or Gemini image generation.",
     `SHOT: ${shot.code}`,
     `ACTION: ${shot.action}`,
     `CAMERA: ${shot.shotType}, ${shot.cameraAngle}, ${shot.lens}, ${shot.cameraMovement}`,
+    `FRAME: ${project.aspectRatio} aspect ratio; compose for the complete final frame with no later crop required`,
     `LIGHTING: ${shot.lighting}`,
     `EMOTION: ${shot.emotion}`,
     project.visualStyle
@@ -145,9 +147,10 @@ function buildPrompt(input: {
       ? `PROP CONTINUITY:\n${props.map(propDescription).join("\n")}`
       : undefined,
     paths.length > 0
-      ? `REFERENCE IMAGES:\n${paths.join("\n")}`
-      : "REFERENCE IMAGES: none supplied yet",
-    "Preserve the exact identity, proportions, wardrobe, geography, materials, and recurring-object details defined above. Depict one visible action only.",
+      ? `REFERENCE IMAGES TO UPLOAD WITH THIS PROMPT:\n${paths.join("\n")}`
+      : "REFERENCE IMAGES TO UPLOAD WITH THIS PROMPT: none supplied yet",
+    "GENERATION RULES:\n- Preserve the exact identity, apparent age, proportions, wardrobe, geography, architecture, materials, colors, markings, and recurring-object condition defined above\n- Depict only the single visible action at its clearest, strongest instant\n- Treat camera movement as motion intent, but return a sharp still frame rather than motion blur\n- Keep hands, faces, anatomy, eyelines, scale, shadows, reflections, and object contact physically coherent\n- Match the project medium and visual style; do not add unrelated people, objects, or scenery\n- Do not add text, subtitles, logos, borders, split panels, contact sheets, signatures, or watermarks",
+    "OUTPUT: Return only one final image with no written explanation.",
   ]).join("\n\n");
 }
 
