@@ -2521,6 +2521,7 @@ project's source of truth.
 | 2026-09-11 | Story AI workflow | Selectable OpenAI API, local Ollama, and manual ChatGPT; every result is preview-only until explicit import | Accepted |
 | 2026-09-11 | Cloud story model | OpenAI Responses API with `gpt-5.4-mini`, strict structured output, `store: false`, and per-request billing confirmation | Accepted |
 | 2026-09-11 | Local story model | Ollama with `qwen3.5:9b-q4_K_M`; loopback-only, thinking disabled for structured stories, unloaded after use, no per-token provider fee. MLX was rejected because the installed runtime does not support required structured output | Accepted |
+| 2026-09-11 | Ollama story schema | Send the required JSON object structure without grammar keywords rejected by Ollama/llama.cpp; retain full Zod validation before preview or import | Accepted |
 | 2026-09-10 | Story-plan persistence | Transactional replacement with story/script version increments, ordered scenes, and globally unique shot codes | Accepted |
 | 2026-09-10 | Bible identity matching | Exact case-insensitive name or stable generated code; missing labels are unresolved and never fuzzy-guessed | Accepted |
 | 2026-09-10 | Reference image storage | Project-local generated paths; JPEG/PNG/WebP only, 8 MB limit, MIME magic-byte verification, SHA-256 metadata | Accepted |
@@ -2647,9 +2648,11 @@ project's source of truth.
 - The Story Room has three explicit choices: local Ollama, the OpenAI API, and the
   existing manual ChatGPT export/import workflow. A ready local provider is the
   default.
-- Both automatic adapters receive the same strict story-plan JSON Schema and their
-  output is validated again by the domain contract. Results remain unsaved previews
-  until an explicit import or replacement confirmation.
+- Both automatic adapters receive the same required story-plan object structure.
+  OpenAI receives the full strict schema; Ollama receives a grammar-compatible
+  structural subset after its runner rejected pattern and length constraints with
+  HTTP 400. Every result still receives full domain validation and remains an unsaved
+  preview until explicit import or replacement confirmation.
 - OpenAI uses the Responses API with `store: false`, server-only credentials, a
   five-request-per-minute route limit, and an explicit billing warning in the UI.
 - Ollama is restricted to loopback, disables hidden thinking in structured output,

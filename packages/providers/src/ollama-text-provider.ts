@@ -125,7 +125,7 @@ export class OllamaTextProvider implements TextProvider {
             stream: false,
             think: false,
             keep_alive: 0,
-            format: request.schema,
+            format: toOllamaSchema(request.schema),
             messages: [
               {
                 role: "system",
@@ -147,9 +147,7 @@ export class OllamaTextProvider implements TextProvider {
       );
     }
     if (!response.ok) {
-      throw new TextProviderUnavailableError(
-        `Ollama story generation returned HTTP ${response.status}.`,
-      );
+      throw new TextProviderUnavailableError(await ollamaHttpMessage(response));
     }
     const body = asObject(await safeJson(response));
     const message = asObject(body?.message);
@@ -182,6 +180,66 @@ export class OllamaTextProvider implements TextProvider {
       model: this.config.model,
       message,
     });
+  }
+}
+
+const unsupportedGrammarKeywords = new Set([
+  "exclusiveMaximum",
+  "exclusiveMinimum",
+  "format",
+  "maxItems",
+  "maxLength",
+  "maximum",
+  "minItems",
+  "minLength",
+  "minimum",
+  "multipleOf",
+  "pattern",
+]);
+
+function toOllamaSchema(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
+  return simplifySchemaValue(schema) as Record<string, unknown>;
+}
+
+function simplifySchemaValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(simplifySchemaValue);
+  const object = asObject(value);
+  if (!object) return value;
+  return Object.fromEntries(
+    Object.entries(object)
+      .filter(([key]) => !unsupportedGrammarKeywords.has(key))
+      .map(([key, child]) => [key, simplifySchemaValue(child)]),
+  );
+}
+
+async function ollamaHttpMessage(response: Response): Promise<string> {
+  const body = asObject(await safeJson(response));
+  const detail = nestedErrorMessage(body?.error);
+  if (detail?.toLowerCase().includes("failed to parse grammar")) {
+    return "Ollama could not apply the structured story format. Restart AI Film Studio and try again.";
+  }
+  if (detail?.toLowerCase().includes("memory")) {
+    return "Ollama does not have enough free memory for story generation. Close memory-heavy applications and try again.";
+  }
+  if (
+    detail?.toLowerCase().includes("model") &&
+    detail.toLowerCase().includes("not found")
+  ) {
+    return "The configured Ollama story model is no longer installed.";
+  }
+  return `Ollama story generation returned HTTP ${response.status}.`;
+}
+
+function nestedErrorMessage(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  try {
+    const outer = asObject(JSON.parse(value) as unknown);
+    const error = asObject(outer?.error);
+    return typeof error?.message === "string" ? error.message : value;
+  } catch {
+    return value;
   }
 }
 

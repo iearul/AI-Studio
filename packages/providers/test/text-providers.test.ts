@@ -84,7 +84,19 @@ describe("story text providers", () => {
     const generated = await provider.generate({
       prompt: "Build a private story",
       schemaName: "film_story_plan",
-      schema: { type: "object" },
+      schema: {
+        type: "object",
+        properties: {
+          title: {
+            type: "string",
+            minLength: 2,
+            maxLength: 160,
+            pattern: "^[A-Z]",
+          },
+        },
+        required: ["title"],
+        additionalProperties: false,
+      },
     });
 
     expect(requestBody).toMatchObject({
@@ -92,10 +104,50 @@ describe("story text providers", () => {
       stream: false,
       think: false,
       keep_alive: 0,
-      format: { type: "object" },
+      format: {
+        type: "object",
+        properties: { title: { type: "string" } },
+        required: ["title"],
+        additionalProperties: false,
+      },
     });
     expect(generated.output).toEqual({ story: { title: "Local" } });
     expect(generated.usage).toEqual({ inputTokens: 88, outputTokens: 34 });
+  });
+
+  it("turns Ollama grammar failures into an actionable error", async () => {
+    const provider = new OllamaTextProvider(
+      {
+        baseUrl: "http://127.0.0.1:11434",
+        model: "qwen3.5:9b-q4_K_M",
+        timeoutMs: 10_000,
+      },
+      {
+        fetch: vi.fn<typeof fetch>(() =>
+          Promise.resolve(
+            Response.json(
+              {
+                error: JSON.stringify({
+                  error: {
+                    message:
+                      "Failed to initialize samplers: failed to parse grammar",
+                  },
+                }),
+              },
+              { status: 400 },
+            ),
+          ),
+        ),
+      },
+    );
+
+    await expect(
+      provider.generate({
+        prompt: "Build a private story",
+        schemaName: "film_story_plan",
+        schema: { type: "object" },
+      }),
+    ).rejects.toThrow("structured story format");
   });
 
   it("reports missing credentials without making network requests", async () => {

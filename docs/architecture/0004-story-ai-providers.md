@@ -16,8 +16,9 @@ shape and must not silently replace filmmaker-approved work.
   choices. The local provider is selected by default when it is ready.
 - `packages/providers` owns a provider-neutral text interface. The OpenAI adapter
   uses the Responses API with a strict JSON Schema, `store: false`, and a server-only
-  API key. The Ollama adapter is restricted to loopback HTTP and uses the identical
-  schema with thinking disabled.
+  API key. The Ollama adapter is restricted to loopback HTTP, disables thinking,
+  and uses the same required object shape with grammar keywords unsupported by the
+  installed llama.cpp engine removed.
 - OpenAI defaults to `gpt-5.4-mini`; any request requires a user confirmation that
   API tokens are billed separately. Manual ChatGPT preserves prompt export,
   validation, and JSON import without subscription automation.
@@ -25,9 +26,11 @@ shape and must not silently replace filmmaker-approved work.
   build was rejected because the installed Ollama runtime returned HTTP 501 for
   structured output, which the story contract requires. The Q4 model runs locally
   with no per-token provider charge and unloads after generation.
-- Automatic provider output is validated twice: constrained generation against the
-  shared JSON Schema and server-side Zod domain validation. The result is only a
-  preview. Saving or replacing a plan remains a separate explicit action.
+- Automatic provider output is validated twice: provider-side constrained generation
+  and full server-side Zod domain validation. OpenAI receives the strict complete
+  schema; Ollama receives its structural subset because its grammar parser rejects
+  constraints such as string patterns and lengths. The result is only a preview.
+  Saving or replacing a plan remains a separate explicit action.
 - Automatic generation is rate-limited and one project cannot start overlapping
   story requests in a single API process. Provider errors are normalized and never
   reveal credentials or raw upstream payloads.
