@@ -233,6 +233,19 @@ export class GenerationRepository {
     const attemptId = randomUUID();
     const jobId = randomUUID();
     this.manager.connection.transaction(() => {
+      const active = this.manager.connection
+        .prepare(
+          `SELECT 1 FROM generation_jobs
+           WHERE shot_id = ?
+             AND status IN ('queued', 'preparing', 'generating', 'downloading')
+           LIMIT 1`,
+        )
+        .get(input.shotId);
+      if (active) {
+        throw new GenerationStateError(
+          "An image generation is already active for this shot.",
+        );
+      }
       this.insertAttempt(attemptId, timestamp, "queued", input);
       this.manager.connection
         .prepare(
@@ -299,8 +312,14 @@ export class GenerationRepository {
       : undefined;
   }
 
-  requeueInterruptedJobs(): number {
+  failInterruptedJobs(): number {
     const timestamp = new Date().toISOString();
+    const message =
+      "The application restarted while ComfyUI was processing this image. Retry manually; automatic replay is disabled to prevent duplicate renders.";
+    const details = JSON.stringify({
+      code: "application_restart",
+      recoverable: true,
+    });
     return this.manager.connection.transaction(() => {
       const rows = this.manager.connection
         .prepare(
@@ -311,20 +330,23 @@ export class GenerationRepository {
       if (rows.length === 0) return 0;
       this.manager.connection
         .prepare(
-          `UPDATE generation_jobs SET
-            status = 'queued', progress = 0, started_at = NULL,
-            error_message = 'Recovered after application restart.'
-           WHERE status IN ('preparing', 'generating', 'downloading')`,
-        )
-        .run();
-      this.manager.connection
-        .prepare(
-          `UPDATE generation_attempts SET status = 'queued', updated_at = ?
+          `UPDATE generation_attempts SET
+            status = 'failed', error_message = ?, error_details_json = ?,
+            updated_at = ?
            WHERE id IN (
-             SELECT attempt_id FROM generation_jobs WHERE status = 'queued'
+             SELECT attempt_id FROM generation_jobs
+             WHERE status IN ('preparing', 'generating', 'downloading')
            ) AND status = 'generating'`,
         )
-        .run(timestamp);
+        .run(message, details, timestamp);
+      this.manager.connection
+        .prepare(
+          `UPDATE generation_jobs SET
+            status = 'failed', error_message = ?, error_details_json = ?,
+            completed_at = ?
+           WHERE status IN ('preparing', 'generating', 'downloading')`,
+        )
+        .run(message, details, timestamp);
       for (const projectId of new Set(rows.map((row) => row.project_id))) {
         this.projects.markManifestDirty(projectId);
       }

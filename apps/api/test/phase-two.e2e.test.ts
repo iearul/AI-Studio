@@ -2,7 +2,15 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import type { StoryPlanInput } from "@ai-film-studio/contracts";
+import type {
+  StoryPlanInput,
+  StoryProviderStatus,
+} from "@ai-film-studio/contracts";
+import type {
+  GeneratedText,
+  TextGenerationRequest,
+  TextProvider,
+} from "@ai-film-studio/providers";
 import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -46,6 +54,7 @@ const planInput: StoryPlanInput = {
           code: "SHOT_001",
           durationSeconds: 4,
           characters: ["Rahim"],
+          props: [],
           location: "Abandoned railway platform",
           shotType: "wide",
           cameraAngle: "eye-level",
@@ -60,6 +69,7 @@ const planInput: StoryPlanInput = {
           code: "SHOT_002",
           durationSeconds: 4,
           characters: ["Rahim"],
+          props: [],
           location: "Abandoned railway platform",
           shotType: "close-up",
           cameraAngle: "eye-level",
@@ -75,11 +85,38 @@ const planInput: StoryPlanInput = {
   ],
 };
 
+class MockTextProvider implements TextProvider {
+  readonly id = "ollama" as const;
+  request: TextGenerationRequest | undefined;
+
+  getStatus(): Promise<StoryProviderStatus> {
+    return Promise.resolve({
+      id: this.id,
+      name: "Test Ollama",
+      mode: "local-free",
+      configured: true,
+      available: true,
+      model: "test-model",
+      message: "Ready",
+    });
+  }
+
+  generate(request: TextGenerationRequest): Promise<GeneratedText> {
+    this.request = request;
+    return Promise.resolve({
+      output: planInput,
+      model: "test-model",
+      usage: { inputTokens: 100, outputTokens: 200 },
+    });
+  }
+}
+
 describe("Phase 2 API", () => {
   let directory: string;
   let services: Services;
   let app: FastifyInstance;
   let projectId: string;
+  let textProvider: MockTextProvider;
 
   beforeEach(async () => {
     directory = await mkdtemp(path.join(tmpdir(), "film-studio-story-api-"));
@@ -87,7 +124,8 @@ describe("Phase 2 API", () => {
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");
-    services = await createServices();
+    textProvider = new MockTextProvider();
+    services = await createServices({ textProviders: [textProvider] });
     app = await buildApp(
       {
         environment: "test",
@@ -187,5 +225,37 @@ describe("Phase 2 API", () => {
       url: `/api/v1/projects/${projectId}/story-plan`,
     });
     expect(plan.json<{ plan: unknown }>().plan).toBeNull();
+  });
+
+  it("generates a validated local preview without saving it", async () => {
+    const providers = await app.inject({
+      method: "GET",
+      url: "/api/v1/providers/stories",
+    });
+    expect(providers.statusCode).toBe(200);
+    expect(
+      providers.json<{ providers: StoryProviderStatus[] }>().providers[0],
+    ).toMatchObject({ id: "ollama", available: true, mode: "local-free" });
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${projectId}/story-plan/generate`,
+      payload: { provider: "ollama" },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      provider: "ollama",
+      model: "test-model",
+      plan: { story: { title: "The Last Train" } },
+      usage: { inputTokens: 100, outputTokens: 200 },
+    });
+    expect(textProvider.request?.prompt).toContain("<project_brief>");
+    expect(textProvider.request?.schema).toMatchObject({ type: "object" });
+
+    const current = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${projectId}/story-plan`,
+    });
+    expect(current.json<{ plan: unknown }>().plan).toBeNull();
   });
 });

@@ -76,6 +76,11 @@ export class ImageGenerationService {
       throw new ImageProviderUnavailableError(status.message);
     }
     const parsedSeed = input.seed ?? randomInt(0, 2_147_483_647);
+    const dimensions = resolveDimensions(
+      context.project.aspectRatio,
+      input.width,
+      input.height,
+    );
     const attempt = this.generations.queueImage({
       projectId,
       shotId,
@@ -86,8 +91,8 @@ export class ImageGenerationService {
       references: this.references(context.coverage),
       seed: parsedSeed,
       settings: {
-        width: input.width ?? 1024,
-        height: input.height ?? 1024,
+        width: dimensions.width,
+        height: dimensions.height,
       },
     });
     await this.manifests.drain();
@@ -227,7 +232,7 @@ export class ImageGenerationService {
 
   start(intervalMs = 750): void {
     if (this.timer) return;
-    this.generations.requeueInterruptedJobs();
+    this.generations.failInterruptedJobs();
     const tick = () => {
       if (this.running) return;
       this.running = true;
@@ -282,6 +287,17 @@ export class ImageGenerationService {
     }
     return [...byId.values()];
   }
+}
+
+function resolveDimensions(
+  aspectRatio: Project["aspectRatio"],
+  width?: number,
+  height?: number,
+): { width: number; height: number } {
+  if (width !== undefined && height !== undefined) return { width, height };
+  if (aspectRatio === "9:16") return { width: 720, height: 1280 };
+  if (aspectRatio === "16:9") return { width: 1024, height: 576 };
+  return { width: 768, height: 768 };
 }
 
 function numericSetting(

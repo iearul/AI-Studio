@@ -1363,6 +1363,164 @@ textarea:focus-visible {
   flex: 0 0 auto;
   gap: 8px;
 }
+.story-generation-panel {
+  margin-bottom: 17px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.story-generation-heading {
+  margin-bottom: 16px;
+}
+.story-generation-heading h2 {
+  margin: 6px 0 4px;
+  font:
+    500 24px/1.15 Georgia,
+    serif;
+}
+.story-generation-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+.provider-checking {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.story-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.story-mode-card {
+  display: grid;
+  grid-template-columns: 39px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: #faf9f5;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+.story-mode-card:hover {
+  transform: translateY(-1px);
+  border-color: #beb9aa;
+}
+.story-mode-card.selected {
+  border-color: var(--accent);
+  background: #fff8f3;
+  box-shadow: 0 0 0 2px rgba(236, 91, 42, 0.1);
+}
+.story-mode-card > span:nth-child(2) {
+  min-width: 0;
+}
+.story-mode-card strong,
+.story-mode-card small {
+  display: block;
+}
+.story-mode-card strong {
+  margin-bottom: 3px;
+  font-size: 10px;
+}
+.story-mode-card small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.story-mode-icon {
+  width: 39px;
+  height: 39px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+}
+.story-mode-icon.local {
+  color: #53663a;
+  background: #e7eddc;
+}
+.story-mode-icon.cloud {
+  color: #3d5d73;
+  background: #e3edf2;
+}
+.story-mode-icon.manual {
+  color: #84513d;
+  background: #f4e4dc;
+}
+.provider-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c7c4ba;
+}
+.provider-dot.ready {
+  background: #6f8d48;
+  box-shadow: 0 0 0 3px rgba(111, 141, 72, 0.12);
+}
+.provider-dot.offline {
+  background: #ba8b78;
+}
+.story-mode-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 12px;
+  padding: 14px 15px;
+  border-radius: 11px;
+  background: #f3f2ed;
+}
+.story-mode-action > div:first-child {
+  min-width: 0;
+}
+.story-mode-action strong,
+.story-mode-action span,
+.story-mode-action small {
+  display: block;
+}
+.story-mode-action strong {
+  margin-bottom: 3px;
+  font-size: 9px;
+}
+.story-mode-action span {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+.story-mode-action small {
+  margin-top: 5px;
+  color: #8b694f;
+  font-size: 7px;
+  line-height: 1.45;
+}
+.story-mode-action > div:last-child {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+.story-mode-action > .button {
+  flex: 0 0 auto;
+}
+.story-generation-error {
+  margin-top: 10px;
+}
 .story-empty {
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
@@ -1803,6 +1961,16 @@ textarea:focus-visible {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.5;
+}
+.import-preview .generation-meta {
+  display: block;
+  margin: 13px 0 0;
+  color: #817d70;
+  font:
+    8px/1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 }
 .import-preview > div:not(.duration-warning) {
   display: flex;
@@ -2875,6 +3043,23 @@ textarea:focus-visible {
   .story-empty {
     gap: 28px;
     padding: 22px;
+  }
+  .story-generation-panel {
+    padding: 18px;
+  }
+  .story-mode-grid {
+    grid-template-columns: 1fr;
+  }
+  .story-mode-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .story-mode-action > div:last-child,
+  .story-mode-action > .button {
+    width: 100%;
+  }
+  .story-mode-action > div:last-child .button {
+    flex: 1;
   }
   .reel-beats,
   .arc-grid {

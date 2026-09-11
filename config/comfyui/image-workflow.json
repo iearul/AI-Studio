@@ -11,7 +11,7 @@
   },
   "30": {
     "inputs": {
-      "clip_name": "qwen_3_4b.safetensors",
+      "clip_name": "qwen_3_4b_fp8_mixed.safetensors",
       "type": "lumina2",
       "device": "default"
     },

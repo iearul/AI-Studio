@@ -13,6 +13,9 @@ import {
 import {
   ImageProviderConfigurationError,
   ImageProviderUnavailableError,
+  TextProviderConfigurationError,
+  TextProviderResponseError,
+  TextProviderUnavailableError,
 } from "@ai-film-studio/providers";
 import {
   BackupIntegrityError,
@@ -24,6 +27,13 @@ export class NotFoundError extends Error {
   constructor(resource: string) {
     super(`${resource} was not found.`);
     this.name = "NotFoundError";
+  }
+}
+
+export class StoryGenerationBusyError extends Error {
+  constructor() {
+    super("A story is already being generated for this project.");
+    this.name = "StoryGenerationBusyError";
   }
 }
 
@@ -79,7 +89,10 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
-    if (error instanceof GenerationStateError) {
+    if (
+      error instanceof GenerationStateError ||
+      error instanceof StoryGenerationBusyError
+    ) {
       void reply.status(409).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/generation-state",
         title: "Generation state conflict",
@@ -89,7 +102,10 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
-    if (error instanceof ImageProviderConfigurationError) {
+    if (
+      error instanceof ImageProviderConfigurationError ||
+      error instanceof TextProviderConfigurationError
+    ) {
       void reply.status(422).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/provider-configuration",
         title: "Provider is not configured",
@@ -99,11 +115,24 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
-    if (error instanceof ImageProviderUnavailableError) {
+    if (
+      error instanceof ImageProviderUnavailableError ||
+      error instanceof TextProviderUnavailableError
+    ) {
       void reply.status(503).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/provider-unavailable",
         title: "Provider is unavailable",
         status: 503,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof TextProviderResponseError) {
+      void reply.status(502).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/provider-response",
+        title: "Provider returned an invalid response",
+        status: 502,
         detail: error.message,
         instance: request.url,
       });

@@ -10,6 +10,7 @@ adapters.
 - Node.js 22 or newer (Node 24 LTS is recommended)
 - pnpm 9 or newer
 - ComfyUI Desktop with the Z-Image Turbo starter for free local image generation
+- Ollama with `qwen3.5:9b-mlx` for free local story generation
 - FFmpeg for later media-rendering phases
 
 ## Start locally
@@ -37,11 +38,16 @@ cache/                   disposable working files
 
 ## Story planning workflow
 
-Open a project and select **Build story plan**. The Story Room exports a
-project-specific prompt for manual use in ChatGPT, validates the returned JSON,
-shows scene/shot/duration totals, and imports the approved plan transactionally.
-The resulting story, script, scenes, and shots are stored in SQLite and mirrored
-into the portable `project.json` manifest.
+Open a project and select **Build story plan**. The Story Room lets you choose
+Local Ollama (private, no per-token charge), the separately billed OpenAI API, or
+manual ChatGPT prompt export/import. Every path returns the same structured plan,
+shows scene/shot/duration totals, and remains preview-only until you explicitly
+import it. The accepted story, script, scenes, and shots are stored in SQLite and
+mirrored into the portable `project.json` manifest.
+
+Ollama runs as a background service after installation. On an 18 GB M3 Pro, do not
+run local story generation and ComfyUI at the same time; each needs most of the
+available unified-memory headroom. The story adapter unloads Ollama after a result.
 
 ## Visual Bible and continuity
 
@@ -60,8 +66,9 @@ JPEG/PNG/WebP frame when ComfyUI is unavailable. Each attempt records its prompt
 reference snapshot, provider, model, seed, settings, timing, error, and cost; an
 explicit review selects exactly one approved image per shot. See
 [`config/comfyui/README.md`](config/comfyui/README.md) for local workflow setup.
-The committed Z-Image Turbo workflow runs entirely on the Mac with no per-image
-provider fee; the first render is slower while the model is loaded into memory.
+The committed quantized Z-Image Turbo workflow runs entirely on the Mac with no
+per-image provider fee; the first render is slower while the model is loaded into
+memory. Application restarts never replay an opaque ComfyUI job automatically.
 
 ## Quality checks
 

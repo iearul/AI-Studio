@@ -48,6 +48,7 @@ export const lenses = [
 ] as const;
 
 const optionalNarrativeText = z.string().trim().max(4000).nullable().optional();
+const generatedNarrativeText = z.string().trim().max(4000).nullable();
 
 export const storyInputSchema = z.object({
   title: z.string().trim().min(2).max(160),
@@ -113,39 +114,40 @@ export const storyPlanInputSchema = z
     script: scriptInputSchema,
     scenes: z.array(sceneInputSchema).min(1).max(200),
   })
-  .superRefine((plan, context) => {
-    const sceneNumbers = new Set<number>();
-    const shotCodes = new Set<string>();
-    let shotCount = 0;
-    plan.scenes.forEach((scene, sceneIndex) => {
-      if (sceneNumbers.has(scene.sceneNumber)) {
-        context.addIssue({
-          code: "custom",
-          message: `Scene number ${scene.sceneNumber} is duplicated.`,
-          path: ["scenes", sceneIndex, "sceneNumber"],
-        });
-      }
-      sceneNumbers.add(scene.sceneNumber);
-      scene.shots.forEach((shot, shotIndex) => {
-        shotCount += 1;
-        if (shot.code && shotCodes.has(shot.code)) {
-          context.addIssue({
-            code: "custom",
-            message: `Shot code ${shot.code} is duplicated.`,
-            path: ["scenes", sceneIndex, "shots", shotIndex, "code"],
-          });
-        }
-        if (shot.code) shotCodes.add(shot.code);
-      });
-    });
-    if (shotCount > 500) {
-      context.addIssue({
-        code: "custom",
-        message: "A story plan can contain at most 500 shots.",
-        path: ["scenes"],
-      });
-    }
-  });
+  .superRefine(validateStoryPlan);
+
+export const storyPlanGenerationSchema = z
+  .object({
+    story: storyInputSchema.extend({
+      hook: generatedNarrativeText,
+      twist: generatedNarrativeText,
+      cliffhanger: generatedNarrativeText,
+    }),
+    script: scriptInputSchema.extend({ notes: generatedNarrativeText }),
+    scenes: z
+      .array(
+        sceneInputSchema.extend({
+          narration: generatedNarrativeText,
+          dialogue: generatedNarrativeText,
+          shots: z
+            .array(
+              shotInputSchema.extend({
+                code: z
+                  .string()
+                  .trim()
+                  .regex(/^SHOT_[0-9]{3,4}$/),
+                props: z.array(z.string().trim().min(1).max(160)).max(30),
+                status: z.enum(["draft", "approved"]),
+              }),
+            )
+            .min(1)
+            .max(100),
+        }),
+      )
+      .min(1)
+      .max(200),
+  })
+  .superRefine(validateStoryPlan);
 
 export const storySchema = storyInputSchema.extend({
   id: z.uuid(),
@@ -207,8 +209,51 @@ export type ScriptInput = z.infer<typeof scriptInputSchema>;
 export type ShotInput = z.input<typeof shotInputSchema>;
 export type SceneInput = z.input<typeof sceneInputSchema>;
 export type StoryPlanInput = z.input<typeof storyPlanInputSchema>;
+export type StoryPlanGeneration = z.infer<typeof storyPlanGenerationSchema>;
 export type Story = z.infer<typeof storySchema>;
 export type Script = z.infer<typeof scriptSchema>;
 export type Shot = z.infer<typeof shotSchema>;
 export type Scene = z.infer<typeof sceneSchema>;
 export type StoryPlan = z.infer<typeof storyPlanSchema>;
+
+function validateStoryPlan(
+  plan: {
+    scenes: Array<{
+      sceneNumber: number;
+      shots: Array<{ code?: string }>;
+    }>;
+  },
+  context: z.RefinementCtx,
+): void {
+  const sceneNumbers = new Set<number>();
+  const shotCodes = new Set<string>();
+  let shotCount = 0;
+  plan.scenes.forEach((scene, sceneIndex) => {
+    if (sceneNumbers.has(scene.sceneNumber)) {
+      context.addIssue({
+        code: "custom",
+        message: `Scene number ${scene.sceneNumber} is duplicated.`,
+        path: ["scenes", sceneIndex, "sceneNumber"],
+      });
+    }
+    sceneNumbers.add(scene.sceneNumber);
+    scene.shots.forEach((shot, shotIndex) => {
+      shotCount += 1;
+      if (shot.code && shotCodes.has(shot.code)) {
+        context.addIssue({
+          code: "custom",
+          message: `Shot code ${shot.code} is duplicated.`,
+          path: ["scenes", sceneIndex, "shots", shotIndex, "code"],
+        });
+      }
+      if (shot.code) shotCodes.add(shot.code);
+    });
+  });
+  if (shotCount > 500) {
+    context.addIssue({
+      code: "custom",
+      message: "A story plan can contain at most 500 shots.",
+      path: ["scenes"],
+    });
+  }
+}

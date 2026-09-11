@@ -6,7 +6,7 @@ and set its relative path in `.env`:
 
 ```dotenv
 COMFYUI_IMAGE_WORKFLOW_PATH=config/comfyui/image-workflow.json
-COMFYUI_IMAGE_MODEL=z_image_turbo_bf16.safetensors
+COMFYUI_IMAGE_MODEL=z_image_turbo_int8_convrot.safetensors
 ```
 
 Replace the corresponding widget values in the API-format JSON with these exact
@@ -31,9 +31,10 @@ optional and may be added sequentially to `LoadImage` nodes. The backend uploads
 matching project reference files to ComfyUI before queueing the prompt.
 
 `image-workflow.json` is the committed, API-format Z-Image Turbo graph. It uses
-only ComfyUI core nodes, the diffusion-model filename remains configurable, and
-the required text encoder and VAE filenames match ComfyUI Desktop's starter-model
-installation. Model weights and private media remain outside the repository.
+only ComfyUI core nodes, the INT8 ConvRot diffusion model, the FP8 mixed Qwen
+encoder, and the starter AE VAE. These quantized weights keep the combined model
+footprint low enough for an 18 GB Apple Silicon machine. Model weights and
+private media remain outside the repository.
 
 ## Local runtime
 
@@ -43,8 +44,10 @@ installation. Model weights and private media remain outside the repository.
 4. Start AI Film Studio with `pnpm dev`, open a project's Storyboard, and use
    **Generate with ComfyUI**.
 
-The first generation has to load roughly 19 GB of model components and is slower
-than later generations. All generation stays on this Mac and records zero provider
-cost. Z-Image Turbo does not use reference images in this first workflow; uploaded
-Bible references remain visible as continuity warnings and are reserved for a
-future reference-conditioning workflow.
+The first generation still has to load roughly 12 GB of model components and is
+slower than later generations. Close other memory-heavy AI workloads before a
+render; in particular, do not keep a large Ollama model loaded while ComfyUI is
+generating. All generation stays on this Mac and records zero provider cost.
+Z-Image Turbo does not use reference images in this first workflow; uploaded Bible
+references remain visible as continuity warnings and are reserved for a future
+reference-conditioning workflow.

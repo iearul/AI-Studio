@@ -19,8 +19,10 @@ cost reporting, recovery, and later image-to-video work.
   with mandatory exact tokens for prompt, negative prompt, seed, size, filename,
   and model. Reference images are uploaded through the local API before submission.
 - A persistent SQLite job is claimed transactionally by one in-process worker.
-  Interrupted preparing/generating/downloading jobs are returned to the queue on
-  startup. BullMQ/Redis remains deferred for a single-machine workload.
+  At most one active job may exist per shot. Interrupted external work is marked
+  failed on startup and requires an explicit retry; it is never blindly replayed
+  because ComfyUI may still be executing the original prompt. BullMQ/Redis remains
+  deferred for a single-machine workload.
 - Every request creates an immutable generation-attempt record containing prompt,
   references, settings, seed, model, provider, state, error, time, and cost. The
   resulting image is stored beneath its project with MIME magic-byte verification,
@@ -31,6 +33,10 @@ cost reporting, recovery, and later image-to-video work.
 - Provider availability is explicit in the API and UI. No cloud image provider is
   selected or charged automatically. Google Drive upload remains pending the
   separately tracked OAuth milestone.
+- The M3 Pro/18 GB installation uses the official Z-Image Turbo INT8 ConvRot
+  diffusion model with the FP8 mixed Qwen encoder. Default dimensions follow each
+  project's aspect ratio and avoid the larger BF16 combination that exhausted
+  unified memory during live acceptance.
 
 ## Consequences
 
@@ -38,5 +44,6 @@ cost reporting, recovery, and later image-to-video work.
   stable approved asset.
 - The storyboard workflow remains usable without an AI runtime, while the UI makes
   offline or incomplete ComfyUI setup visible.
-- Live ComfyUI acceptance still requires a user-selected installed model and an
-  exported workflow compatible with that installation.
+- Progress is intentionally coarse and evidence-based: submitted, waiting for a
+  ComfyUI result, and downloading. The UI does not invent percentages while an
+  opaque model step is running.

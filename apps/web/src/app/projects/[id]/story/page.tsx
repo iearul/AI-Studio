@@ -1,21 +1,29 @@
 "use client";
 
 import type {
+  AutomaticStoryProviderId,
   Project,
+  StoryGenerationResult,
   StoryPlan,
   StoryPlanInput,
+  StoryProviderStatus,
 } from "@ai-film-studio/contracts";
 import {
   ArrowLeft,
+  Bot,
   BookOpen,
   Check,
   CheckCircle2,
+  Cloud,
   Clock3,
   Copy,
+  Cpu,
   Download,
   FileJson,
   Film,
   Layers3,
+  LoaderCircle,
+  MessageSquareText,
   Sparkles,
   Upload,
   X,
@@ -27,17 +35,24 @@ import { useEffect, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "@/lib/api";
 
 type StoryRequest = { filename: string; prompt: string };
-type Modal = "export" | "import" | null;
+type StoryMode = AutomaticStoryProviderId | "manual";
+type Modal = "export" | "import" | "review" | null;
 
 export default function StoryWorkspacePage() {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project>();
   const [plan, setPlan] = useState<StoryPlan | null>();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string>();
+  const [providerLoading, setProviderLoading] = useState(true);
+  const [providerError, setProviderError] = useState<string>();
+  const [providers, setProviders] = useState<StoryProviderStatus[]>([]);
+  const [mode, setMode] = useState<StoryMode>("manual");
   const [modal, setModal] = useState<Modal>(null);
   const [request, setRequest] = useState<StoryRequest>();
   const [importText, setImportText] = useState("");
   const [preview, setPreview] = useState<StoryPlanInput>();
+  const [generated, setGenerated] = useState<StoryGenerationResult>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -55,7 +70,7 @@ export default function StoryWorkspacePage() {
       })
       .catch((reason: unknown) => {
         if (!cancelled)
-          setError(
+          setLoadError(
             reason instanceof Error
               ? reason.message
               : "Could not open the story workspace.",
@@ -69,6 +84,37 @@ export default function StoryWorkspacePage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void apiFetch<{ providers: StoryProviderStatus[] }>("/providers/stories")
+      .then((response) => {
+        if (cancelled) return;
+        setProviders(response.providers);
+        const local = response.providers.find(
+          (provider) => provider.id === "ollama" && provider.available,
+        );
+        const cloud = response.providers.find(
+          (provider) => provider.id === "openai" && provider.available,
+        );
+        setMode(local ? "ollama" : cloud ? "openai" : "manual");
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setProviderError(
+            reason instanceof Error
+              ? reason.message
+              : "Automatic story providers could not be checked.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setProviderLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const previewTotals = useMemo(() => {
     if (!preview) return undefined;
     const shots = preview.scenes.flatMap((scene) => scene.shots);
@@ -78,6 +124,10 @@ export default function StoryWorkspacePage() {
       duration: shots.reduce((total, shot) => total + shot.durationSeconds, 0),
     };
   }, [preview]);
+  const automaticMode = mode === "manual" ? undefined : mode;
+  const selectedProvider = automaticMode
+    ? providers.find((provider) => provider.id === automaticMode)
+    : undefined;
 
   async function openExport() {
     setBusy(true);
@@ -117,8 +167,45 @@ export default function StoryWorkspacePage() {
 
   function openImport() {
     setPreview(undefined);
+    setGenerated(undefined);
     setError(undefined);
     setModal("import");
+  }
+
+  async function generateStory(provider: AutomaticStoryProviderId) {
+    const status = providers.find((candidate) => candidate.id === provider);
+    if (!status?.available) {
+      setError(status?.message ?? "This story provider is not available.");
+      return;
+    }
+    if (
+      provider === "openai" &&
+      !window.confirm(
+        "Generate with the OpenAI API? This uses separately billed API tokens. Nothing is saved until you review and import the result.",
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(undefined);
+    setGenerated(undefined);
+    try {
+      const result = await apiFetch<StoryGenerationResult>(
+        `/projects/${id}/story-plan/generate`,
+        { method: "POST", body: JSON.stringify({ provider }) },
+      );
+      setGenerated(result);
+      setPreview(result.plan);
+      setModal("review");
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The story could not be generated.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function validateImport() {
@@ -167,6 +254,7 @@ export default function StoryWorkspacePage() {
       setPlan(saved);
       setModal(null);
       setPreview(undefined);
+      setGenerated(undefined);
       setImportText("");
     } catch (reason) {
       setError(
@@ -185,12 +273,12 @@ export default function StoryWorkspacePage() {
         <div className="project-detail-skeleton" />
       </div>
     );
-  if (!project || (error && !modal))
+  if (!project || loadError)
     return (
       <div className="page">
         <div className="notice error">
           <strong>Story workspace unavailable</strong>
-          <span>{error ?? "Project not found."}</span>
+          <span>{loadError ?? "Project not found."}</span>
         </div>
       </div>
     );
@@ -208,7 +296,7 @@ export default function StoryWorkspacePage() {
           <h1>{plan?.story.title ?? "Build the story plan."}</h1>
           <p>
             {plan?.story.logline ??
-              "Use ChatGPT manually, review the structured result, then import it before any generation begins."}
+              "Choose free local AI, the automatic OpenAI API, or the manual ChatGPT workflow. Every result stops for review before it is saved."}
           </p>
         </div>
         <div className="story-actions">
@@ -225,6 +313,142 @@ export default function StoryWorkspacePage() {
         </div>
       </header>
 
+      <section className="story-generation-panel">
+        <div className="section-heading story-generation-heading">
+          <div>
+            <span className="eyebrow">
+              <Bot size={14} /> Story generator
+            </span>
+            <h2>Choose how this draft is created.</h2>
+            <p>
+              All three modes produce the same validated plan and preserve the
+              review gate.
+            </p>
+          </div>
+          {providerLoading && (
+            <span className="provider-checking">
+              <LoaderCircle className="spin" size={14} /> Checking local AI
+            </span>
+          )}
+        </div>
+
+        <div className="story-mode-grid">
+          <button
+            type="button"
+            className={`story-mode-card ${mode === "ollama" ? "selected" : ""}`}
+            aria-pressed={mode === "ollama"}
+            onClick={() => {
+              setMode("ollama");
+              setError(undefined);
+            }}
+          >
+            <span className="story-mode-icon local">
+              <Cpu size={19} />
+            </span>
+            <span>
+              <strong>Local AI</strong>
+              <small>Private · no per-token cost</small>
+            </span>
+            <i
+              className={`provider-dot ${providers.find((provider) => provider.id === "ollama")?.available ? "ready" : "offline"}`}
+            />
+          </button>
+          <button
+            type="button"
+            className={`story-mode-card ${mode === "openai" ? "selected" : ""}`}
+            aria-pressed={mode === "openai"}
+            onClick={() => {
+              setMode("openai");
+              setError(undefined);
+            }}
+          >
+            <span className="story-mode-icon cloud">
+              <Cloud size={19} />
+            </span>
+            <span>
+              <strong>OpenAI API</strong>
+              <small>Automatic · separately billed</small>
+            </span>
+            <i
+              className={`provider-dot ${providers.find((provider) => provider.id === "openai")?.available ? "ready" : "offline"}`}
+            />
+          </button>
+          <button
+            type="button"
+            className={`story-mode-card ${mode === "manual" ? "selected" : ""}`}
+            aria-pressed={mode === "manual"}
+            onClick={() => {
+              setMode("manual");
+              setError(undefined);
+            }}
+          >
+            <span className="story-mode-icon manual">
+              <MessageSquareText size={19} />
+            </span>
+            <span>
+              <strong>Manual ChatGPT</strong>
+              <small>Export prompt · paste JSON</small>
+            </span>
+            <i className="provider-dot ready" />
+          </button>
+        </div>
+
+        <div className="story-mode-action">
+          <div>
+            <strong>
+              {mode === "manual"
+                ? "Use ChatGPT in your browser"
+                : (selectedProvider?.name ?? "Provider not ready")}
+            </strong>
+            <span>
+              {mode === "manual"
+                ? "No API connection is used. Export the tailored request, then validate and import ChatGPT's JSON."
+                : (selectedProvider?.message ??
+                  "The provider status could not be loaded.")}
+            </span>
+            {mode === "ollama" && (
+              <small>
+                Ollama unloads after generation to return memory to ComfyUI. Do
+                not run both models at the same time on this 18 GB Mac.
+              </small>
+            )}
+          </div>
+          {mode === "manual" ? (
+            <div>
+              <button
+                className="button secondary"
+                disabled={busy}
+                onClick={() => void openExport()}
+              >
+                <Download size={15} /> Export
+              </button>
+              <button className="button primary" onClick={openImport}>
+                <Upload size={15} /> Import JSON
+              </button>
+            </div>
+          ) : (
+            <button
+              className="button primary"
+              disabled={busy || !selectedProvider?.available}
+              onClick={() => automaticMode && void generateStory(automaticMode)}
+            >
+              {busy ? (
+                <LoaderCircle className="spin" size={16} />
+              ) : (
+                <Sparkles size={16} />
+              )}
+              {busy ? "Generating story…" : "Generate draft"}
+            </button>
+          )}
+        </div>
+        {(providerError || (error && !modal)) && (
+          <div className="notice error story-generation-error">
+            <strong>Story generator</strong>
+            <span>{error ?? providerError}</span>
+          </div>
+        )}
+      </section>
+
       {!plan ? (
         <section className="story-empty">
           <div className="story-empty-art">
@@ -236,14 +460,12 @@ export default function StoryWorkspacePage() {
           </div>
           <div>
             <span className="eyebrow">
-              <Sparkles size={14} /> Manual AI workflow
+              <Sparkles size={14} /> Human-reviewed workflow
             </span>
-            <h2>Keep creative control between every step.</h2>
+            <h2>Three creation paths, one safe review gate.</h2>
             <ol>
-              <li>
-                <strong>Export</strong> the tailored story request.
-              </li>
-              <li>Use it in ChatGPT and copy the JSON response.</li>
+              <li>Select Local AI, OpenAI API, or Manual ChatGPT above.</li>
+              <li>Create a structured story, script, scenes, and shot list.</li>
               <li>
                 <strong>Validate &amp; review</strong> scene, shot, and duration
                 totals.
@@ -252,9 +474,17 @@ export default function StoryWorkspacePage() {
             </ol>
             <button
               className="button primary"
-              onClick={() => void openExport()}
+              disabled={
+                busy || Boolean(automaticMode && !selectedProvider?.available)
+              }
+              onClick={() =>
+                automaticMode
+                  ? void generateStory(automaticMode)
+                  : void openExport()
+              }
             >
-              Export first request <Download size={16} />
+              {automaticMode ? "Generate first draft" : "Export first request"}
+              {automaticMode ? <Sparkles size={16} /> : <Download size={16} />}
             </button>
           </div>
         </section>
@@ -411,6 +641,8 @@ export default function StoryWorkspacePage() {
               <span className="settings-icon">
                 {modal === "export" ? (
                   <Download size={19} />
+                ) : modal === "review" ? (
+                  <Sparkles size={19} />
                 ) : (
                   <FileJson size={19} />
                 )}
@@ -419,12 +651,16 @@ export default function StoryWorkspacePage() {
                 <h2 id="story-modal-title">
                   {modal === "export"
                     ? "Story request"
-                    : "Import structured JSON"}
+                    : modal === "review"
+                      ? "Review generated story"
+                      : "Import structured JSON"}
                 </h2>
                 <p>
                   {modal === "export"
                     ? "Paste this into ChatGPT. It contains the brief, constraints, and exact schema."
-                    : "Nothing is saved until validation succeeds and you choose Import plan."}
+                    : modal === "review"
+                      ? "The automatic draft passed structural validation. Nothing is saved until you choose Import plan."
+                      : "Nothing is saved until validation succeeds and you choose Import plan."}
                 </p>
               </div>
               <button
@@ -433,6 +669,10 @@ export default function StoryWorkspacePage() {
                 onClick={() => {
                   setModal(null);
                   setError(undefined);
+                  if (modal === "review") {
+                    setPreview(undefined);
+                    setGenerated(undefined);
+                  }
                 }}
               >
                 <X size={19} />
@@ -464,96 +704,123 @@ export default function StoryWorkspacePage() {
                 </footer>
               </>
             )}
-            {modal === "import" && (
+            {modal === "import" && !preview && (
               <>
-                {!preview ? (
-                  <>
-                    <textarea
-                      className="code-area import-area"
-                      value={importText}
-                      onChange={(event) => setImportText(event.target.value)}
-                      placeholder='Paste the JSON response here, beginning with { "story": ... }'
-                      aria-label="Story plan JSON"
-                    />
-                    {error && (
-                      <div className="notice error">
-                        <strong>Validation failed</strong>
-                        <span>{error}</span>
-                      </div>
-                    )}
-                    <footer>
-                      <span>
-                        JSON is validated locally by the Film Studio API.
-                      </span>
-                      <button
-                        className="button primary"
-                        disabled={busy || importText.trim().length === 0}
-                        onClick={() => void validateImport()}
-                      >
-                        {busy ? "Validating…" : "Validate & review"}
-                      </button>
-                    </footer>
-                  </>
-                ) : (
-                  <>
-                    <div className="import-preview">
-                      <span className="preview-check">
-                        <CheckCircle2 size={26} />
-                      </span>
-                      <h3>Valid structure</h3>
-                      <p>{preview.story.logline}</p>
-                      <div>
-                        <span>
-                          <strong>{previewTotals?.scenes}</strong> scenes
-                        </span>
-                        <span>
-                          <strong>{previewTotals?.shots}</strong> shots
-                        </span>
-                        <span>
-                          <strong>{previewTotals?.duration}s</strong> duration
-                        </span>
-                      </div>
-                      {project &&
-                        previewTotals &&
-                        Math.abs(
-                          previewTotals.duration -
-                            project.targetDurationSeconds,
-                        ) >
-                          project.targetDurationSeconds * 0.2 && (
-                          <div className="duration-warning">
-                            Planned shots differ from the{" "}
-                            {project.targetDurationSeconds}s target by more than
-                            20%. Review before importing.
-                          </div>
-                        )}
-                    </div>
-                    {error && (
-                      <div className="notice error">
-                        <span>{error}</span>
-                      </div>
-                    )}
-                    <footer>
-                      <button
-                        className="button secondary"
-                        onClick={() => setPreview(undefined)}
-                      >
-                        Back to JSON
-                      </button>
-                      <button
-                        className="button primary"
-                        disabled={busy}
-                        onClick={() => void importPlan()}
-                      >
-                        {busy ? "Importing…" : "Import plan"}
-                      </button>
-                    </footer>
-                  </>
+                <textarea
+                  className="code-area import-area"
+                  value={importText}
+                  onChange={(event) => setImportText(event.target.value)}
+                  placeholder='Paste the JSON response here, beginning with { "story": ... }'
+                  aria-label="Story plan JSON"
+                />
+                {error && (
+                  <div className="notice error">
+                    <strong>Validation failed</strong>
+                    <span>{error}</span>
+                  </div>
                 )}
+                <footer>
+                  <span>JSON is validated locally by the Film Studio API.</span>
+                  <button
+                    className="button primary"
+                    disabled={busy || importText.trim().length === 0}
+                    onClick={() => void validateImport()}
+                  >
+                    {busy ? "Validating…" : "Validate & review"}
+                  </button>
+                </footer>
               </>
             )}
+            {(modal === "review" || (modal === "import" && preview)) &&
+              preview && (
+                <>
+                  <div className="import-preview">
+                    <span className="preview-check">
+                      <CheckCircle2 size={26} />
+                    </span>
+                    <h3>
+                      {generated
+                        ? `Generated with ${generated.providerName}`
+                        : "Valid structure"}
+                    </h3>
+                    <p>{preview.story.logline}</p>
+                    <div>
+                      <span>
+                        <strong>{previewTotals?.scenes}</strong> scenes
+                      </span>
+                      <span>
+                        <strong>{previewTotals?.shots}</strong> shots
+                      </span>
+                      <span>
+                        <strong>{previewTotals?.duration}s</strong> duration
+                      </span>
+                    </div>
+                    {generated && (
+                      <small className="generation-meta">
+                        {generated.model} ·{" "}
+                        {formatDuration(generated.generationTimeMs)}
+                        {generated.usage.inputTokens !== null &&
+                          generated.usage.outputTokens !== null &&
+                          ` · ${generated.usage.inputTokens.toLocaleString()} in / ${generated.usage.outputTokens.toLocaleString()} out tokens`}
+                      </small>
+                    )}
+                    {previewTotals &&
+                      Math.abs(
+                        previewTotals.duration - project.targetDurationSeconds,
+                      ) >
+                        project.targetDurationSeconds * 0.2 && (
+                        <div className="duration-warning">
+                          Planned shots differ from the{" "}
+                          {project.targetDurationSeconds}s target by more than
+                          20%. Review before importing.
+                        </div>
+                      )}
+                  </div>
+                  {error && (
+                    <div className="notice error">
+                      <span>{error}</span>
+                    </div>
+                  )}
+                  <footer>
+                    <button
+                      className="button secondary"
+                      onClick={() => {
+                        if (modal === "import") {
+                          setPreview(undefined);
+                        } else {
+                          setModal(null);
+                          setPreview(undefined);
+                          setGenerated(undefined);
+                        }
+                      }}
+                    >
+                      {modal === "import" ? "Back to JSON" : "Discard"}
+                    </button>
+                    <button
+                      className="button primary"
+                      disabled={busy}
+                      onClick={() => void importPlan()}
+                    >
+                      {busy
+                        ? "Importing…"
+                        : plan
+                          ? "Replace current plan"
+                          : "Import plan"}
+                    </button>
+                  </footer>
+                </>
+              )}
           </section>
         </div>
       )}
     </div>
   );
+}
+
+function formatDuration(milliseconds: number): string {
+  if (milliseconds < 1_000) return `${milliseconds}ms`;
+  if (milliseconds < 60_000) return `${(milliseconds / 1_000).toFixed(1)}s`;
+  const minutes = Math.floor(milliseconds / 60_000);
+  const seconds = Math.round((milliseconds % 60_000) / 1_000);
+  return `${minutes}m ${seconds}s`;
 }

@@ -10,8 +10,13 @@ import {
 } from "@ai-film-studio/database";
 import {
   ComfyUiImageProvider,
+  OllamaTextProvider,
+  OpenAiTextProvider,
   resolveComfyUiImageProviderConfig,
+  resolveOllamaTextProviderConfig,
+  resolveOpenAiTextProviderConfig,
   type ImageProvider,
+  type TextProvider,
 } from "@ai-film-studio/providers";
 import {
   BackupService,
@@ -25,11 +30,15 @@ import {
 } from "@ai-film-studio/storage";
 
 import { ImageGenerationService } from "./image-generation-service.js";
+import { StoryGenerationService } from "./story-generation-service.js";
 
 export type Services = Awaited<ReturnType<typeof createServices>>;
 
 export async function createServices(
-  options: { imageProvider?: ImageProvider } = {},
+  options: {
+    imageProvider?: ImageProvider;
+    textProviders?: TextProvider[];
+  } = {},
 ) {
   const storage: StorageConfig = resolveStorageConfig();
   await ensureStorageDirectories(storage);
@@ -50,6 +59,10 @@ export async function createServices(
     resolveComfyUiImageProviderConfig(storage.workspaceRoot),
   );
   const imageProvider = options.imageProvider ?? comfyUi;
+  const textProviders = options.textProviders ?? [
+    new OpenAiTextProvider(resolveOpenAiTextProviderConfig()),
+    new OllamaTextProvider(resolveOllamaTextProviderConfig()),
+  ];
   const manifestSynchronizer = new ManifestSynchronizer(
     manifestOutbox,
     manifestStore,
@@ -91,6 +104,7 @@ export async function createServices(
     imageProvider,
     manifestSynchronizer,
   );
+  const storyGenerations = new StoryGenerationService(projects, textProviders);
 
   await manifestSynchronizer.drain();
 
@@ -109,6 +123,7 @@ export async function createServices(
     storyboardAssets,
     comfyUi,
     imageGenerations,
+    storyGenerations,
     backups,
   };
 }

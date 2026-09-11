@@ -1037,9 +1037,8 @@ with blank values.
 
 # 23. ChatGPT Subscription vs OpenAI API
 
-A ChatGPT subscription is separate from API billing.
-
-Initially the Film Studio can work in a **manual ChatGPT mode**.
+A ChatGPT subscription is separate from API billing. The Story Room supports three
+explicit modes that all stop at the same preview and validation gate.
 
 Example:
 
@@ -1055,9 +1054,9 @@ ChatGPT produces structured JSON
 Import JSON into Film Studio
 ```
 
-This lets you use your existing ChatGPT subscription while developing the workflow.
+This lets you use your existing ChatGPT subscription without API automation.
 
-Later:
+Automatic paid mode:
 
 ```text
 Film Studio
@@ -1067,7 +1066,21 @@ OpenAI API
 Automatic story/script/shot generation
 ```
 
-API integration can therefore be introduced only when automation becomes worth paying for.
+Automatic private mode:
+
+```text
+Film Studio
+↓
+Local Ollama on loopback
+↓
+Qwen 3.5 9B MLX
+↓
+Validated preview
+```
+
+The local option has no per-token provider charge. OpenAI API requests require an
+explicit billing confirmation. Neither automatic option saves or replaces a plan
+until the filmmaker imports the validated preview.
 
 ---
 
@@ -1999,9 +2012,10 @@ Success criterion:
 
 ## Phase 2 — Story System
 
-> **Implementation status — 2026-09-10:** Complete. A project-specific manual
-> ChatGPT request can be exported, its JSON response is validated without being
-> saved, and the filmmaker sees scene, shot, and duration totals before import.
+> **Implementation status — 2026-09-11:** Complete. The Story Room offers local
+> Ollama, the OpenAI Responses API, and manual ChatGPT request export/import. All
+> responses use one structured contract, are validated without being saved, and
+> show scene, shot, duration, model, timing, and available token totals before import.
 > An accepted plan is written transactionally as a versioned story and script
 > with ordered scenes and globally identified shots, then synchronized into the
 > portable project manifest. Re-import replaces the prior scene/shot hierarchy
@@ -2017,6 +2031,8 @@ Script
 Scenes
 Shot list
 Manual ChatGPT import/export
+Automatic OpenAI API preview
+Automatic local Ollama preview
 ```
 
 Success criterion:
@@ -2508,7 +2524,9 @@ project's source of truth.
 | 2026-09-10 | Local AI | ComfyUI adapter boundary | Accepted for Phase 4+ |
 | 2026-09-10 | Cloud video | Select one provider during Phase 6 after explicit cost/region review | Deferred |
 | 2026-09-10 | Project content in Git | Excluded; Git contains application source and safe templates only | Accepted |
-| 2026-09-10 | Story AI workflow | Manual ChatGPT prompt export and validated JSON import; no subscription automation or API charge | Accepted |
+| 2026-09-11 | Story AI workflow | Selectable OpenAI API, local Ollama, and manual ChatGPT; every result is preview-only until explicit import | Accepted |
+| 2026-09-11 | Cloud story model | OpenAI Responses API with `gpt-5.4-mini`, strict structured output, `store: false`, and per-request billing confirmation | Accepted |
+| 2026-09-11 | Local story model | Ollama with Apple-native `qwen3.5:9b-mlx`; loopback-only, thinking disabled, unloaded after use, no per-token provider fee | Accepted |
 | 2026-09-10 | Story-plan persistence | Transactional replacement with story/script version increments, ordered scenes, and globally unique shot codes | Accepted |
 | 2026-09-10 | Bible identity matching | Exact case-insensitive name or stable generated code; missing labels are unresolved and never fuzzy-guessed | Accepted |
 | 2026-09-10 | Reference image storage | Project-local generated paths; JPEG/PNG/WebP only, 8 MB limit, MIME magic-byte verification, SHA-256 metadata | Accepted |
@@ -2518,7 +2536,8 @@ project's source of truth.
 | 2026-09-10 | ComfyUI workflow contract | API-format JSON with exact runtime tokens and loopback-only HTTP access | Accepted |
 | 2026-09-10 | Offline image workflow | Manual JPEG/PNG/WebP import enters the same zero-cost review history | Accepted |
 | 2026-09-10 | Cloud image provider | No provider selected and no automatic cloud spending | Deferred |
-| 2026-09-11 | Local image model | Z-Image Turbo BF16 with Qwen 3 4B encoder and AE VAE; Apache-2.0 model family, no per-generation provider fee | Accepted |
+| 2026-09-11 | Local image model | Z-Image Turbo INT8 ConvRot with FP8 mixed Qwen encoder and AE VAE; selected after the BF16 stack exceeded 18 GB unified memory | Accepted |
+| 2026-09-11 | Image job restart safety | One active job per shot; interrupted external jobs fail visibly and require manual retry instead of automatic replay | Accepted |
 | 2026-09-11 | Local image runtime | ComfyUI Desktop on Apple Silicon MPS, loopback API, committed core-node workflow | Accepted; first project render pending |
 
 ## Milestone progress
@@ -2527,6 +2546,7 @@ project's source of truth.
 - [x] Phase 1A — Local Project Manager, portable manifests, backup and restore
 - [ ] Phase 1B — Google Drive OAuth connection and verified backup upload
 - [x] Phase 2 — Story System
+- [x] Phase 2B — Selectable OpenAI, local Ollama, and manual ChatGPT story modes
 - [x] Phase 3 — Character & Location Bible
 - [x] Phase 4A — Image jobs, immutable history, manual fallback, and review UI
 - [x] Phase 4B1 — Install and configure local ComfyUI model/workflow
@@ -2624,9 +2644,10 @@ project's source of truth.
 
 - ComfyUI Desktop 1.0.47 installed the stable ComfyUI 0.35.x standalone runtime
   and selected Apple's MPS device on the local M3 Pro with 18 GB unified memory.
-- The free Z-Image Turbo starter is installed outside the repository: the BF16
-  diffusion model, Qwen 3 4B text encoder, and AE VAE total roughly 19 GB. No
-  account, credits, or paid image API is required for generation.
+- The first BF16 acceptance render exhausted the Mac's 18 GB unified-memory
+  headroom. The selected replacement uses the official INT8 ConvRot diffusion
+  model, FP8 mixed Qwen encoder, and AE VAE at roughly 12 GB combined. No account,
+  credits, or paid image API is required for generation.
 - `config/comfyui/image-workflow.json` contains a safe API-format graph using only
   ComfyUI core nodes, eight sampling steps, deterministic runtime seeds, requested
   dimensions, and project-safe output prefixes. Model weights remain untracked.
@@ -2638,3 +2659,17 @@ project's source of truth.
 - The first real storyboard render and approval remain Phase 4B2 acceptance work,
   deferred at the user's request. Google Drive upload still requires the separate
   OAuth credential milestone.
+
+### Phase 2B — Selectable Story AI (2026-09-11)
+
+- The Story Room has three explicit choices: local Ollama, the OpenAI API, and the
+  existing manual ChatGPT export/import workflow. A ready local provider is the
+  default.
+- Both automatic adapters receive the same strict story-plan JSON Schema and their
+  output is validated again by the domain contract. Results remain unsaved previews
+  until an explicit import or replacement confirmation.
+- OpenAI uses the Responses API with `store: false`, server-only credentials, a
+  five-request-per-minute route limit, and an explicit billing warning in the UI.
+- Ollama is restricted to loopback, disables hidden thinking in structured output,
+  records token/timing metadata, and unloads the model after generation so ComfyUI
+  can reclaim unified memory.

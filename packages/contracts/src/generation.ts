@@ -21,13 +21,23 @@ export const attemptStatuses = [
 ] as const;
 export const reviewStatuses = ["pending", "approved", "rejected"] as const;
 
-export const imageGenerationInputSchema = z.object({
-  provider: z.literal("comfyui").default("comfyui"),
-  negativePrompt: z.string().trim().max(4000).default(""),
-  seed: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
-  width: z.number().int().min(256).max(4096).multipleOf(8).default(1024),
-  height: z.number().int().min(256).max(4096).multipleOf(8).default(1024),
-});
+export const imageGenerationInputSchema = z
+  .object({
+    provider: z.literal("comfyui").default("comfyui"),
+    negativePrompt: z.string().trim().max(4000).default(""),
+    seed: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+    width: z.number().int().min(256).max(4096).multipleOf(8).optional(),
+    height: z.number().int().min(256).max(4096).multipleOf(8).optional(),
+  })
+  .superRefine((input, context) => {
+    if ((input.width === undefined) !== (input.height === undefined)) {
+      context.addIssue({
+        code: "custom",
+        message: "Set both width and height, or leave both blank.",
+        path: input.width === undefined ? ["width"] : ["height"],
+      });
+    }
+  });
 
 export const generatedAssetSchema = z.object({
   id: z.uuid(),

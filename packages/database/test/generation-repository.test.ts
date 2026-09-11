@@ -152,14 +152,12 @@ describe("GenerationRepository", () => {
     expect(history.totals).toMatchObject({ attempts: 2, succeeded: 2 });
   });
 
-  it("records failures, rejects invalid reviews, and requeues interrupted jobs", () => {
+  it("records failures and rejects invalid reviews", () => {
     const attempt = queued();
     repository.claimNextImageJob();
     expect(() => repository.review(projectId, attempt.id, "approve")).toThrow(
       GenerationStateError,
     );
-    expect(repository.requeueInterruptedJobs()).toBe(1);
-    expect(repository.claimNextImageJob()?.id).toBe(attempt.id);
     const failed = repository.failAttempt(
       projectId,
       attempt.id,
@@ -167,5 +165,20 @@ describe("GenerationRepository", () => {
     );
     expect(failed.status).toBe("failed");
     expect(failed.errorMessage).toContain("GPU allocation");
+  });
+
+  it("blocks duplicate active jobs and fails interrupted work without replay", () => {
+    const attempt = queued();
+    expect(() => queued()).toThrow(GenerationStateError);
+    expect(repository.claimNextImageJob()?.id).toBe(attempt.id);
+
+    expect(repository.failInterruptedJobs()).toBe(1);
+    expect(repository.claimNextImageJob()).toBeUndefined();
+    const interrupted = repository.getAttempt(projectId, attempt.id);
+    expect(interrupted?.status).toBe("failed");
+    expect(interrupted?.errorMessage).toContain("prevent duplicate renders");
+    expect(interrupted?.job?.status).toBe("failed");
+
+    expect(() => queued()).not.toThrow();
   });
 });

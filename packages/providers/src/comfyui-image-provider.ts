@@ -234,7 +234,7 @@ export class ComfyUiImageProvider implements ImageProvider {
     startedAt: number,
     onProgress: (progress: ImageProviderProgress) => void | Promise<void>,
   ): Promise<{ filename: string; subfolder: string; type: string }> {
-    let progress = 35;
+    let waitingReported = false;
     while (Date.now() - startedAt < this.config.timeoutMs) {
       const history = await this.fetchJson(
         `${this.config.baseUrl}/history/${encodeURIComponent(promptId)}`,
@@ -251,12 +251,14 @@ export class ComfyUiImageProvider implements ImageProvider {
         const image = firstOutputImage(asObject(entry.outputs));
         if (image) return image;
       }
-      progress = Math.min(85, progress + 2);
-      await onProgress({
-        status: "generating",
-        progress,
-        providerJobId: promptId,
-      });
+      if (!waitingReported) {
+        await onProgress({
+          status: "generating",
+          progress: 35,
+          providerJobId: promptId,
+        });
+        waitingReported = true;
+      }
       await this.dependencies.sleep(this.config.pollIntervalMs);
     }
     throw new ImageProviderUnavailableError(

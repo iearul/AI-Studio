@@ -264,6 +264,10 @@ function StoryboardWorkspace() {
         <div className="storyboard-shot-list">
           {coverage.shots.map((shot) => {
             const attempts = attemptsByShot.get(shot.shotId) ?? [];
+            const hasActiveAttempt = attempts.some(
+              (attempt) =>
+                attempt.status === "queued" || attempt.status === "generating",
+            );
             const selected = attempts.find((attempt) => attempt.selected);
             const action =
               shot.prompt
@@ -306,7 +310,10 @@ function StoryboardWorkspace() {
                   <button
                     className="button primary"
                     disabled={
-                      !provider.available || !shot.ready || Boolean(busy)
+                      !provider.available ||
+                      !shot.ready ||
+                      hasActiveAttempt ||
+                      Boolean(busy)
                     }
                     onClick={() => void generate(shot.shotId)}
                   >
@@ -315,7 +322,9 @@ function StoryboardWorkspace() {
                     ) : (
                       <Sparkles size={15} />
                     )}
-                    Generate with ComfyUI
+                    {hasActiveAttempt
+                      ? "Generation in progress"
+                      : "Generate with ComfyUI"}
                   </button>
                   <label className="storyboard-file">
                     <Upload size={15} />
