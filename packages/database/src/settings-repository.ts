@@ -8,7 +8,7 @@ const defaults: Settings = {
   defaultLanguage: "en",
   automaticBackups: true,
   backupRetentionDays: 30,
-  googleDriveFolder: "AI-Film-Studio",
+  googleDriveFolder: "OSPO",
 };
 
 export class SettingsRepository {

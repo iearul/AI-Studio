@@ -33,6 +33,7 @@ All runtime data is excluded from Git:
 data/film-studio.sqlite  application database
 data/projects/           portable project manifests and future assets
 data/backups/            verified SQLite backups
+data/secrets/            private local OAuth tokens (mode 0600)
 cache/                   disposable working files
 ```
 
@@ -78,6 +79,32 @@ streamed into local project storage before provider links expire.
 To enable cloud video, add `KLING_API_KEY` and/or `SEEDANCE_API_KEY` to the ignored
 `.env.local` file and restart the API. Seedance's documented restriction on direct
 real-human face reference images is displayed in the workspace.
+
+## Google Drive backup
+
+AI Film Studio uses the least-privilege `drive.file` OAuth scope and creates this
+visible hierarchy in your own Drive:
+
+```text
+OSPO/
+└── AI-Film-Studio/
+    ├── projects/          manifests, reference images, storyboards and videos
+    └── backups/database/  verified SQLite snapshots
+```
+
+Create a Google OAuth 2.0 **Web application** client, enable the Google Drive API,
+and register this exact authorized redirect URI:
+
+```text
+http://127.0.0.1:4100/api/v1/integrations/google-drive/callback
+```
+
+Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the Git-ignored `.env.local`,
+restart `pnpm dev`, then open **Settings → Connect Google Drive**. After Google
+consent, choose **Sync projects & backup**. The refresh token is stored only in
+`data/secrets/google-drive.json` with owner-only file permissions; it is never sent
+to the browser or included in project manifests. **Backup now** always keeps the
+verified local backup even when Drive is disconnected or unavailable.
 
 ## Quality checks
 

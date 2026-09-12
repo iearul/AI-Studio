@@ -1090,34 +1090,32 @@ until the filmmaker imports the validated preview.
 
 # 24. Google Drive Storage
 
-Google Drive can be used for project assets.
+Google Drive can be used for project assets. The selected implementation creates a
+user-visible `OSPO` root folder and uses the limited `drive.file` OAuth scope.
 
 Recommended hierarchy:
 
 ```text
-AI-Film-Studio/
-│
-├── projects/
-│   ├── project-001/
-│   │   ├── project.json
-│   │   ├── characters/
-│   │   ├── locations/
-│   │   ├── storyboards/
-│   │   ├── images/
-│   │   ├── videos/
-│   │   ├── audio/
-│   │   ├── subtitles/
-│   │   └── exports/
-│   │
-│   └── project-002/
-│
-├── shared-assets/
-│   ├── characters/
-│   ├── music/
-│   ├── sound-effects/
-│   └── textures/
-│
-└── backups/
+OSPO/
+└── AI-Film-Studio/
+    ├── projects/
+    │   ├── project-001/
+    │   │   ├── project.json
+    │   │   ├── characters/
+    │   │   ├── locations/
+    │   │   ├── storyboards/
+    │   │   ├── images/
+    │   │   ├── videos/
+    │   │   ├── audio/
+    │   │   ├── subtitles/
+    │   │   └── exports/
+    │   └── project-002/
+    ├── shared-assets/
+    │   ├── characters/
+    │   ├── music/
+    │   ├── sound-effects/
+    │   └── textures/
+    └── backups/
 ```
 
 Do not depend exclusively on local disk storage.
@@ -1661,7 +1659,7 @@ data/film-studio.sqlite
 Automatically back it up to:
 
 ```text
-Google Drive/AI-Film-Studio/backups/database/
+Google Drive/OSPO/AI-Film-Studio/backups/database/
 ```
 
 Example:
@@ -1984,12 +1982,12 @@ Do not build everything at once.
 
 ## Phase 1 — Project Manager
 
-> **Implementation status — 2026-09-10:** The local Phase 1 success criterion is
+> **Implementation status — 2026-09-12:** The local Phase 1 success criterion is
 > complete. The application creates, persists, closes/reopens, manifests, backs
-> up, verifies, and restores projects. Settings includes Google Drive credential
-> readiness and the intended remote folder, but authenticated Drive OAuth/upload
-> is tracked separately as Phase 1B because it requires user-supplied Google OAuth
-> credentials for a real acceptance test. No remote-backup claim is made yet.
+> up, verifies, and restores projects. Phase 1B now implements authenticated Google
+> OAuth, a visible OSPO hierarchy, full asset/manifest sync, and verified database
+> upload. A live-account acceptance run remains user-controlled because Google
+> consent cannot be granted by the application on the user's behalf.
 
 Build:
 
@@ -2539,12 +2537,13 @@ project's source of truth.
 | 2026-09-11 | Local image runtime | Remove ComfyUI Desktop, models, adapters, workflows, worker, API routes, and UI controls | Accepted and completed |
 | 2026-09-11 | Character image workflow | Deterministic detailed reference-photo prompt, manual ChatGPT image creation, verified upload, and local continuity reuse | Accepted |
 | 2026-09-11 | Manual image intake | The selected character angle controls its prompt; character and storyboard inputs accept picker, file drop, or clipboard image paste; shot prompts target ChatGPT Images or Gemini | Accepted |
+| 2026-09-12 | Google Drive boundary | OAuth 2.0 with least-privilege `drive.file`; a fixed visible `OSPO/AI-Film-Studio` hierarchy; private local refresh-token storage; idempotent resumable uploads; local backups succeed independently of Drive | Accepted |
 
 ## Milestone progress
 
 - [x] Architecture foundation and decision register
 - [x] Phase 1A — Local Project Manager, portable manifests, backup and restore
-- [ ] Phase 1B — Google Drive OAuth connection and verified backup upload
+- [x] Phase 1B — Google Drive OAuth connection and verified backup upload implementation
 - [x] Phase 2 — Story System
 - [x] Phase 2B — Selectable OpenAI, local Ollama, and manual ChatGPT story modes
 - [x] Phase 2C — Automatic Visual Bible population from accepted story plans
@@ -2553,7 +2552,7 @@ project's source of truth.
 - [x] Phase 4B1 — Retire local ComfyUI and remove its disk/memory footprint
 - [x] Phase 4B2 — Add character-reference and per-shot ChatGPT prompt workflows
 - [x] Phase 4B3 — Angle-specific prompts plus drag-and-drop/clipboard image intake
-- [ ] Phase 4C — Accept one manually generated image and upload assets to Google Drive
+- [x] Phase 4C — Accept manually generated images and include project assets in Drive sync
 - [x] Phase 5A — Approved-frame manual video import and review
 - [ ] Phase 5B — Local Video (intentionally not installed on this Mac)
 - [x] Phase 6A — Kling and Seedance cloud-video adapters and UI
@@ -2682,3 +2681,20 @@ project's source of truth.
   an allow-listed HTTPS host into project storage before its remote URL expires.
 - Videos are magic-byte checked, limited to 512 MB, hashed with SHA-256, included in
   portable manifests, and served with HTTP byte ranges for efficient review.
+
+### Phase 1B / 4C — Google Drive OSPO Backup (2026-09-12)
+
+- Settings reports configuration, consent, folder, and last-sync state honestly and
+  provides Connect, Sync, Open OSPO, and Disconnect controls.
+- OAuth uses the limited `drive.file` scope, a short-lived constant-time-checked CSRF
+  state, an exact loopback callback, and a refresh token stored only in an ignored
+  owner-readable local file.
+- Sync creates `OSPO/AI-Film-Studio`, uploads portable project manifests and all
+  verified project media through resumable requests, and creates/uploads a fresh
+  SQLite online backup beneath `backups/database`.
+- Existing Drive files are updated by stable parent/name lookup. Remote files are not
+  deleted, and a local manual backup still succeeds when Drive is disconnected or
+  temporarily unavailable.
+- Automated tests cover the OAuth request and state, token permissions, path
+  containment, safe streaming behavior, honest readiness, and local-backup fallback.
+  The final live upload requires the user to grant Google consent in Settings.

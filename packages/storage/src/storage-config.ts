@@ -9,20 +9,29 @@ export type StorageConfig = {
   projectsPath: string;
   backupsPath: string;
   cachePath: string;
+  secretsPath: string;
 };
 
 export function resolveStorageConfig(): StorageConfig {
   const workspaceRoot = findWorkspaceRoot();
   const resolveFromRoot = (value: string): string =>
     path.resolve(workspaceRoot, value);
+  const databasePath = resolveFromRoot(
+    process.env.DATABASE_PATH ?? "data/film-studio.sqlite",
+  );
+  const defaultSecretsPath =
+    process.env.NODE_ENV === "test"
+      ? path.join(path.dirname(databasePath), "secrets")
+      : "data/secrets";
   return {
     workspaceRoot,
-    databasePath: resolveFromRoot(
-      process.env.DATABASE_PATH ?? "data/film-studio.sqlite",
-    ),
+    databasePath,
     projectsPath: resolveFromRoot(process.env.PROJECTS_PATH ?? "data/projects"),
     backupsPath: resolveFromRoot(process.env.BACKUPS_PATH ?? "data/backups"),
     cachePath: resolveFromRoot(process.env.CACHE_PATH ?? "cache"),
+    secretsPath: resolveFromRoot(
+      process.env.SECRETS_PATH ?? defaultSecretsPath,
+    ),
   };
 }
 
@@ -34,5 +43,6 @@ export async function ensureStorageDirectories(
     mkdir(config.projectsPath, { recursive: true }),
     mkdir(config.backupsPath, { recursive: true }),
     mkdir(config.cachePath, { recursive: true }),
+    mkdir(config.secretsPath, { recursive: true, mode: 0o700 }),
   ]);
 }

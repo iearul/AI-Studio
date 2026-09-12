@@ -2,6 +2,8 @@
 
 import type {
   Backup,
+  BackupCreationResult,
+  DriveSyncResult,
   IntegrationStatus,
   Settings,
   StorageStatus,
@@ -9,9 +11,13 @@ import type {
 import {
   CheckCircle2,
   Cloud,
+  CloudUpload,
   Database,
   Download,
+  ExternalLink,
   HardDrive,
+  Link2,
+  LogOut,
   RefreshCw,
   Save,
   Settings2,
@@ -19,7 +25,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
-import { apiFetch, formatBytes } from "@/lib/api";
+import { apiBaseUrl, apiFetch, formatBytes } from "@/lib/api";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>();
@@ -74,13 +80,110 @@ export default function SettingsPage() {
     setBusy(true);
     setMessage(undefined);
     try {
-      const backup = await apiFetch<Backup>("/backups", { method: "POST" });
-      setBackups((current) => [backup, ...current]);
-      setMessage("Verified database backup created.");
+      const result = await apiFetch<BackupCreationResult>("/backups", {
+        method: "POST",
+      });
+      setBackups((current) => [result, ...current]);
+      setMessage(result.drive.message);
       setStorage(await apiFetch<StorageStatus>("/storage"));
+      setDrive(await apiFetch<IntegrationStatus>("/integrations/google-drive"));
     } catch (reason) {
       setMessage(
         reason instanceof Error ? reason.message : "Could not create backup.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function connectDrive() {
+    setBusy(true);
+    setMessage(undefined);
+    const popup = window.open(
+      `${apiBaseUrl}/integrations/google-drive/connect`,
+      "ai-film-studio-google-drive",
+      "popup,width=620,height=760",
+    );
+    if (!popup) {
+      setMessage("Allow pop-ups for this local app, then try Connect again.");
+      setBusy(false);
+      return;
+    }
+    try {
+      for (let attempt = 0; attempt < 80; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        const next = await apiFetch<IntegrationStatus>(
+          "/integrations/google-drive",
+        );
+        setDrive(next);
+        if (next.state === "connected") {
+          setMessage(
+            "Google Drive connected. The visible OSPO folder is ready.",
+          );
+          popup.close();
+          return;
+        }
+        if (popup.closed) break;
+      }
+      setMessage(
+        "Connection was not completed. Choose Connect Google Drive to try again.",
+      );
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error
+          ? reason.message
+          : "Google Drive connection could not be checked.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function syncDrive() {
+    setBusy(true);
+    setMessage(undefined);
+    try {
+      const result = await apiFetch<DriveSyncResult>(
+        "/integrations/google-drive/sync",
+        { method: "POST" },
+      );
+      setBackups((current) => [result.backup, ...current]);
+      setDrive(await apiFetch<IntegrationStatus>("/integrations/google-drive"));
+      setMessage(
+        `Uploaded ${result.uploadedFiles} files (${formatBytes(result.uploadedBytes)}) to OSPO.`,
+      );
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error ? reason.message : "Google Drive sync failed.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disconnectDrive() {
+    if (
+      !window.confirm(
+        "Disconnect Google Drive on this Mac? Existing OSPO files will stay in Drive.",
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setMessage(undefined);
+    try {
+      await apiFetch("/integrations/google-drive/disconnect", {
+        method: "POST",
+      });
+      setDrive(await apiFetch<IntegrationStatus>("/integrations/google-drive"));
+      setMessage(
+        "Google Drive disconnected on this Mac. Existing OSPO files were not deleted.",
+      );
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error
+          ? reason.message
+          : "Google Drive could not be disconnected.",
       );
     } finally {
       setBusy(false);
@@ -167,16 +270,12 @@ export default function SettingsPage() {
               </select>
             </label>
             <label className="field full">
-              <span>Google Drive folder</span>
-              <input
-                value={settings.googleDriveFolder}
-                onChange={(event) =>
-                  setSettings({
-                    ...settings,
-                    googleDriveFolder: event.target.value,
-                  })
-                }
-              />
+              <span>Google Drive root folder</span>
+              <input value={settings.googleDriveFolder} disabled />
+              <small>
+                Fixed to OSPO so backups and project media always have one
+                predictable home.
+              </small>
             </label>
             <label className="toggle-row full">
               <input
@@ -252,20 +351,77 @@ export default function SettingsPage() {
             <div className="integration-status">
               <span
                 className={
-                  drive.state === "not_configured"
-                    ? "integration-dot idle"
-                    : "integration-dot"
+                  drive.state === "connected"
+                    ? "integration-dot connected"
+                    : drive.state === "not_configured"
+                      ? "integration-dot idle"
+                      : "integration-dot"
                 }
               />
               <div>
                 <strong>
                   {drive.state === "not_configured"
                     ? "Not configured"
-                    : "Ready to connect"}
+                    : drive.state === "connected"
+                      ? "Connected"
+                      : "Ready to connect"}
                 </strong>
                 <p>{drive.message}</p>
+                <small>
+                  Drive path: OSPO/AI-Film-Studio · permission: drive.file
+                </small>
               </div>
             </div>
+            {drive.state === "ready_to_connect" && (
+              <button
+                type="button"
+                className="button primary drive-action"
+                disabled={busy}
+                onClick={() => void connectDrive()}
+              >
+                <Link2 size={16} /> Connect Google Drive
+              </button>
+            )}
+            {drive.state === "connected" && (
+              <div className="drive-actions">
+                <button
+                  type="button"
+                  className="button primary"
+                  disabled={busy}
+                  onClick={() => void syncDrive()}
+                >
+                  {busy ? (
+                    <RefreshCw className="spin" size={16} />
+                  ) : (
+                    <CloudUpload size={16} />
+                  )}
+                  Sync projects &amp; backup
+                </button>
+                {drive.rootFolderUrl && (
+                  <a
+                    className="button secondary"
+                    href={drive.rootFolderUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLink size={16} /> Open OSPO
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="button ghost"
+                  disabled={busy}
+                  onClick={() => void disconnectDrive()}
+                >
+                  <LogOut size={16} /> Disconnect
+                </button>
+                <small className="drive-last-sync">
+                  {drive.lastSyncAt
+                    ? `Last sync ${new Date(drive.lastSyncAt).toLocaleString()}`
+                    : "No full workspace sync yet"}
+                </small>
+              </div>
+            )}
           </section>
         </div>
       </div>

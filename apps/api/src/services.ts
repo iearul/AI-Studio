@@ -24,6 +24,8 @@ import {
 import {
   BackupService,
   ensureStorageDirectories,
+  GoogleDriveClient,
+  GoogleDriveTokenStore,
   ManifestSynchronizer,
   ProjectManifestStore,
   ReferenceImageStore,
@@ -34,6 +36,7 @@ import {
 } from "@ai-film-studio/storage";
 
 import { ImageGenerationService } from "./image-generation-service.js";
+import { GoogleDriveService } from "./google-drive-service.js";
 import { StoryGenerationService } from "./story-generation-service.js";
 import { VideoGenerationService } from "./video-generation-service.js";
 
@@ -62,6 +65,17 @@ export async function createServices(
   const referenceImages = new ReferenceImageStore(storage.projectsPath);
   const storyboardAssets = new StoryboardAssetStore(storage.projectsPath);
   const videoAssets = new VideoAssetStore(storage.projectsPath);
+  const googleDriveTokens = new GoogleDriveTokenStore(storage.secretsPath);
+  const googleDriveClient = new GoogleDriveClient(
+    {
+      clientId: process.env.GOOGLE_CLIENT_ID?.trim() || undefined,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim() || undefined,
+      redirectUri:
+        process.env.GOOGLE_REDIRECT_URI?.trim() ||
+        "http://127.0.0.1:4100/api/v1/integrations/google-drive/callback",
+    },
+    googleDriveTokens,
+  );
   const textProviders = options.textProviders ?? [
     new OpenAiTextProvider(resolveOpenAiTextProviderConfig()),
     new OllamaTextProvider(resolveOllamaTextProviderConfig()),
@@ -125,6 +139,13 @@ export async function createServices(
     manifestSynchronizer,
     videoProviders,
   );
+  const googleDrive = new GoogleDriveService(
+    googleDriveClient,
+    backups,
+    manifestSynchronizer,
+    storage.projectsPath,
+    storage.backupsPath,
+  );
 
   await manifestSynchronizer.drain();
 
@@ -146,6 +167,9 @@ export async function createServices(
     imageGenerations,
     storyGenerations,
     videoGenerations,
+    googleDrive,
+    googleDriveClient,
+    googleDriveTokens,
     backups,
   };
 }

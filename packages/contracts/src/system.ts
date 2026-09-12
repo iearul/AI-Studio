@@ -6,7 +6,7 @@ export const settingsSchema = z.object({
   defaultLanguage: z.enum(["bn", "en", "de", "other"]),
   automaticBackups: z.boolean(),
   backupRetentionDays: z.number().int().min(1).max(365),
-  googleDriveFolder: z.string().trim().min(1).max(180),
+  googleDriveFolder: z.literal("OSPO"),
 });
 
 export const updateSettingsSchema = settingsSchema.partial();
@@ -41,6 +41,31 @@ export const integrationStatusSchema = z.object({
   state: z.enum(["not_configured", "ready_to_connect", "connected"]),
   folder: z.string(),
   message: z.string(),
+  scope: z.literal("drive.file"),
+  rootFolderId: z.string().nullable(),
+  rootFolderUrl: z.string().url().nullable(),
+  connectedAt: z.iso.datetime().nullable(),
+  lastSyncAt: z.iso.datetime().nullable(),
+});
+
+export const driveBackupResultSchema = z.object({
+  state: z.enum(["not_connected", "uploaded", "failed"]),
+  fileId: z.string().nullable(),
+  webViewLink: z.string().url().nullable(),
+  message: z.string(),
+});
+
+export const backupCreationResultSchema = backupSchema.extend({
+  drive: driveBackupResultSchema,
+});
+
+export const driveSyncResultSchema = z.object({
+  rootFolderId: z.string(),
+  rootFolderUrl: z.string().url(),
+  uploadedFiles: z.number().int().nonnegative(),
+  uploadedBytes: z.number().int().nonnegative(),
+  backup: backupSchema,
+  completedAt: z.iso.datetime(),
 });
 
 export const problemDetailsSchema = z.object({
@@ -56,4 +81,7 @@ export type Settings = z.infer<typeof settingsSchema>;
 export type Backup = z.infer<typeof backupSchema>;
 export type StorageStatus = z.infer<typeof storageStatusSchema>;
 export type IntegrationStatus = z.infer<typeof integrationStatusSchema>;
+export type DriveBackupResult = z.infer<typeof driveBackupResultSchema>;
+export type BackupCreationResult = z.infer<typeof backupCreationResultSchema>;
+export type DriveSyncResult = z.infer<typeof driveSyncResultSchema>;
 export type ProblemDetails = z.infer<typeof problemDetailsSchema>;

@@ -21,9 +21,17 @@ import {
 import {
   BackupIntegrityError,
   BackupNotFoundError,
+  GoogleDriveConfigurationError,
+  GoogleDriveResponseError,
+  GoogleDriveUnavailableError,
   ReferenceImageValidationError,
   VideoAssetValidationError,
 } from "@ai-film-studio/storage";
+
+import {
+  GoogleDriveOAuthStateError,
+  GoogleDriveSyncBusyError,
+} from "./google-drive-service.js";
 
 export class NotFoundError extends Error {
   constructor(resource: string) {
@@ -99,6 +107,49 @@ export function registerErrorHandler(app: FastifyInstance): void {
         type: "https://ai-film-studio.local/problems/generation-state",
         title: "Generation state conflict",
         status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof GoogleDriveSyncBusyError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/google-drive-sync",
+        title: "Google Drive sync is already running",
+        status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (
+      error instanceof GoogleDriveConfigurationError ||
+      error instanceof GoogleDriveOAuthStateError
+    ) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/google-drive-configuration",
+        title: "Google Drive is not ready",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof GoogleDriveUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/google-drive-unavailable",
+        title: "Google Drive is unavailable",
+        status: 503,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof GoogleDriveResponseError) {
+      void reply.status(502).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/google-drive-response",
+        title: "Google Drive returned an invalid response",
+        status: 502,
         detail: error.message,
         instance: request.url,
       });

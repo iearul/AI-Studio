@@ -3473,6 +3473,31 @@ textarea:focus-visible {
   border-radius: 4px;
   background: #ece9e0;
 }
+.drive-card .integration-status small {
+  display: block;
+  margin-top: 5px;
+  color: #96938a;
+  font-size: 8px;
+}
+.integration-dot.connected {
+  background: #6f9653;
+  box-shadow: 0 0 0 4px rgba(111, 150, 83, 0.14);
+}
+.drive-action {
+  margin-top: 16px;
+}
+.drive-actions {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.drive-last-sync {
+  flex: 1 0 100%;
+  color: #88857d;
+  font-size: 8px;
+}
 .video-prompt-details {
   margin-top: 10px;
   border: 1px solid #e2ded4;
