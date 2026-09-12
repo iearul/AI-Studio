@@ -57,6 +57,8 @@ describe("Google Drive API", () => {
       state: "ready_to_connect",
       folder: "OSPO",
       scope: "drive.file",
+      redirectUri:
+        "http://127.0.0.1:4100/api/v1/integrations/google-drive/callback",
       connectedAt: null,
     });
   });

@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Cloud,
   CloudUpload,
+  Copy,
   Database,
   Download,
   ExternalLink,
@@ -136,6 +137,20 @@ export default function SettingsPage() {
       );
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function copyDriveRedirectUri() {
+    if (!drive) return;
+    try {
+      await navigator.clipboard.writeText(drive.redirectUri);
+      setMessage(
+        "Redirect URI copied. Add it unchanged to your Google OAuth Web client.",
+      );
+    } catch {
+      setMessage(
+        "Clipboard access was blocked. Select and copy the redirect URI below.",
+      );
     }
   }
 
@@ -372,6 +387,34 @@ export default function SettingsPage() {
                 </small>
               </div>
             </div>
+            {drive.state !== "connected" && (
+              <div className="drive-oauth-setup">
+                <strong>Required Google OAuth redirect URI</strong>
+                <code>{drive.redirectUri}</code>
+                <p>
+                  Add this exact value under Authorized redirect URIs. Google
+                  treats localhost, 127.0.0.1, ports and trailing slashes as
+                  different values.
+                </p>
+                <div className="drive-actions">
+                  <button
+                    type="button"
+                    className="button secondary"
+                    onClick={() => void copyDriveRedirectUri()}
+                  >
+                    <Copy size={16} /> Copy redirect URI
+                  </button>
+                  <a
+                    className="button ghost"
+                    href="https://console.cloud.google.com/auth/clients"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLink size={16} /> Google OAuth clients
+                  </a>
+                </div>
+              </div>
+            )}
             {drive.state === "ready_to_connect" && (
               <button
                 type="button"

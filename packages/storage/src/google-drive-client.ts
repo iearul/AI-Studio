@@ -43,6 +43,10 @@ export class GoogleDriveClient {
     return Boolean(this.config.clientId && this.config.clientSecret);
   }
 
+  redirectUri(): string {
+    return this.config.redirectUri;
+  }
+
   async connection(): Promise<GoogleDriveCredentials | undefined> {
     const stored = await this.tokens.get();
     if (stored) return stored;

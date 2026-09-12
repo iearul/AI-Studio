@@ -106,6 +106,10 @@ consent, choose **Sync projects & backup**. The refresh token is stored only in
 to the browser or included in project manifests. **Backup now** always keeps the
 verified local backup even when Drive is disconnected or unavailable.
 
+If Google reports `redirect_uri_mismatch`, open **Settings**, copy the displayed
+redirect URI, and add it unchanged to that same Web application's **Authorized
+redirect URIs**. `localhost` and `127.0.0.1` are not interchangeable for this check.
+
 ## Quality checks
 
 ```bash

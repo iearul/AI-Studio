@@ -42,6 +42,7 @@ export const integrationStatusSchema = z.object({
   folder: z.string(),
   message: z.string(),
   scope: z.literal("drive.file"),
+  redirectUri: z.string().url(),
   rootFolderId: z.string().nullable(),
   rootFolderUrl: z.string().url().nullable(),
   connectedAt: z.iso.datetime().nullable(),

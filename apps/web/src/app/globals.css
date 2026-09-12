@@ -3486,6 +3486,32 @@ textarea:focus-visible {
 .drive-action {
   margin-top: 16px;
 }
+.drive-oauth-setup {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e2ded4;
+  border-radius: 10px;
+  background: #fbfaf6;
+}
+.drive-oauth-setup > strong,
+.drive-oauth-setup > code {
+  display: block;
+}
+.drive-oauth-setup > code {
+  margin-top: 8px;
+  padding: 9px 10px;
+  overflow-wrap: anywhere;
+  border-radius: 7px;
+  background: #f0ede5;
+  color: #444138;
+  font-size: 9px;
+}
+.drive-oauth-setup > p {
+  margin: 8px 0 0;
+  color: #7c7971;
+  font-size: 9px;
+  line-height: 1.55;
+}
 .drive-actions {
   margin-top: 16px;
   display: flex;
