@@ -49,24 +49,48 @@ export class SeedanceVideoProvider implements VideoProvider {
   ) {}
 
   status(): VideoProviderStatus {
+    const rates = {
+      "720p": this.config.estimatedUsdPerSecond,
+      "1080p": null,
+      "4k": null,
+    };
     return {
       id: this.id,
       label: "Seedance 2.0",
       configured: Boolean(this.config.apiKey),
-      model: this.config.model,
-      supportedResolutions: ["720p"],
-      minimumDurationSeconds: 4,
-      maximumDurationSeconds: 15,
-      estimatedUsdPerSecond: this.config.estimatedUsdPerSecond,
-      pricingMessage:
-        "Estimate uses BytePlus's documented enhanced Seedance 2.0 720p image-to-video rate; the provider bill remains authoritative.",
-      warning:
-        "Seedance 2.x does not accept direct reference images containing real human faces unless your BytePlus account has the authorized material-library feature.",
+      defaultModel: this.config.model,
+      models: [
+        {
+          id: this.config.model,
+          label: "Seedance 2.0",
+          supportedResolutions: ["720p"],
+          supportedDurationsSeconds: Array.from(
+            { length: 12 },
+            (_, index) => index + 4,
+          ),
+          supportsNativeAudio: true,
+          estimatedUsdPerSecond: {
+            withoutAudio: rates,
+            withAudio: rates,
+          },
+          pricingMessage:
+            "Estimate uses BytePlus's documented enhanced Seedance 2.0 720p image-to-video rate; the provider bill remains authoritative.",
+          continuityMessage:
+            "The approved storyboard image is attached as the first frame.",
+          warning:
+            "Seedance 2.x does not accept direct reference images containing real human faces unless your BytePlus account has the authorized material-library feature.",
+        },
+      ],
     };
   }
 
   async submit(input: VideoSubmission): Promise<{ jobId: string }> {
     const apiKey = this.requireApiKey();
+    if (input.model !== this.config.model) {
+      throw new VideoProviderConfigurationError(
+        `Unsupported Seedance model: ${input.model}.`,
+      );
+    }
     if (input.resolution !== "720p") {
       throw new VideoProviderConfigurationError(
         "Seedance image-to-video is configured for supported 720p output.",
@@ -80,7 +104,7 @@ export class SeedanceVideoProvider implements VideoProvider {
     const body = await this.jsonRequest(this.config.baseUrl, apiKey, {
       method: "POST",
       body: JSON.stringify({
-        model: this.config.model,
+        model: input.model,
         content: [
           { type: "text", text: input.prompt },
           {

@@ -55,13 +55,39 @@ class MockKlingProvider implements VideoProvider {
       id: "kling",
       label: "Kling test",
       configured: true,
-      model: "kling-test",
-      supportedResolutions: ["720p"],
-      minimumDurationSeconds: 3,
-      maximumDurationSeconds: 15,
-      estimatedUsdPerSecond: 0.2,
-      pricingMessage: "Test estimate",
-      warning: null,
+      defaultModel: "kling-test",
+      models: [
+        {
+          id: "kling-test",
+          label: "Kling test model",
+          supportedResolutions: ["720p"],
+          supportedDurationsSeconds: [
+            3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+          ],
+          supportsNativeAudio: true,
+          estimatedUsdPerSecond: {
+            withoutAudio: { "720p": 0.2, "1080p": null, "4k": null },
+            withAudio: { "720p": 0.2, "1080p": null, "4k": null },
+          },
+          pricingMessage: "Test estimate",
+          continuityMessage: "Approved frame is attached.",
+          warning: null,
+        },
+        {
+          id: "kling-2.5-turbo",
+          label: "Kling 2.5 Turbo",
+          supportedResolutions: ["720p", "1080p"],
+          supportedDurationsSeconds: [5, 10],
+          supportsNativeAudio: false,
+          estimatedUsdPerSecond: {
+            withoutAudio: { "720p": 0.042, "1080p": 0.07, "4k": null },
+            withAudio: { "720p": null, "1080p": null, "4k": null },
+          },
+          pricingMessage: "Turbo test estimate",
+          continuityMessage: "Approved frame is attached as first_frame.",
+          warning: "No native audio.",
+        },
+      ],
     };
   }
 
@@ -255,6 +281,7 @@ describe("Phase 6 video API", () => {
       url: `/api/v1/projects/${projectId}/shots/${shotId}/video-generations`,
       payload: {
         provider: "kling",
+        model: "kling-test",
         resolution: "720p",
         generateAudio: false,
         confirmation: "yes",
@@ -267,6 +294,7 @@ describe("Phase 6 video API", () => {
       url: `/api/v1/projects/${projectId}/shots/${shotId}/video-generations`,
       payload: {
         provider: "kling",
+        model: "kling-test",
         resolution: "720p",
         generateAudio: false,
         confirmation: paidVideoConfirmation,
@@ -277,6 +305,7 @@ describe("Phase 6 video API", () => {
     expect(provider.submission?.firstFrameDataUrl).toMatch(
       /^data:image\/png;base64,/,
     );
+    expect(provider.submission?.model).toBe("kling-test");
 
     const refreshed = await app.inject({
       method: "POST",
@@ -296,5 +325,49 @@ describe("Phase 6 video API", () => {
     ) as { videoAssets: unknown[]; videoAttempts: unknown[] };
     expect(manifest.videoAssets).toHaveLength(1);
     expect(manifest.videoAttempts).toHaveLength(1);
+  });
+
+  it("selects Kling 2.5 Turbo per shot and enforces its no-audio contract", async () => {
+    const invalid = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${projectId}/shots/${shotId}/video-generations`,
+      payload: {
+        provider: "kling",
+        model: "kling-2.5-turbo",
+        resolution: "1080p",
+        generateAudio: true,
+        confirmation: paidVideoConfirmation,
+      },
+    });
+    expect(invalid.statusCode).toBe(409);
+
+    const submitted = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${projectId}/shots/${shotId}/video-generations`,
+      payload: {
+        provider: "kling",
+        model: "kling-2.5-turbo",
+        resolution: "1080p",
+        generateAudio: false,
+        confirmation: paidVideoConfirmation,
+      },
+    });
+    expect(submitted.statusCode).toBe(202);
+    expect(submitted.json()).toMatchObject({
+      model: "kling-2.5-turbo",
+      requestedDurationSeconds: 5,
+      costMicros: 350_000,
+      costIsEstimate: true,
+      settings: {
+        continuityInput: "first_frame",
+        additionalReferencesSent: false,
+      },
+    });
+    expect(provider.submission).toMatchObject({
+      model: "kling-2.5-turbo",
+      resolution: "1080p",
+      durationSeconds: 5,
+      generateAudio: false,
+    });
   });
 });

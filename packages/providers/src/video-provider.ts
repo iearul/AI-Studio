@@ -5,6 +5,7 @@ import type {
 } from "@ai-film-studio/contracts";
 
 export type VideoSubmission = {
+  model: string;
   prompt: string;
   firstFrameDataUrl: string;
   firstFrameMimeType: "image/jpeg" | "image/png" | "image/webp";

@@ -1,4 +1,7 @@
-import type { VideoProviderStatus } from "@ai-film-studio/contracts";
+import type {
+  VideoProviderModel,
+  VideoProviderStatus,
+} from "@ai-film-studio/contracts";
 
 import {
   type VideoProvider,
@@ -12,10 +15,48 @@ import {
 export type KlingVideoProviderConfig = {
   apiKey?: string;
   baseUrl: string;
-  model: string;
+  defaultModel: string;
   requestTimeoutMs: number;
-  estimatedUsdPerSecond: number | null;
 };
+
+const klingModels: VideoProviderModel[] = [
+  {
+    id: "kling-3.0",
+    label: "Kling 3.0",
+    supportedResolutions: ["720p", "1080p", "4k"],
+    supportedDurationsSeconds: Array.from(
+      { length: 13 },
+      (_, index) => index + 3,
+    ),
+    supportsNativeAudio: true,
+    estimatedUsdPerSecond: {
+      withoutAudio: { "720p": 0.084, "1080p": 0.112, "4k": 0.42 },
+      withAudio: { "720p": 0.126, "1080p": 0.168, "4k": 0.42 },
+    },
+    pricingMessage:
+      "Estimate uses Kling's September 2026 per-second API rates; Kling's returned cash billing replaces it after completion.",
+    continuityMessage:
+      "The approved storyboard image is attached as first_frame. Additional character references require Kling Element IDs created in Kling's Element Library; raw extra photos cannot be attached directly.",
+    warning: null,
+  },
+  {
+    id: "kling-2.5-turbo",
+    label: "Kling 2.5 Turbo",
+    supportedResolutions: ["720p", "1080p"],
+    supportedDurationsSeconds: [5, 10],
+    supportsNativeAudio: false,
+    estimatedUsdPerSecond: {
+      withoutAudio: { "720p": 0.042, "1080p": 0.07, "4k": null },
+      withAudio: { "720p": null, "1080p": null, "4k": null },
+    },
+    pricingMessage:
+      "Estimate uses Kling's September 2026 2.5 Turbo no-audio API rate: $0.042/s at 720p or $0.070/s at 1080p.",
+    continuityMessage:
+      "The approved storyboard image is attached as first_frame. Kling 2.5 Turbo does not accept separate character, location, or prop reference photos.",
+    warning:
+      "Kling 2.5 Turbo generates only 5s or 10s clips, has no native audio option, and does not support 4K.",
+  },
+];
 
 type KlingTask = {
   id?: unknown;
@@ -30,13 +71,10 @@ export function resolveKlingVideoProviderConfig(): KlingVideoProviderConfig {
     apiKey: process.env.KLING_API_KEY?.trim() || undefined,
     baseUrl:
       process.env.KLING_BASE_URL?.trim() || "https://api-singapore.klingai.com",
-    model: process.env.KLING_VIDEO_MODEL?.trim() || "kling-3.0",
+    defaultModel: supportedDefaultModel(process.env.KLING_VIDEO_MODEL),
     requestTimeoutMs: positiveInteger(
       process.env.KLING_VIDEO_TIMEOUT_MS,
       30_000,
-    ),
-    estimatedUsdPerSecond: nonNegativeNumber(
-      process.env.KLING_ESTIMATED_USD_PER_SECOND,
     ),
   };
 }
@@ -52,35 +90,55 @@ export class KlingVideoProvider implements VideoProvider {
   status(): VideoProviderStatus {
     return {
       id: this.id,
-      label: "Kling 3.0",
+      label: "Kling",
       configured: Boolean(this.config.apiKey),
-      model: this.config.model,
-      supportedResolutions: ["720p", "1080p", "4k"],
-      minimumDurationSeconds: 3,
-      maximumDurationSeconds: 15,
-      estimatedUsdPerSecond: this.config.estimatedUsdPerSecond,
-      pricingMessage:
-        this.config.estimatedUsdPerSecond === null
-          ? "Kling pricing is account/package dependent. Check the Kling console; actual cash billing is recorded after completion when returned by the API."
-          : "Estimate uses KLING_ESTIMATED_USD_PER_SECOND; Kling's returned cash billing replaces it after completion.",
-      warning: null,
+      defaultModel: this.config.defaultModel,
+      models: klingModels,
     };
   }
 
   async submit(input: VideoSubmission): Promise<{ jobId: string }> {
     const apiKey = this.requireApiKey();
+    const model = klingModels.find((candidate) => candidate.id === input.model);
+    if (!model) {
+      throw new VideoProviderConfigurationError(
+        `Unsupported Kling model: ${input.model}.`,
+      );
+    }
     if (input.firstFrameMimeType === "image/webp") {
       throw new VideoProviderConfigurationError(
-        "Kling 3.0 accepts JPEG or PNG first frames, but the approved frame is WebP. Import and approve a PNG or JPEG attempt for this shot.",
+        `${model.label} accepts JPEG or PNG first frames, but the approved frame is WebP. Import and approve a PNG or JPEG attempt for this shot.`,
       );
     }
-    if (input.durationSeconds < 3 || input.durationSeconds > 15) {
+    if (!model.supportedDurationsSeconds.includes(input.durationSeconds)) {
       throw new VideoProviderConfigurationError(
-        "Kling 3.0 video duration must be between 3 and 15 seconds.",
+        `${model.label} supports ${durationList(model.supportedDurationsSeconds)} clips.`,
       );
     }
+    if (!model.supportedResolutions.includes(input.resolution)) {
+      throw new VideoProviderConfigurationError(
+        `${model.label} does not support ${input.resolution}.`,
+      );
+    }
+    if (input.generateAudio && !model.supportsNativeAudio) {
+      throw new VideoProviderConfigurationError(
+        `${model.label} does not support native audio.`,
+      );
+    }
+    const settings =
+      model.id === "kling-2.5-turbo"
+        ? {
+            resolution: input.resolution,
+            duration: input.durationSeconds,
+          }
+        : {
+            resolution: input.resolution,
+            duration: input.durationSeconds,
+            audio: input.generateAudio ? "native" : "off",
+            multi_shot: false,
+          };
     const body = await this.jsonRequest(
-      `${this.config.baseUrl}/image-to-video/${encodeURIComponent(this.config.model)}`,
+      `${this.config.baseUrl}/image-to-video/${encodeURIComponent(model.id)}`,
       apiKey,
       {
         method: "POST",
@@ -89,12 +147,7 @@ export class KlingVideoProvider implements VideoProvider {
             { type: "prompt", text: input.prompt },
             { type: "first_frame", url: input.firstFrameDataUrl },
           ],
-          settings: {
-            resolution: input.resolution,
-            duration: input.durationSeconds,
-            audio: input.generateAudio ? "native" : "off",
-            multi_shot: false,
-          },
+          settings,
           options: {
             external_task_id: input.externalTaskId,
             watermark_info: { enabled: false },
@@ -260,8 +313,15 @@ function positiveInteger(value: string | undefined, fallback: number): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function nonNegativeNumber(value: string | undefined): number | null {
-  if (!value?.trim()) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+function supportedDefaultModel(value: string | undefined): string {
+  const requested = value?.trim();
+  return klingModels.some((model) => model.id === requested)
+    ? requested!
+    : "kling-3.0";
+}
+
+function durationList(values: number[]): string {
+  return values.length === 2
+    ? `${values[0]}-second or ${values[1]}-second`
+    : `${values[0]}-${values.at(-1)} second`;
 }

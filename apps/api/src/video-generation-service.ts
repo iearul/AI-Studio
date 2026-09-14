@@ -8,6 +8,7 @@ import {
   type Shot,
   type VideoAttempt,
   type VideoProviderId,
+  type VideoProviderModel,
   type VideoWorkspace,
 } from "@ai-film-studio/contracts";
 import {
@@ -109,7 +110,7 @@ export class VideoGenerationService {
       provider: "manual",
       model: null,
       prompt: buildVideoPrompt(context.project, context.shot),
-      sourceImageAssetId: source.id,
+      sourceImageAssetId: source.asset.id,
       resolution: "720p",
       requestedDurationSeconds: Math.max(
         1,
@@ -162,37 +163,56 @@ export class VideoGenerationService {
         `${status.label} is not configured. Add its API key in .env.local and restart the API.`,
       );
     }
-    if (!status.supportedResolutions.includes(input.resolution)) {
-      throw new GenerationStateError(
-        `${status.label} does not support ${input.resolution} for this image-to-video workflow.`,
-      );
-    }
-    if (context.shot.durationSeconds > status.maximumDurationSeconds) {
-      throw new GenerationStateError(
-        `${status.label} supports at most ${status.maximumDurationSeconds} seconds. Split this shot before submitting it.`,
-      );
-    }
-    const durationSeconds = Math.max(
-      status.minimumDurationSeconds,
-      Math.ceil(context.shot.durationSeconds),
+    const model = status.models.find(
+      (candidate) => candidate.id === input.model,
     );
-    const estimatedCostMicros = status.estimatedUsdPerSecond
-      ? Math.round(status.estimatedUsdPerSecond * durationSeconds * 1_000_000)
-      : 0;
+    if (!model) {
+      throw new GenerationStateError(
+        `${input.model} is not available for ${status.label}. Reload the page and select an available model.`,
+      );
+    }
+    if (!model.supportedResolutions.includes(input.resolution)) {
+      throw new GenerationStateError(
+        `${model.label} does not support ${input.resolution} for this image-to-video workflow.`,
+      );
+    }
+    if (input.generateAudio && !model.supportsNativeAudio) {
+      throw new GenerationStateError(
+        `${model.label} does not support native audio. Turn it off before submitting.`,
+      );
+    }
+    const durationSeconds = providerDuration(
+      context.shot.durationSeconds,
+      model,
+    );
+    if (durationSeconds === null) {
+      throw new GenerationStateError(
+        `${model.label} supports at most ${Math.max(...model.supportedDurationsSeconds)} seconds. Split this shot before submitting it.`,
+      );
+    }
+    const rate = input.generateAudio
+      ? model.estimatedUsdPerSecond.withAudio[input.resolution]
+      : model.estimatedUsdPerSecond.withoutAudio[input.resolution];
+    const estimatedCostMicros =
+      rate !== null ? Math.round(rate * durationSeconds * 1_000_000) : 0;
     const attempt = this.videos.begin({
       projectId,
       shotId,
       provider: input.provider,
-      model: status.model,
+      model: model.id,
       prompt: buildVideoPrompt(context.project, context.shot),
-      sourceImageAssetId: source.id,
+      sourceImageAssetId: source.asset.id,
       resolution: input.resolution,
       requestedDurationSeconds: durationSeconds,
       generateAudio: input.generateAudio,
       settings: {
         source: "approved-storyboard-image",
+        continuityInput: "first_frame",
+        sourceReferenceIds: source.referenceIds,
+        additionalReferencesSent: false,
+        continuityNote: model.continuityMessage,
         sourceShotDurationSeconds: context.shot.durationSeconds,
-        minimumProviderDurationApplied:
+        providerDurationRounded:
           durationSeconds !== Math.ceil(context.shot.durationSeconds),
       },
       costMicros: estimatedCostMicros,
@@ -200,12 +220,16 @@ export class VideoGenerationService {
     });
     try {
       const image = await readFile(
-        this.storyboardAssets.absolutePath(projectId, source.relativePath),
+        this.storyboardAssets.absolutePath(
+          projectId,
+          source.asset.relativePath,
+        ),
       );
       const submitted = await provider.submit({
+        model: model.id,
         prompt: attempt.prompt,
-        firstFrameDataUrl: `data:${source.mimeType};base64,${image.toString("base64")}`,
-        firstFrameMimeType: source.mimeType,
+        firstFrameDataUrl: `data:${source.asset.mimeType};base64,${image.toString("base64")}`,
+        firstFrameMimeType: source.asset.mimeType,
         aspectRatio: context.project.aspectRatio,
         durationSeconds,
         resolution: input.resolution,
@@ -356,7 +380,7 @@ export class VideoGenerationService {
   private requireApprovedSource(
     projectId: string,
     shotId: string,
-  ): GeneratedAsset {
+  ): { asset: GeneratedAsset; referenceIds: string[] } {
     const attempt = this.images
       .listProject(projectId)
       .attempts.find(
@@ -368,7 +392,10 @@ export class VideoGenerationService {
         "Approve one storyboard image for this shot before making video.",
       );
     }
-    return attempt.asset;
+    return {
+      asset: attempt.asset,
+      referenceIds: attempt.references.map((reference) => reference.id),
+    };
   }
 
   private requireProvider(providerId: VideoProviderId): VideoProvider {
@@ -433,4 +460,16 @@ export class VideoGenerationService {
     }
     return response;
   }
+}
+
+function providerDuration(
+  shotDurationSeconds: number,
+  model: VideoProviderModel,
+): number | null {
+  const target = Math.ceil(shotDurationSeconds);
+  return (
+    [...model.supportedDurationsSeconds]
+      .sort((left, right) => left - right)
+      .find((duration) => duration >= target) ?? null
+  );
 }

@@ -17,6 +17,27 @@ export const videoResolutions = ["720p", "1080p", "4k"] as const;
 export const paidVideoConfirmation =
   "I AUTHORIZE THIS PAID GENERATION" as const;
 
+const resolutionRateSchema = z.object({
+  "720p": z.number().nonnegative().nullable(),
+  "1080p": z.number().nonnegative().nullable(),
+  "4k": z.number().nonnegative().nullable(),
+});
+
+export const videoProviderModelSchema = z.object({
+  id: z.string().trim().min(1).max(120),
+  label: z.string().trim().min(1).max(120),
+  supportedResolutions: z.array(z.enum(videoResolutions)).min(1),
+  supportedDurationsSeconds: z.array(z.number().int().positive()).min(1),
+  supportsNativeAudio: z.boolean(),
+  estimatedUsdPerSecond: z.object({
+    withoutAudio: resolutionRateSchema,
+    withAudio: resolutionRateSchema,
+  }),
+  pricingMessage: z.string(),
+  continuityMessage: z.string(),
+  warning: z.string().nullable(),
+});
+
 export const videoAssetSchema = z.object({
   id: z.uuid(),
   projectId: z.uuid(),
@@ -75,13 +96,8 @@ export const videoProviderStatusSchema = z.object({
   id: z.enum(cloudVideoProviders),
   label: z.string(),
   configured: z.boolean(),
-  model: z.string(),
-  supportedResolutions: z.array(z.enum(videoResolutions)).min(1),
-  minimumDurationSeconds: z.number().int().positive(),
-  maximumDurationSeconds: z.number().int().positive(),
-  estimatedUsdPerSecond: z.number().nonnegative().nullable(),
-  pricingMessage: z.string(),
-  warning: z.string().nullable(),
+  defaultModel: z.string(),
+  models: z.array(videoProviderModelSchema).min(1),
 });
 
 export const videoShotPlanSchema = z.object({
@@ -103,6 +119,7 @@ export const videoWorkspaceSchema = z.object({
 
 export const createCloudVideoSchema = z.object({
   provider: z.enum(cloudVideoProviders),
+  model: z.string().trim().min(1).max(120),
   resolution: z.enum(videoResolutions),
   generateAudio: z.boolean().default(false),
   confirmation: z.literal(paidVideoConfirmation),
@@ -120,6 +137,7 @@ export type VideoAsset = z.infer<typeof videoAssetSchema>;
 export type VideoAttempt = z.infer<typeof videoAttemptSchema>;
 export type VideoHistory = z.infer<typeof videoHistorySchema>;
 export type VideoProviderStatus = z.infer<typeof videoProviderStatusSchema>;
+export type VideoProviderModel = z.infer<typeof videoProviderModelSchema>;
 export type VideoShotPlan = z.infer<typeof videoShotPlanSchema>;
 export type VideoWorkspace = z.infer<typeof videoWorkspaceSchema>;
 export type CreateCloudVideo = z.infer<typeof createCloudVideoSchema>;

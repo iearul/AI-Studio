@@ -70,11 +70,18 @@ by AI Film Studio, which avoids the memory pressure observed on the 18 GB M3 Pro
 
 Open **Video** after approving a storyboard image. Every shot recommends that exact
 approved image as its first frame and supplies a motion-specific continuity prompt.
-You can create the clip manually and import MP4/MOV/WebM, or choose Kling 3.0 or
-BytePlus Seedance 2.0. Cloud submission always shows the provider duration and an
-available USD estimate in a native confirmation dialog; cancelling it makes no API
-request. Cloud jobs run asynchronously, survive restarts, and successful results are
-streamed into local project storage before provider links expire.
+You can create the clip manually and import MP4/MOV/WebM, or choose Kling 3.0,
+Kling 2.5 Turbo, or BytePlus Seedance 2.0 per shot. Kling 2.5 Turbo is the cheaper
+no-audio option and supports 5- or 10-second clips at 720p/1080p. Cloud submission
+always shows the selected model, provider duration, resolution, audio choice, and
+USD estimate in a native confirmation dialog; cancelling it makes no API request.
+Cloud jobs run asynchronously, survive restarts, and successful results are streamed
+into local project storage before provider links expire.
+
+The API always attaches the approved storyboard image as `first_frame`. Kling 2.5
+Turbo cannot receive separate character, location, or prop photos. Kling 3.0 accepts
+additional continuity references only as pre-created Kling Element IDs, so the
+current integration does not pretend that raw reference photos were sent.
 
 To enable cloud video, add `KLING_API_KEY` and/or `SEEDANCE_API_KEY` to the ignored
 `.env.local` file and restart the API. Seedance's documented restriction on direct

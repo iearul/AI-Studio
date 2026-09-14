@@ -4,6 +4,7 @@ import type {
   Project,
   VideoAttempt,
   VideoProviderId,
+  VideoProviderModel,
   VideoProviderStatus,
   VideoResolution,
   VideoShotPlan,
@@ -51,6 +52,7 @@ export default function VideoPage() {
   const [resolutions, setResolutions] = useState<
     Record<string, VideoResolution>
   >({});
+  const [models, setModels] = useState<Record<string, string>>({});
   const [audio, setAudio] = useState<Record<string, boolean>>({});
   const [files, setFiles] = useState<Record<string, File | undefined>>({});
   const [busy, setBusy] = useState<string>();
@@ -106,15 +108,25 @@ export default function VideoPage() {
     return providers[shotId] ?? "manual";
   }
 
+  function selectedModel(
+    shotId: string,
+    provider: VideoProviderStatus,
+  ): VideoProviderModel {
+    return (
+      provider.models.find((model) => model.id === models[shotId]) ??
+      provider.models.find((model) => model.id === provider.defaultModel) ??
+      provider.models[0]!
+    );
+  }
+
   function selectedResolution(
     shotId: string,
-    providerId: VideoProviderId,
+    model: VideoProviderModel,
   ): VideoResolution {
-    const provider = providerMap.get(providerId);
     const selected = resolutions[shotId];
-    return selected && provider?.supportedResolutions.includes(selected)
+    return selected && model.supportedResolutions.includes(selected)
       ? selected
-      : (provider?.supportedResolutions[0] ?? "720p");
+      : model.supportedResolutions[0]!;
   }
 
   async function copyPrompt(shot: VideoShotPlan) {
@@ -194,26 +206,32 @@ export default function VideoPage() {
   ) {
     const provider = providerMap.get(providerId);
     if (!provider) return;
-    const duration = Math.max(
-      provider.minimumDurationSeconds,
-      Math.ceil(shot.durationSeconds),
-    );
-    const resolution = selectedResolution(shot.shotId, providerId);
+    const model = selectedModel(shot.shotId, provider);
+    const duration = providerDuration(shot.durationSeconds, model);
+    if (duration === null) return;
+    const resolution = selectedResolution(shot.shotId, model);
+    const generateAudio =
+      model.supportsNativeAudio && Boolean(audio[shot.shotId]);
+    const rate = generateAudio
+      ? model.estimatedUsdPerSecond.withAudio[resolution]
+      : model.estimatedUsdPerSecond.withoutAudio[resolution];
     const estimatedCost =
-      provider.estimatedUsdPerSecond === null
+      rate === null
         ? "Unknown — check the provider console before continuing"
-        : formatUsd(provider.estimatedUsdPerSecond * duration);
+        : formatUsd(rate * duration);
     const accepted = window.confirm(
       [
         `${provider.label} is a paid cloud generation.`,
         "",
         `Shot: ${shot.shotCode}`,
+        `Model: ${model.label}`,
         `Provider duration: ${duration} seconds`,
         `Resolution: ${resolution}`,
         `Estimated charge: ${estimatedCost}`,
-        audio[shot.shotId] ? "Native audio: on" : "Native audio: off",
+        generateAudio ? "Native audio: on" : "Native audio: off",
+        "Continuity: approved storyboard image attached as first_frame",
         "",
-        provider.pricingMessage,
+        model.pricingMessage,
         "Submission may spend provider credit and cannot be undone.",
       ].join("\n"),
     );
@@ -226,13 +244,14 @@ export default function VideoPage() {
         method: "POST",
         body: JSON.stringify({
           provider: providerId,
+          model: model.id,
           resolution,
-          generateAudio: audio[shot.shotId] ?? false,
+          generateAudio,
           confirmation: paidVideoConfirmation,
         }),
       });
       setMessage(
-        `${provider.label} accepted the task. The app will poll it and save the finished video locally.`,
+        `${model.label} accepted the task with the approved image attached as its first frame. The app will poll it and save the finished video locally.`,
       );
       await load();
     } catch (reason) {
@@ -376,6 +395,9 @@ export default function VideoPage() {
             const choice = selectedProvider(shot.shotId);
             const provider =
               choice === "manual" ? undefined : providerMap.get(choice);
+            const model = provider
+              ? selectedModel(shot.shotId, provider)
+              : undefined;
             const active = shot.attempts.find((attempt) =>
               ["submitting", "submitted", "processing", "downloading"].includes(
                 attempt.status,
@@ -521,15 +543,16 @@ export default function VideoPage() {
                           Import video
                         </button>
                       </div>
-                    ) : provider ? (
+                    ) : provider && model ? (
                       <CloudVideoControls
-                        audio={audio[shot.shotId] ?? false}
+                        audio={
+                          model.supportsNativeAudio &&
+                          Boolean(audio[shot.shotId])
+                        }
                         busy={Boolean(busy)}
+                        model={model}
                         provider={provider}
-                        resolution={selectedResolution(
-                          shot.shotId,
-                          provider.id,
-                        )}
+                        resolution={selectedResolution(shot.shotId, model)}
                         shot={shot}
                         onAudio={(value) =>
                           setAudio((current) => ({
@@ -538,6 +561,21 @@ export default function VideoPage() {
                           }))
                         }
                         onGenerate={() => void generateCloud(shot, provider.id)}
+                        onModel={(value) => {
+                          setModels((current) => ({
+                            ...current,
+                            [shot.shotId]: value,
+                          }));
+                          const nextModel = provider.models.find(
+                            (candidate) => candidate.id === value,
+                          );
+                          if (!nextModel?.supportsNativeAudio) {
+                            setAudio((current) => ({
+                              ...current,
+                              [shot.shotId]: false,
+                            }));
+                          }
+                        }}
                         onResolution={(value) =>
                           setResolutions((current) => ({
                             ...current,
@@ -597,9 +635,7 @@ export default function VideoPage() {
                             <strong>
                               {attempt.provider === "manual"
                                 ? "Manual import"
-                                : attempt.provider === "kling"
-                                  ? "Kling 3.0"
-                                  : "Seedance 2.0"}
+                                : modelLabel(attempt.model, attempt.provider)}
                             </strong>
                             <small>
                               {new Date(attempt.createdAt).toLocaleString()}
@@ -700,8 +736,11 @@ function ProviderBanner({ provider }: { provider: VideoProviderStatus }) {
       </span>
       <div>
         <strong>{provider.label}</strong>
-        <p>{provider.pricingMessage}</p>
-        <small>{provider.model}</small>
+        <p>
+          {provider.models.map((model) => model.label).join(" or ")} available
+          per shot.
+        </p>
+        <small>Default: {modelLabel(provider.defaultModel, provider.id)}</small>
       </div>
       <span className="provider-state">
         {provider.configured ? <CheckCircle2 size={14} /> : <X size={14} />}
@@ -714,34 +753,50 @@ function ProviderBanner({ provider }: { provider: VideoProviderStatus }) {
 function CloudVideoControls({
   shot,
   provider,
+  model,
   resolution,
   audio,
   busy,
   onResolution,
+  onModel,
   onAudio,
   onGenerate,
 }: {
   shot: VideoShotPlan;
   provider: VideoProviderStatus;
+  model: VideoProviderModel;
   resolution: VideoResolution;
   audio: boolean;
   busy: boolean;
   onResolution: (value: VideoResolution) => void;
+  onModel: (value: string) => void;
   onAudio: (value: boolean) => void;
   onGenerate: () => void;
 }) {
-  const duration = Math.max(
-    provider.minimumDurationSeconds,
-    Math.ceil(shot.durationSeconds),
-  );
-  const tooLong = shot.durationSeconds > provider.maximumDurationSeconds;
+  const duration = providerDuration(shot.durationSeconds, model);
+  const rate = audio
+    ? model.estimatedUsdPerSecond.withAudio[resolution]
+    : model.estimatedUsdPerSecond.withoutAudio[resolution];
   const estimatedCost =
-    provider.estimatedUsdPerSecond === null
+    duration === null || rate === null
       ? "Check provider console"
-      : `About ${formatUsd(provider.estimatedUsdPerSecond * duration)}`;
+      : `About ${formatUsd(rate * duration)}`;
   return (
     <div className="cloud-video-controls">
       <div className="cloud-settings-row">
+        <label className="field">
+          <span>Model</span>
+          <select
+            value={model.id}
+            onChange={(event) => onModel(event.target.value)}
+          >
+            {provider.models.map((value) => (
+              <option value={value.id} key={value.id}>
+                {value.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="field">
           <span>Resolution</span>
           <select
@@ -750,7 +805,7 @@ function CloudVideoControls({
               onResolution(event.target.value as VideoResolution)
             }
           >
-            {provider.supportedResolutions.map((value) => (
+            {model.supportedResolutions.map((value) => (
               <option value={value} key={value}>
                 {value}
               </option>
@@ -761,34 +816,42 @@ function CloudVideoControls({
           <input
             type="checkbox"
             checked={audio}
+            disabled={!model.supportsNativeAudio}
             onChange={(event) => onAudio(event.target.checked)}
           />
-          Native audio
+          {model.supportsNativeAudio ? "Native audio" : "No native audio"}
         </label>
         <span className="cloud-estimate">
           <small>Provider duration</small>
-          <strong>{duration}s</strong>
+          <strong>{duration === null ? "Too long" : `${duration}s`}</strong>
         </span>
         <span className="cloud-estimate">
           <small>Charge estimate</small>
           <strong>{estimatedCost}</strong>
         </span>
       </div>
-      {provider.warning && (
+      <p className="cloud-continuity-note">
+        <ImageIcon size={14} /> {model.continuityMessage}
+      </p>
+      {model.warning && (
         <p className="cloud-provider-warning">
-          <AlertTriangle size={14} /> {provider.warning}
+          <AlertTriangle size={14} /> {model.warning}
         </p>
       )}
-      {tooLong && (
+      {duration === null && (
         <p className="cloud-provider-warning">
           <AlertTriangle size={14} /> Split this {shot.durationSeconds}s shot;
-          {provider.label} accepts at most {provider.maximumDurationSeconds}s.
+          {model.label} accepts at most{" "}
+          {Math.max(...model.supportedDurationsSeconds)}s.
         </p>
       )}
       <button
         className="button primary"
         disabled={
-          !shot.sourceImageAsset || !provider.configured || tooLong || busy
+          !shot.sourceImageAsset ||
+          !provider.configured ||
+          duration === null ||
+          busy
         }
         onClick={onGenerate}
       >
@@ -801,6 +864,25 @@ function CloudVideoControls({
       )}
     </div>
   );
+}
+
+function providerDuration(
+  shotDurationSeconds: number,
+  model: VideoProviderModel,
+): number | null {
+  const target = Math.ceil(shotDurationSeconds);
+  return (
+    [...model.supportedDurationsSeconds]
+      .sort((left, right) => left - right)
+      .find((duration) => duration >= target) ?? null
+  );
+}
+
+function modelLabel(model: string | null, provider: string): string {
+  if (model === "kling-2.5-turbo") return "Kling 2.5 Turbo";
+  if (model === "kling-3.0") return "Kling 3.0";
+  if (provider === "seedance") return "Seedance 2.0";
+  return model ?? provider;
 }
 
 function formatUsd(value: number): string {

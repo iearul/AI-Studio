@@ -3414,7 +3414,7 @@ textarea:focus-visible {
 }
 .cloud-settings-row {
   display: grid;
-  grid-template-columns: 130px auto auto auto;
+  grid-template-columns: 150px 130px auto auto auto;
   align-items: end;
   gap: 13px;
 }
@@ -3458,6 +3458,18 @@ textarea:focus-visible {
   color: #8e5f2d;
   font-size: 9px;
   line-height: 1.5;
+}
+.cloud-continuity-note {
+  margin: 10px 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #4e665c;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.cloud-continuity-note svg {
+  flex: 0 0 auto;
 }
 .cloud-provider-warning svg {
   flex: 0 0 auto;

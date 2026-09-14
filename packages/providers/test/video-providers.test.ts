@@ -4,6 +4,7 @@ import { KlingVideoProvider } from "../src/kling-video-provider.js";
 import { SeedanceVideoProvider } from "../src/seedance-video-provider.js";
 
 const submission = {
+  model: "kling-3.0",
   prompt: "A slow cinematic push in.",
   firstFrameDataUrl: "data:image/png;base64,aGVsbG8=",
   firstFrameMimeType: "image/png" as const,
@@ -32,9 +33,8 @@ describe("KlingVideoProvider", () => {
       {
         apiKey: "test-key",
         baseUrl: "https://api-singapore.klingai.com",
-        model: "kling-3.0",
+        defaultModel: "kling-3.0",
         requestTimeoutMs: 1000,
-        estimatedUsdPerSecond: null,
       },
       request,
     );
@@ -63,6 +63,48 @@ describe("KlingVideoProvider", () => {
     });
   });
 
+  it("submits Kling 2.5 Turbo with its approved first frame and no unsupported settings", async () => {
+    let requestedUrl: string | URL | Request | undefined;
+    let requestedInit: RequestInit | undefined;
+    const request: typeof fetch = (input, init) => {
+      requestedUrl = input;
+      requestedInit = init;
+      return Promise.resolve(
+        Response.json({ code: 0, data: { id: "kling-task-25" } }),
+      );
+    };
+    const provider = new KlingVideoProvider(
+      {
+        apiKey: "test-key",
+        baseUrl: "https://api-singapore.klingai.com",
+        defaultModel: "kling-3.0",
+        requestTimeoutMs: 1000,
+      },
+      request,
+    );
+
+    await expect(
+      provider.submit({ ...submission, model: "kling-2.5-turbo" }),
+    ).resolves.toEqual({ jobId: "kling-task-25" });
+    expect(requestedUrl).toBe(
+      "https://api-singapore.klingai.com/image-to-video/kling-2.5-turbo",
+    );
+    if (typeof requestedInit?.body !== "string") {
+      throw new Error("Expected a JSON request body.");
+    }
+    const body = JSON.parse(requestedInit.body) as {
+      contents: Array<{ type: string; url?: string }>;
+      settings: Record<string, unknown>;
+    };
+    expect(body.contents[1]).toEqual({
+      type: "first_frame",
+      url: submission.firstFrameDataUrl,
+    });
+    expect(body.settings).toEqual({ resolution: "720p", duration: 5 });
+    expect(body.settings).not.toHaveProperty("audio");
+    expect(body.settings).not.toHaveProperty("multi_shot");
+  });
+
   it("reads video output and actual USD cash billing", async () => {
     const request: typeof fetch = () =>
       Promise.resolve(
@@ -86,9 +128,8 @@ describe("KlingVideoProvider", () => {
       {
         apiKey: "test-key",
         baseUrl: "https://api-singapore.klingai.com",
-        model: "kling-3.0",
+        defaultModel: "kling-3.0",
         requestTimeoutMs: 1000,
-        estimatedUsdPerSecond: null,
       },
       request,
     );
@@ -131,7 +172,9 @@ describe("SeedanceVideoProvider", () => {
       request,
     );
 
-    await expect(provider.submit(submission)).resolves.toEqual({
+    await expect(
+      provider.submit({ ...submission, model: "dreamina-seedance-2-0-260128" }),
+    ).resolves.toEqual({
       jobId: "seedance-task-1",
     });
     const requestBody = requests[0]?.init?.body;

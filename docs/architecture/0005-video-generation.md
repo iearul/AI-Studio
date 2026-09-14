@@ -16,8 +16,9 @@ an unmistakable user action.
 - A deterministic image-to-video prompt snapshots the action, camera, lighting,
   emotional intent, frame ratio, and strict identity/geometry continuity rules.
 - Manual MP4, MOV, and WebM imports are always available and record zero API cost.
-- Kling 3.0 and BytePlus Seedance 2.0 implement one shared asynchronous provider
-  boundary. Provider keys stay server-side in ignored environment files.
+- Kling 3.0, Kling 2.5 Turbo, and BytePlus Seedance 2.0 implement one shared
+  asynchronous provider boundary. The Kling model is selected independently for
+  each shot. Provider keys stay server-side in ignored environment files.
 - A paid request is accepted only with the literal server-validated confirmation
   token emitted after the UI displays provider, duration, resolution, audio choice,
   and the best available USD estimate.
@@ -36,8 +37,12 @@ an unmistakable user action.
   free of per-request API charges; Kling and Seedance charge the user's own account.
 - Seedance 2.0 uses the documented 720p image-to-video path and displays its current
   real-human-face material-library restriction.
-- Kling pricing can vary by account or package. An optional configured per-second
-  estimate is shown before submission, and actual returned USD cash billing replaces
-  the estimate when Kling reports it.
+- The approved storyboard image is always sent as the provider's first frame. Kling
+  2.5 Turbo does not accept separate reference photos. Kling 3.0 accepts additional
+  references only through Kling Element IDs created in the Element Library; raw
+  project photos are not sent as Elements.
+- Model-specific Kling estimates use the published September 2026 per-second rates.
+  Kling 2.5 Turbo is restricted to 5/10 seconds, 720p/1080p, and no native audio.
+  Actual returned USD cash billing replaces an estimate when Kling reports it.
 - The application keeps working when a provider is unconfigured or unavailable;
   failures do not remove prior images, videos, or project data.

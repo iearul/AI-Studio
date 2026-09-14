@@ -2515,6 +2515,8 @@ project's source of truth.
 | 2026-09-10 | Background jobs | Persistent local runner first; BullMQ/Redis only when scaling evidence exists | Accepted |
 | 2026-09-10 | Local image AI | ComfyUI adapter boundary | Superseded 2026-09-11 |
 | 2026-09-11 | Video workflow | Use the approved storyboard image as the recommended first frame; offer zero-API-cost manual import plus optional Kling 3.0 and BytePlus Seedance 2.0 | Accepted |
+| 2026-09-14 | Kling model choice | Offer Kling 3.0 and Kling 2.5 Turbo per shot; use model-specific resolution, duration, audio, and September 2026 price rules | Accepted |
+| 2026-09-14 | Video continuity input | Always attach the approved storyboard image as `first_frame`; do not claim to send raw extra photos to Kling 2.5 Turbo, while Kling 3.0 extra references remain unavailable until Kling Element Library automation is implemented | Accepted |
 | 2026-09-11 | Cloud video safety | Asynchronous provider adapters, persistent attempts, local result download, provider-domain allow-list, and literal server-validated confirmation after cost review | Accepted |
 | 2026-09-11 | Local video runtime | Do not install or start a local video model on the 18 GB M3 Pro; retain manual creation and opt-in cloud providers | Accepted |
 | 2026-09-10 | Project content in Git | Excluded; Git contains application source and safe templates only | Accepted |
@@ -2665,14 +2667,22 @@ project's source of truth.
 - Ollama is restricted to loopback, disables hidden thinking in structured output,
   records token/timing metadata, and unloads the model after story generation.
 
-### Phase 5A / 6A — Video Production (2026-09-11)
+### Phase 5A / 6A — Video Production (2026-09-11, revised 2026-09-14)
 
 - The Video workspace recommends the selected approved storyboard image for each
   shot, builds a motion-specific continuity prompt, and supports streamed manual
   MP4/MOV/WebM import with explicit review and one selected result per shot.
-- Kling 3.0 and BytePlus Seedance 2.0 use current asynchronous image-to-video API
-  contracts behind one provider boundary. Missing keys are reported honestly and
-  never disable the manual workflow.
+- Kling 3.0, Kling 2.5 Turbo, and BytePlus Seedance 2.0 use current asynchronous
+  image-to-video API contracts behind one provider boundary. The Kling model is
+  selectable per shot. Missing keys are reported honestly and never disable the
+  manual workflow.
+- Every cloud request attaches the selected approved storyboard image as its exact
+  `first_frame`. Kling 2.5 Turbo accepts no separate character, location, or prop
+  references. Kling 3.0 requires pre-created Kling Element IDs for extra references;
+  raw project photos are therefore not falsely represented as API attachments.
+- Kling 2.5 Turbo is constrained to 5/10 seconds, 720p/1080p, and no native audio.
+  The UI and API both enforce those rules and estimate the selected model using the
+  published September 2026 per-second rates.
 - Before a paid submission, the UI shows provider, duration, resolution, audio, and
   an available USD estimate, and the API independently requires an exact billing
   authorization token. A cancelled dialog sends no request.
