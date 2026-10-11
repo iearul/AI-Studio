@@ -94,9 +94,9 @@ export default function StoryWorkspacePage() {
           (provider) => provider.id === "ollama" && provider.available,
         );
         const cloud = response.providers.find(
-          (provider) => provider.id === "openai" && provider.available,
+          (provider) => provider.mode === "cloud-paid" && provider.available,
         );
-        setMode(local ? "ollama" : cloud ? "openai" : "manual");
+        setMode(local ? "ollama" : (cloud?.id ?? "manual"));
       })
       .catch((reason: unknown) => {
         if (!cancelled) {
@@ -184,9 +184,9 @@ export default function StoryWorkspacePage() {
       return;
     }
     if (
-      provider === "openai" &&
+      status.mode === "cloud-paid" &&
       !window.confirm(
-        "Generate with the OpenAI API? This uses separately billed API tokens. Nothing is saved until you review and import the result.",
+        `Generate with the ${status.name}? This uses separately billed API tokens. Nothing is saved until you review and import the result.`,
       )
     ) {
       return;
@@ -301,7 +301,7 @@ export default function StoryWorkspacePage() {
           <h1>{plan?.story.title ?? "Build the story plan."}</h1>
           <p>
             {plan?.story.logline ??
-              "Choose free local AI, the automatic OpenAI API, or the manual ChatGPT workflow. Every result stops for review before it is saved."}
+              "Choose free local AI, the automatic OpenAI or Claude API, or the manual ChatGPT workflow. Every result stops for review before it is saved."}
           </p>
         </div>
         <div className="story-actions">
@@ -326,7 +326,7 @@ export default function StoryWorkspacePage() {
             </span>
             <h2>Choose how this draft is created.</h2>
             <p>
-              All three modes produce the same validated plan and preserve the
+              All four modes produce the same validated plan and preserve the
               review gate.
             </p>
           </div>
@@ -376,6 +376,26 @@ export default function StoryWorkspacePage() {
             </span>
             <i
               className={`provider-dot ${providers.find((provider) => provider.id === "openai")?.available ? "ready" : "offline"}`}
+            />
+          </button>
+          <button
+            type="button"
+            className={`story-mode-card ${mode === "anthropic" ? "selected" : ""}`}
+            aria-pressed={mode === "anthropic"}
+            onClick={() => {
+              setMode("anthropic");
+              setError(undefined);
+            }}
+          >
+            <span className="story-mode-icon cloud">
+              <Cloud size={19} />
+            </span>
+            <span>
+              <strong>Claude API</strong>
+              <small>Automatic · separately billed</small>
+            </span>
+            <i
+              className={`provider-dot ${providers.find((provider) => provider.id === "anthropic")?.available ? "ready" : "offline"}`}
             />
           </button>
           <button
@@ -467,9 +487,12 @@ export default function StoryWorkspacePage() {
             <span className="eyebrow">
               <Sparkles size={14} /> Human-reviewed workflow
             </span>
-            <h2>Three creation paths, one safe review gate.</h2>
+            <h2>Four creation paths, one safe review gate.</h2>
             <ol>
-              <li>Select Local AI, OpenAI API, or Manual ChatGPT above.</li>
+              <li>
+                Select Local AI, OpenAI API, Claude API, or Manual ChatGPT
+                above.
+              </li>
               <li>Create a structured story, script, scenes, and shot list.</li>
               <li>
                 <strong>Validate &amp; review</strong> scene, shot, and duration

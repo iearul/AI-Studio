@@ -10,6 +10,7 @@ adapters.
 - Node.js 22 or newer (Node 24 LTS is recommended)
 - pnpm 9 or newer
 - Ollama with `qwen3.5:9b-q4_K_M` for free local story generation
+- Optional OpenAI or Anthropic API key for paid automatic story generation
 - ChatGPT access for manually creating character references and storyboard frames
 - Optional Kling or BytePlus Seedance API key for paid image-to-video generation
 - FFmpeg for later media-rendering phases
@@ -40,10 +41,10 @@ cache/                   disposable working files
 ## Story planning workflow
 
 Open a project and select **Build story plan**. The Story Room lets you choose
-Local Ollama (private, no per-token charge), the separately billed OpenAI API, or
-manual ChatGPT prompt export/import. Every path returns the same structured plan,
-shows scene/shot/duration totals, and remains preview-only until you explicitly
-import it. The accepted story, script, scenes, and shots are stored in SQLite and
+Local Ollama (private, no per-token charge), the separately billed OpenAI or Claude
+API, or manual ChatGPT prompt export/import. Every path returns the same structured
+plan, shows scene/shot/duration totals, and remains preview-only until you
+explicitly import it. The accepted story, script, scenes, and shots are stored in SQLite and
 mirrored into the portable `project.json` manifest.
 
 Ollama runs as a background service after installation. The story adapter unloads

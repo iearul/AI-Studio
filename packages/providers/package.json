@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-film-studio/contracts": "workspace:*"
+    "@ai-film-studio/contracts": "workspace:*",
+    "@anthropic-ai/sdk": "^0.133.0"
   },
   "devDependencies": {
     "@ai-film-studio/tooling": "workspace:*",

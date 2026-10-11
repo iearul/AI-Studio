@@ -10,10 +10,12 @@ import {
   VideoRepository,
 } from "@ai-film-studio/database";
 import {
+  AnthropicTextProvider,
   KlingVideoProvider,
   OllamaTextProvider,
   OpenAiTextProvider,
   SeedanceVideoProvider,
+  resolveAnthropicTextProviderConfig,
   resolveKlingVideoProviderConfig,
   resolveOllamaTextProviderConfig,
   resolveOpenAiTextProviderConfig,
@@ -78,6 +80,7 @@ export async function createServices(
   );
   const textProviders = options.textProviders ?? [
     new OpenAiTextProvider(resolveOpenAiTextProviderConfig()),
+    new AnthropicTextProvider(resolveAnthropicTextProviderConfig()),
     new OllamaTextProvider(resolveOllamaTextProviderConfig()),
   ];
   const videoProviders = options.videoProviders ?? [
