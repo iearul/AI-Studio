@@ -1,12 +1,13 @@
 "use client";
 
-import type {
-  ImageAttempt,
-  ImageHistory,
-  Project,
-  ReferenceCoverage,
-  ReferenceImage,
-  ShotReferenceContext,
+import {
+  paidImageConfirmation,
+  type ImageAttempt,
+  type ImageHistory,
+  type Project,
+  type ReferenceCoverage,
+  type ReferenceImage,
+  type ShotReferenceContext,
 } from "@ai-film-studio/contracts";
 import {
   AlertTriangle,
@@ -33,6 +34,11 @@ import {
   useState,
 } from "react";
 
+import {
+  confirmImageGeneration,
+  ImageGeneratorControls,
+  useImageGenerator,
+} from "@/components/image-generator";
 import { apiBaseUrl, apiFetch } from "@/lib/api";
 
 const referencePreference = [
@@ -76,6 +82,29 @@ export default function StoryboardPage() {
   );
 }
 
+const providerNames: Record<ImageAttempt["provider"], string> = {
+  manual: "Manual import",
+  openai: "OpenAI",
+  gemini: "Gemini",
+  comfyui: "Legacy local attempt",
+};
+
+function isActiveCloudAttempt(attempt: ImageAttempt): boolean {
+  return (
+    attempt.provider !== "manual" &&
+    attempt.provider !== "comfyui" &&
+    (attempt.status === "queued" || attempt.status === "generating")
+  );
+}
+
+function referenceCount(shot: ShotReferenceContext): number {
+  return [
+    ...shot.characters,
+    ...(shot.location ? [shot.location] : []),
+    ...shot.props,
+  ].reduce((total, entity) => total + entity.references.length, 0);
+}
+
 function StoryboardSkeleton() {
   return (
     <div className="page">
@@ -93,6 +122,7 @@ function StoryboardWorkspace() {
   const [busy, setBusy] = useState<string>();
   const [copiedShot, setCopiedShot] = useState<string>();
   const [error, setError] = useState("");
+  const generator = useImageGenerator();
 
   const load = useCallback(async () => {
     const [nextProject, nextCoverage, nextHistory] = await Promise.all([
@@ -124,6 +154,15 @@ function StoryboardWorkspace() {
     };
   }, [load]);
 
+  const generating = history?.attempts.some(isActiveCloudAttempt) ?? false;
+  useEffect(() => {
+    if (!generating) return;
+    const interval = window.setInterval(() => {
+      void load().catch(() => undefined);
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, [generating, load]);
+
   const attemptsByShot = useMemo(() => {
     const grouped = new Map<string, ImageAttempt[]>();
     for (const attempt of history?.attempts ?? []) {
@@ -145,6 +184,38 @@ function StoryboardWorkspace() {
       setError(
         "The prompt could not be copied. Please copy it from the Visual Bible.",
       );
+    }
+  }
+
+  async function generateFrame(shot: ShotReferenceContext) {
+    const resolved = generator.resolved;
+    if (!resolved?.provider.configured) return;
+    if (
+      !confirmImageGeneration(resolved, shot.shotCode, referenceCount(shot))
+    ) {
+      return;
+    }
+    setBusy(`generate-${shot.shotId}`);
+    setError("");
+    try {
+      await apiFetch(`/projects/${id}/shots/${shot.shotId}/image-generations`, {
+        method: "POST",
+        body: JSON.stringify({
+          provider: resolved.provider.id,
+          model: resolved.model.id,
+          quality: resolved.quality.id,
+          confirmation: paidImageConfirmation,
+        }),
+      });
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The image could not be generated.",
+      );
+    } finally {
+      setBusy(undefined);
     }
   }
 
@@ -243,9 +314,8 @@ function StoryboardWorkspace() {
           </span>
           <h1>Storyboard review</h1>
           <p>
-            Copy each continuity-safe prompt into ChatGPT or Gemini, paste or
-            drop the generated alternatives here, and approve one frame per
-            shot.
+            Generate each frame with an image API, or import one made in
+            ChatGPT. Approve one frame per shot.
           </p>
         </div>
         <div className="storyboard-metrics">
@@ -261,22 +331,22 @@ function StoryboardWorkspace() {
         </div>
       </header>
 
-      <section className="provider-banner online">
-        <span className="provider-icon">
-          <ImagePlus size={20} />
+      <section className="image-generator-panel">
+        <span className="eyebrow">
+          <ImagePlus size={14} /> Image generator
         </span>
-        <div>
-          <strong>ChatGPT / Gemini image workflow</strong>
-          <p>
-            Copy the prepared prompt, create the image externally, then paste,
-            drop, or choose it here. AI Film Studio does not run a local image
-            model.
+        {generator.resolved ? (
+          <ImageGeneratorControls
+            providers={generator.providers}
+            resolved={generator.resolved}
+            onChange={generator.setChoice}
+            disabled={Boolean(busy)}
+          />
+        ) : (
+          <p className="image-generator-note warn">
+            {generator.error || "Loading image providers…"}
           </p>
-          <small>No local image-model memory usage</small>
-        </div>
-        <span className="provider-state">
-          <CheckCircle2 size={14} /> Manual
-        </span>
+        )}
       </section>
 
       {error && (
@@ -339,7 +409,7 @@ function StoryboardWorkspace() {
 
                 {suggestedReferences.length > 0 && (
                   <div className="shot-reference-strip">
-                    <strong>Recommended continuity photos to attach</strong>
+                    <strong>Continuity photos</strong>
                     <div>
                       {suggestedReferences.map(({ entityName, reference }) => (
                         <figure key={reference.id}>
@@ -363,6 +433,26 @@ function StoryboardWorkspace() {
                 <div className="storyboard-controls">
                   <button
                     className="button primary"
+                    disabled={
+                      !shot.ready ||
+                      Boolean(busy) ||
+                      !generator.resolved?.provider.configured ||
+                      attempts.some(isActiveCloudAttempt)
+                    }
+                    onClick={() => void generateFrame(shot)}
+                  >
+                    {busy === `generate-${shot.shotId}` ||
+                    attempts.some(isActiveCloudAttempt) ? (
+                      <LoaderCircle className="spinner" size={15} />
+                    ) : (
+                      <Sparkles size={15} />
+                    )}
+                    {attempts.some(isActiveCloudAttempt)
+                      ? "Generating…"
+                      : `Generate with ${generator.resolved ? providerNames[generator.resolved.provider.id] : "API"}`}
+                  </button>
+                  <button
+                    className="button secondary"
                     disabled={!shot.ready || Boolean(busy)}
                     onClick={() => void copyPrompt(shot.shotId, shot.prompt)}
                   >
@@ -414,8 +504,7 @@ function StoryboardWorkspace() {
 
                 {attempts.length === 0 ? (
                   <div className="attempts-empty">
-                    No attempts yet. Create an image in ChatGPT with the copied
-                    prompt, then import it above.
+                    No attempts yet. Generate a frame or import one above.
                   </div>
                 ) : (
                   <div className="attempt-grid">
@@ -443,7 +532,9 @@ function StoryboardWorkspace() {
                               {attempt.status === "queued"
                                 ? "Queued"
                                 : attempt.status === "generating"
-                                  ? `${attempt.job?.progress ?? 0}%`
+                                  ? attempt.job
+                                    ? `${attempt.job.progress}%`
+                                    : "Generating…"
                                   : "No preview"}
                             </span>
                           )}
@@ -459,9 +550,8 @@ function StoryboardWorkspace() {
                         <div className="attempt-body">
                           <div className="attempt-title">
                             <strong>
-                              {attempt.provider === "manual"
-                                ? "Manual import"
-                                : "Legacy local attempt"}
+                              {providerNames[attempt.provider]}
+                              {attempt.model ? ` · ${attempt.model}` : ""}
                             </strong>
                             <small>
                               {new Date(attempt.createdAt).toLocaleString()}
@@ -469,7 +559,12 @@ function StoryboardWorkspace() {
                           </div>
                           <div className="attempt-facts">
                             <span>
-                              Seed <b>{attempt.seed ?? "—"}</b>
+                              Quality{" "}
+                              <b>
+                                {typeof attempt.settings.quality === "string"
+                                  ? attempt.settings.quality
+                                  : "—"}
+                              </b>
                             </span>
                             <span>
                               Time{" "}
@@ -546,9 +641,9 @@ function formatDuration(milliseconds: number | null): string {
 }
 
 function formatCost(micros: number, currency: string): string {
-  if (micros === 0) return "€0.00";
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
+    maximumFractionDigits: micros > 0 && micros < 100_000 ? 3 : 2,
   }).format(micros / 1_000_000);
 }

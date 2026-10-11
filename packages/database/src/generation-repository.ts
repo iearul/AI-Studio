@@ -20,7 +20,7 @@ type AttemptRow = {
   project_id: string;
   shot_id: string;
   shot_code: string;
-  provider: "comfyui" | "manual";
+  provider: "comfyui" | "manual" | "openai" | "gemini";
   model: string | null;
   prompt: string;
   negative_prompt: string;
@@ -90,7 +90,7 @@ export type NewGeneratedAsset = {
 export type NewImageAttempt = {
   projectId: string;
   shotId: string;
-  provider: "manual";
+  provider: "manual" | "openai" | "gemini";
   model: string | null;
   prompt: string;
   negativePrompt: string;
@@ -140,6 +140,9 @@ function groupByAttempt<T extends { attempt_id: string }>(
 ): Map<string, T> {
   return new Map(rows.map((row) => [row.attempt_id, row]));
 }
+
+const activeCloudMessage =
+  "An image is already being generated for this shot. Wait for it to finish.";
 
 export class GenerationRepository {
   constructor(
@@ -213,7 +216,7 @@ export class GenerationRepository {
           (total, attempt) => total + attempt.costMicros,
           0,
         ),
-        currency: "EUR",
+        currency: "USD",
       },
     });
   }
@@ -230,6 +233,66 @@ export class GenerationRepository {
         "Manual import requires the manual provider.",
       );
     }
+    return this.beginImage(input);
+  }
+
+  beginCloudImage(input: NewImageAttempt): ImageAttempt {
+    if (input.provider === "manual") {
+      throw new GenerationStateError(
+        "Cloud generation requires an image API provider.",
+      );
+    }
+    const active = this.manager.connection
+      .prepare(
+        `SELECT 1 FROM generation_attempts
+         WHERE shot_id = ? AND provider IN ('openai', 'gemini')
+           AND status IN ('queued', 'generating')`,
+      )
+      .get(input.shotId);
+    if (active) {
+      throw new GenerationStateError(activeCloudMessage);
+    }
+    try {
+      return this.beginImage(input);
+    } catch (error) {
+      // The partial unique index closes the race between two simultaneous clicks.
+      if ((error as { code?: unknown }).code === "SQLITE_CONSTRAINT_UNIQUE") {
+        throw new GenerationStateError(activeCloudMessage);
+      }
+      throw error;
+    }
+  }
+
+  /** Fails image attempts that were running when the API process stopped. */
+  failInterrupted(): number {
+    const timestamp = new Date().toISOString();
+    return this.manager.connection.transaction(() => {
+      const projectIds = this.manager.connection
+        .prepare(
+          `SELECT DISTINCT project_id FROM generation_attempts
+           WHERE provider IN ('manual', 'openai', 'gemini')
+             AND status IN ('queued', 'generating')`,
+        )
+        .all() as Array<{ project_id: string }>;
+      const result = this.manager.connection
+        .prepare(
+          `UPDATE generation_attempts SET
+            status = 'failed',
+            error_message = 'Interrupted because AI Film Studio stopped before the image was saved. Generate it again.',
+            error_details_json = '{"code":"interrupted","recoverable":true}',
+            updated_at = ?
+           WHERE provider IN ('manual', 'openai', 'gemini')
+             AND status IN ('queued', 'generating')`,
+        )
+        .run(timestamp);
+      for (const { project_id } of projectIds) {
+        this.projects.markManifestDirty(project_id);
+      }
+      return result.changes;
+    })();
+  }
+
+  private beginImage(input: NewImageAttempt): ImageAttempt {
     this.requireShot(input.projectId, input.shotId);
     const timestamp = new Date().toISOString();
     const attemptId = randomUUID();
@@ -245,6 +308,7 @@ export class GenerationRepository {
     attemptId: string,
     asset: NewGeneratedAsset,
     generationTimeMs: number,
+    costMicros = 0,
   ): ImageAttempt {
     const attempt = this.requireAttempt(projectId, attemptId);
     if (attempt.status !== "generating") {
@@ -276,11 +340,11 @@ export class GenerationRepository {
       this.manager.connection
         .prepare(
           `UPDATE generation_attempts SET
-            status = 'succeeded', generation_time_ms = ?, error_message = NULL,
-            error_details_json = NULL, updated_at = ?
+            status = 'succeeded', generation_time_ms = ?, cost_micros = ?,
+            error_message = NULL, error_details_json = NULL, updated_at = ?
            WHERE id = ?`,
         )
-        .run(generationTimeMs, timestamp, attemptId);
+        .run(generationTimeMs, costMicros, timestamp, attemptId);
       this.projects.markManifestDirty(projectId);
     })();
     return this.requireAttempt(projectId, attemptId);
@@ -398,7 +462,7 @@ export class GenerationRepository {
         ) VALUES (
           @id, @projectId, @shotId, 'image', @provider, @model, @prompt,
           @negativePrompt, @referencesJson, @seed, @settingsJson, @status,
-          'pending', 0, 0, 'EUR', @createdAt, @updatedAt
+          'pending', 0, 0, 'USD', @createdAt, @updatedAt
         )`,
       )
       .run({

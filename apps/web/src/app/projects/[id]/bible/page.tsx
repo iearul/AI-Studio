@@ -1,15 +1,16 @@
 "use client";
 
-import type {
-  Bible,
-  Character,
-  CharacterReferencePrompt,
-  Location,
-  Project,
-  Prop,
-  ReferenceCoverage,
-  ReferenceImage,
-  ReferenceView,
+import {
+  paidImageConfirmation,
+  type Bible,
+  type Character,
+  type CharacterReferencePrompt,
+  type Location,
+  type Project,
+  type Prop,
+  type ReferenceCoverage,
+  type ReferenceImage,
+  type ReferenceView,
 } from "@ai-film-studio/contracts";
 import {
   ArrowLeft,
@@ -17,6 +18,7 @@ import {
   CheckCircle2,
   Copy,
   ImagePlus,
+  LoaderCircle,
   MapPin,
   Package,
   PencilLine,
@@ -40,6 +42,11 @@ import {
   useState,
 } from "react";
 
+import {
+  confirmImageGeneration,
+  ImageGeneratorControls,
+  useImageGenerator,
+} from "@/components/image-generator";
 import { apiBaseUrl, apiFetch } from "@/lib/api";
 
 type BibleKind = "characters" | "locations" | "props";
@@ -257,6 +264,9 @@ function BibleWorkspace() {
   const [referencePrompt, setReferencePrompt] =
     useState<CharacterReferencePrompt>();
   const [referencePromptCopied, setReferencePromptCopied] = useState(false);
+  const [referenceGenerating, setReferenceGenerating] = useState(false);
+  const [referenceError, setReferenceError] = useState("");
+  const generator = useImageGenerator();
   const [selectedViews, setSelectedViews] = useState<
     Record<string, ReferenceView>
   >({});
@@ -404,6 +414,7 @@ function BibleWorkspace() {
         `/projects/${id}/characters/${character.id}/reference-prompt?view=${encodeURIComponent(view)}`,
       );
       setReferencePromptCopied(false);
+      setReferenceError("");
       setReferencePrompt(result);
     } catch (reason) {
       setError(
@@ -413,6 +424,50 @@ function BibleWorkspace() {
       );
     } finally {
       setPromptBusy(undefined);
+    }
+  }
+
+  async function generateCharacterReference() {
+    const resolved = generator.resolved;
+    if (!referencePrompt || !resolved?.provider.configured) return;
+    const character = bible?.characters.find(
+      (candidate) => candidate.id === referencePrompt.characterId,
+    );
+    if (
+      !confirmImageGeneration(
+        resolved,
+        `${character?.name ?? referencePrompt.characterCode} · ${referencePrompt.view.replaceAll("-", " ")} view`,
+        character?.references.length ?? 0,
+      )
+    ) {
+      return;
+    }
+    setReferenceGenerating(true);
+    setReferenceError("");
+    try {
+      await apiFetch(
+        `/projects/${id}/characters/${referencePrompt.characterId}/reference-generations`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            provider: resolved.provider.id,
+            model: resolved.model.id,
+            quality: resolved.quality.id,
+            view: referencePrompt.view,
+            confirmation: paidImageConfirmation,
+          }),
+        },
+      );
+      setReferencePrompt(undefined);
+      await loadBible();
+    } catch (reason) {
+      setReferenceError(
+        reason instanceof Error
+          ? reason.message
+          : "The reference photo could not be generated.",
+      );
+    } finally {
+      setReferenceGenerating(false);
     }
   }
 
@@ -731,14 +786,15 @@ function BibleWorkspace() {
               <div>
                 <h2 id="reference-prompt-title">Character reference prompt</h2>
                 <p>
-                  Copy this into ChatGPT or Gemini image creation, then attach
-                  the result as the {referencePrompt.view.replaceAll("-", " ")}{" "}
-                  view.
+                  Generate the {referencePrompt.view.replaceAll("-", " ")} view
+                  with an image API, or copy the prompt into ChatGPT and upload
+                  the result.
                 </p>
               </div>
               <button
                 className="icon-button"
                 aria-label="Close character reference prompt"
+                disabled={referenceGenerating}
                 onClick={() => setReferencePrompt(undefined)}
               >
                 <X size={19} />
@@ -773,10 +829,40 @@ function BibleWorkspace() {
               value={referencePrompt.prompt}
             />
 
+            {generator.resolved && (
+              <ImageGeneratorControls
+                providers={generator.providers}
+                resolved={generator.resolved}
+                onChange={generator.setChoice}
+                disabled={referenceGenerating}
+              />
+            )}
+            {referenceError && (
+              <div className="notice error">
+                <span>{referenceError}</span>
+              </div>
+            )}
+
             <footer className="reference-prompt-footer">
               <span>Suggested filename: {referencePrompt.filename}</span>
               <button
                 className="button primary"
+                disabled={
+                  referenceGenerating ||
+                  !generator.resolved?.provider.configured
+                }
+                onClick={() => void generateCharacterReference()}
+              >
+                {referenceGenerating ? (
+                  <LoaderCircle className="spinner" size={15} />
+                ) : (
+                  <Sparkles size={15} />
+                )}
+                {referenceGenerating ? "Generating…" : "Generate with API"}
+              </button>
+              <button
+                className="button secondary"
+                disabled={referenceGenerating}
                 onClick={() => void copyCharacterPrompt()}
               >
                 {referencePromptCopied ? (

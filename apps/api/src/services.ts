@@ -11,15 +11,20 @@ import {
 } from "@ai-film-studio/database";
 import {
   AnthropicTextProvider,
+  GeminiImageProvider,
   KlingVideoProvider,
   OllamaTextProvider,
+  OpenAiImageProvider,
   OpenAiTextProvider,
   SeedanceVideoProvider,
   resolveAnthropicTextProviderConfig,
+  resolveGeminiImageProviderConfig,
   resolveKlingVideoProviderConfig,
   resolveOllamaTextProviderConfig,
+  resolveOpenAiImageProviderConfig,
   resolveOpenAiTextProviderConfig,
   resolveSeedanceVideoProviderConfig,
+  type ImageProvider,
   type TextProvider,
   type VideoProvider,
 } from "@ai-film-studio/providers";
@@ -47,6 +52,7 @@ export type Services = Awaited<ReturnType<typeof createServices>>;
 export async function createServices(
   options: {
     textProviders?: TextProvider[];
+    imageProviders?: ImageProvider[];
     videoProviders?: VideoProvider[];
   } = {},
 ) {
@@ -82,6 +88,10 @@ export async function createServices(
     new OpenAiTextProvider(resolveOpenAiTextProviderConfig()),
     new AnthropicTextProvider(resolveAnthropicTextProviderConfig()),
     new OllamaTextProvider(resolveOllamaTextProviderConfig()),
+  ];
+  const imageProviders = options.imageProviders ?? [
+    new OpenAiImageProvider(resolveOpenAiImageProviderConfig()),
+    new GeminiImageProvider(resolveGeminiImageProviderConfig()),
   ];
   const videoProviders = options.videoProviders ?? [
     new KlingVideoProvider(resolveKlingVideoProviderConfig()),
@@ -129,8 +139,12 @@ export async function createServices(
     storyPlans,
     bible,
     storyboardAssets,
+    referenceImages,
     manifestSynchronizer,
+    imageProviders,
   );
+  // Image requests run inside this process, so none survive a restart.
+  generations.failInterrupted();
   const storyGenerations = new StoryGenerationService(projects, textProviders);
   const videoGenerations = new VideoGenerationService(
     videos,

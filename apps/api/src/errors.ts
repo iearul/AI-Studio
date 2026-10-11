@@ -11,6 +11,9 @@ import {
   StoryPlanProjectNotFoundError,
 } from "@ai-film-studio/database";
 import {
+  ImageProviderConfigurationError,
+  ImageProviderResponseError,
+  ImageProviderUnavailableError,
   TextProviderConfigurationError,
   TextProviderResponseError,
   TextProviderUnavailableError,
@@ -160,6 +163,36 @@ export function registerErrorHandler(app: FastifyInstance): void {
         type: "https://ai-film-studio.local/problems/provider-configuration",
         title: "Provider is not configured",
         status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof ImageProviderConfigurationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/image-provider-configuration",
+        title: "Image provider is not configured",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof ImageProviderUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/image-provider-unavailable",
+        title: "Image provider is unavailable",
+        status: 503,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof ImageProviderResponseError) {
+      void reply.status(502).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/image-provider-response",
+        title: "Image provider returned an invalid response",
+        status: 502,
         detail: error.message,
         instance: request.url,
       });

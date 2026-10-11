@@ -2484,6 +2484,7 @@ textarea:focus-visible {
   gap: 12px;
 }
 .reference-prompt-footer span {
+  flex: 1;
   overflow-wrap: anywhere;
   color: #858279;
   font-size: 9px;
@@ -2577,6 +2578,41 @@ textarea:focus-visible {
 .provider-banner.online {
   border-color: #cdd9c1;
   background: #f2f6ed;
+}
+.image-generator-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e2ded2;
+  border-radius: 14px;
+  background: rgba(255, 254, 250, 0.85);
+}
+.image-generator-controls {
+  display: grid;
+  gap: 8px;
+}
+.reference-prompt-modal .image-generator-controls {
+  margin-top: 13px;
+}
+.image-settings-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 13px;
+}
+.image-settings-row select {
+  height: 38px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+.image-generator-note {
+  margin: 0;
+  color: #858279;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.image-generator-note.warn {
+  color: #9a5b14;
 }
 .provider-icon {
   width: 39px;
@@ -2774,7 +2810,7 @@ textarea:focus-visible {
 .storyboard-controls {
   padding: 13px 20px;
   display: grid;
-  grid-template-columns: auto minmax(190px, 1fr) auto;
+  grid-template-columns: auto auto minmax(190px, 1fr) auto;
   gap: 8px;
   border-bottom: 1px solid #ece9e1;
   background: #f8f7f2;
@@ -3657,6 +3693,7 @@ textarea:focus-visible {
   }
   .manual-video-controls,
   .cloud-settings-row,
+  .image-settings-row,
   .video-attempt-grid {
     grid-template-columns: 1fr;
   }

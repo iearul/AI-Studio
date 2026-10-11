@@ -7,6 +7,7 @@ import type { Database } from "better-sqlite3";
 const migrationDirectory = fileURLToPath(
   new URL("../migrations", import.meta.url),
 );
+const rebuildMarker = "-- migration: table-rebuild";
 
 export function runMigrations(database: Database): void {
   database.exec(`
@@ -30,11 +31,30 @@ export function runMigrations(database: Database): void {
   for (const filename of filenames) {
     if (applied.has(filename)) continue;
     const sql = readFileSync(path.join(migrationDirectory, filename), "utf8");
-    database.transaction(() => {
-      database.exec(sql);
-      database
-        .prepare("INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)")
-        .run(filename, new Date().toISOString());
-    })();
+    // Table rebuilds must run with foreign keys off, or dropping the old table
+    // cascades into every child row. SQLite ignores this pragma inside a
+    // transaction, so it is switched before and restored after.
+    const rebuild = sql.startsWith(rebuildMarker);
+    if (rebuild) database.pragma("foreign_keys = OFF");
+    try {
+      database.transaction(() => {
+        database.exec(sql);
+        if (rebuild) {
+          const violations = database.pragma("foreign_key_check") as unknown[];
+          if (violations.length > 0) {
+            throw new Error(
+              `Migration ${filename} left ${violations.length} foreign key violations.`,
+            );
+          }
+        }
+        database
+          .prepare(
+            "INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)",
+          )
+          .run(filename, new Date().toISOString());
+      })();
+    } finally {
+      if (rebuild) database.pragma("foreign_keys = ON");
+    }
   }
 }

@@ -11,7 +11,8 @@ adapters.
 - pnpm 9 or newer
 - Ollama with `qwen3.5:9b-q4_K_M` for free local story generation
 - Optional OpenAI or Anthropic API key for paid automatic story generation
-- ChatGPT access for manually creating character references and storyboard frames
+- Optional OpenAI or Gemini API key for paid image generation (ChatGPT works
+  manually without one)
 - Optional Kling or BytePlus Seedance API key for paid image-to-video generation
 - FFmpeg for later media-rendering phases
 
@@ -78,18 +79,23 @@ the model after a result so the 18 GB M3 Pro remains responsive.
 
 The project workspace also provides character, location, and prop Bibles with
 stable generated IDs, editable structured details, and local JPEG/PNG/WebP reference
-uploads. Character cards provide detailed ChatGPT-ready reference-photo prompts.
+uploads. Character cards provide detailed reference-photo prompts that can be
+generated with the OpenAI or Gemini image API, sending the character's existing
+views for consistency, or copied into ChatGPT.
 Shot labels resolve only by exact name or stable code; unresolved labels are shown
 instead of guessed. Each resolved shot receives a continuity prompt combining the
 creative brief, cinematography, Bible facts, and reference paths.
 
 ## Storyboard generation and review
 
-The Storyboard workspace keeps an immutable attempt history for every shot. Copy a
-continuity-safe prompt into ChatGPT, create the image there, and import the resulting
-JPEG/PNG/WebP frame. Each import records its prompt and reference snapshot; explicit
-review selects exactly one approved image per shot. No local image model is started
-by AI Film Studio, which avoids the memory pressure observed on the 18 GB M3 Pro.
+The Storyboard workspace keeps an immutable attempt history for every shot. Generate
+a frame with OpenAI GPT Image or Google Gemini, which receive the shot's
+continuity prompt and its Visual Bible reference photos, or copy the prompt into
+ChatGPT and import the resulting JPEG/PNG/WebP frame. Paid generation asks for
+confirmation with a cost estimate, runs in the background, and records the model,
+quality, reference snapshot, and USD cost on the attempt. Explicit review selects
+exactly one approved image per shot. No local image model is started by AI Film
+Studio, which avoids the memory pressure observed on the 18 GB M3 Pro.
 
 ## Video production
 

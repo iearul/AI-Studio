@@ -148,6 +148,66 @@ describe("GenerationRepository", () => {
     expect(history.totals).toMatchObject({ attempts: 2, succeeded: 2 });
   });
 
+  function startedCloud() {
+    return repository.beginCloudImage({
+      projectId,
+      shotId,
+      provider: "openai",
+      model: "gpt-image-2.5-sunburst",
+      prompt: "A moonlit platform",
+      negativePrompt: "",
+      references: [],
+      seed: null,
+      settings: { quality: "medium" },
+    });
+  }
+
+  it("allows one active paid attempt per shot and records its USD cost", () => {
+    const attempt = startedCloud();
+    expect(attempt).toMatchObject({
+      provider: "openai",
+      status: "generating",
+      currency: "USD",
+    });
+    expect(() => startedCloud()).toThrow(GenerationStateError);
+
+    const done = repository.completeAttempt(
+      projectId,
+      attempt.id,
+      {
+        originalFilename: "SHOT_001-openai.png",
+        relativePath: `storyboard/${shotId}/${attempt.id}.png`,
+        mimeType: "image/png",
+        byteSize: 68,
+        sha256: "c".repeat(64),
+        width: 1,
+        height: 1,
+      },
+      15_000,
+      30_500,
+    );
+    expect(done).toMatchObject({ status: "succeeded", costMicros: 30_500 });
+    expect(repository.listProject(projectId).totals).toMatchObject({
+      costMicros: 30_500,
+      currency: "USD",
+    });
+    expect(startedCloud().status).toBe("generating");
+  });
+
+  it("fails attempts that were running when the process stopped", () => {
+    const cloud = startedCloud();
+    const manual = started();
+
+    expect(repository.failInterrupted()).toBe(2);
+    for (const id of [cloud.id, manual.id]) {
+      expect(repository.getAttempt(projectId, id)).toMatchObject({
+        status: "failed",
+        errorMessage: expect.stringContaining("Interrupted") as unknown,
+      });
+    }
+    expect(startedCloud().status).toBe("generating");
+  });
+
   it("records failures and rejects invalid reviews", () => {
     const attempt = started();
     expect(() => repository.review(projectId, attempt.id, "approve")).toThrow(
