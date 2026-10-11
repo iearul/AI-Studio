@@ -28,6 +28,30 @@ Open the URL printed by `pnpm dev` (normally
 <http://localhost:3000>, or <http://localhost:3001> when port 3000 is occupied).
 The API listens only on <http://127.0.0.1:4100> by default.
 
+## Run in the background (macOS)
+
+For everyday use, install the production build as a LaunchAgent once:
+
+```bash
+pnpm app:install
+```
+
+It builds the app, starts it at <http://localhost:3100>, starts it again at every
+login, and restarts it if it stops. In Safari, open that address and choose
+**File → Add to Dock** to open it like an app.
+
+| Command              | Use                                                   |
+| -------------------- | ----------------------------------------------------- |
+| `pnpm app:update`    | Rebuild after code changes and restart                |
+| `pnpm app:status`    | Show whether the API and web server are up            |
+| `pnpm app:logs`      | Follow `~/Library/Logs/AI-Film-Studio/app.log`        |
+| `pnpm app:stop`      | Stop until next login, e.g. before running `pnpm dev` |
+| `pnpm app:start`     | Start again                                           |
+| `pnpm app:uninstall` | Remove the LaunchAgent                                |
+
+The background app uses port 3100 so it does not clash with other local services
+on port 3000.
+
 All runtime data is excluded from Git:
 
 ```text

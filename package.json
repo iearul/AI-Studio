@@ -9,6 +9,13 @@
     "pnpm": ">=9"
   },
   "scripts": {
+    "app:install": "bash scripts/local-app.sh install",
+    "app:logs": "bash scripts/local-app.sh logs",
+    "app:start": "bash scripts/local-app.sh start",
+    "app:status": "bash scripts/local-app.sh status",
+    "app:stop": "bash scripts/local-app.sh stop",
+    "app:uninstall": "bash scripts/local-app.sh uninstall",
+    "app:update": "bash scripts/local-app.sh update",
     "build": "pnpm -r --if-present build",
     "build:packages": "pnpm --filter @ai-film-studio/contracts --filter @ai-film-studio/database --filter @ai-film-studio/storage --filter @ai-film-studio/film-engine --filter @ai-film-studio/providers build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
