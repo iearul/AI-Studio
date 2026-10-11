@@ -6,14 +6,18 @@ import { z } from "zod";
 
 import {
   characterInputSchema,
+  createCloudReferenceImageSchema,
   locationInputSchema,
   propInputSchema,
   referenceViews,
+  referenceViewsByOwnerType,
   type ReferenceOwnerType,
+  type ReferenceView,
 } from "@ai-film-studio/contracts";
 import {
-  buildCharacterReferencePrompt,
   buildReferenceCoverage,
+  buildReferencePrompt,
+  defaultReferenceViews,
 } from "@ai-film-studio/film-engine";
 import { ReferenceImageValidationError } from "@ai-film-studio/storage";
 
@@ -29,19 +33,22 @@ const referenceOwnerParamsSchema = entityParamsSchema.extend({
   ownerType: z.enum(["characters", "locations", "props"]),
 });
 const uploadQuerySchema = z.object({ view: z.enum(referenceViews) });
-const characterPromptQuerySchema = z.object({
-  view: z
-    .enum([
-      "front",
-      "three-quarter",
-      "profile",
-      "full-body",
-      "neutral",
-      "expression",
-      "other",
-    ])
-    .default("three-quarter"),
+const promptQuerySchema = z.object({
+  view: z.enum(referenceViews).optional(),
 });
+
+function requireViewFor(
+  type: ReferenceOwnerType,
+  view: ReferenceView,
+): ReferenceView {
+  const allowed: readonly ReferenceView[] = referenceViewsByOwnerType[type];
+  if (!allowed.includes(view)) {
+    throw new ReferenceImageValidationError(
+      `A ${type} reference cannot use the ${view} view.`,
+    );
+  }
+  return view;
+}
 
 function ownerType(
   value: "characters" | "locations" | "props",
@@ -88,19 +95,51 @@ export function registerBibleRoutes(
   );
 
   app.get<{
-    Params: { id: string; entityId: string };
+    Params: {
+      id: string;
+      ownerType: "characters" | "locations" | "props";
+      entityId: string;
+    };
     Querystring: { view?: string };
-  }>("/projects/:id/characters/:entityId/reference-prompt", (request) => {
-    const { id, entityId } = entityParamsSchema.parse(request.params);
-    const { view } = characterPromptQuerySchema.parse(request.query);
-    const project = services.projects.getById(id);
+  }>("/projects/:id/:ownerType/:entityId/reference-prompt", (request) => {
+    const params = referenceOwnerParamsSchema.parse(request.params);
+    const query = promptQuerySchema.parse(request.query);
+    const type = ownerType(params.ownerType);
+    const project = services.projects.getById(params.id);
     if (!project) throw new NotFoundError("Project");
-    const character = services.bible
-      .list(id)
-      .characters.find((candidate) => candidate.id === entityId);
-    if (!character) throw new NotFoundError("Character");
-    return buildCharacterReferencePrompt(project, character, view);
+    const prompt = buildReferencePrompt(
+      project,
+      services.bible.list(params.id),
+      type,
+      params.entityId,
+      requireViewFor(type, query.view ?? defaultReferenceViews[type]),
+    );
+    if (!prompt) throw new NotFoundError("Visual Bible record");
+    return prompt;
   });
+
+  app.post<{
+    Params: {
+      id: string;
+      ownerType: "characters" | "locations" | "props";
+      entityId: string;
+    };
+  }>(
+    "/projects/:id/:ownerType/:entityId/reference-generations",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const params = referenceOwnerParamsSchema.parse(request.params);
+      const input = createCloudReferenceImageSchema.parse(request.body);
+      const type = ownerType(params.ownerType);
+      const reference = await services.imageGenerations.generateReference(
+        params.id,
+        type,
+        params.entityId,
+        { ...input, view: requireViewFor(type, input.view) },
+      );
+      return reply.status(201).send(reference);
+    },
+  );
 
   app.post<{ Params: { id: string } }>(
     "/projects/:id/characters",

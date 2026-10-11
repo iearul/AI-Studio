@@ -6,28 +6,12 @@ import {
   type ReferenceView,
 } from "@ai-film-studio/contracts";
 
-function detail(label: string, value: string | number | null): string | null {
-  if (value === null || value === "") return null;
-  return `- ${label}: ${value}`;
-}
-
-function listDetail(label: string, values: string[]): string | null {
-  return values.length > 0 ? `- ${label}: ${values.join(", ")}` : null;
-}
-
-function compact(values: Array<string | null | undefined>): string[] {
-  return values.filter((value): value is string => Boolean(value));
-}
-
-function safeFilename(value: string, view: ReferenceView): string {
-  const stem = value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-  return `${stem || "character"}-${view}-reference.png`;
-}
+import {
+  compact,
+  detail,
+  listDetail,
+  referenceFilename,
+} from "./prompt-text.js";
 
 const compositionByView: Partial<Record<ReferenceView, string>> = {
   front:
@@ -105,7 +89,7 @@ export function buildCharacterReferencePrompt(
     characterId: character.id,
     characterCode: character.code,
     view,
-    filename: safeFilename(character.name, view),
+    filename: referenceFilename(character.name, view, "character"),
     prompt,
     ready: missing.length === 0,
     missingDetails: missing,

@@ -266,8 +266,10 @@ describe("Phase 3 API", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
-      characterId,
-      characterCode: "CHAR_RAHIM_001",
+      ownerType: "character",
+      ownerId: characterId,
+      ownerCode: "CHAR_RAHIM_001",
+      ownerName: "Rahim",
       view: "profile",
       filename: "rahim-profile-reference.png",
       ready: false,

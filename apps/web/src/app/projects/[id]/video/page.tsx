@@ -38,6 +38,7 @@ import {
   useState,
 } from "react";
 
+import { useLightbox } from "@/components/image-lightbox";
 import { apiBaseUrl, apiFetch, formatBytes } from "@/lib/api";
 
 type ProviderChoice = "manual" | VideoProviderId;
@@ -59,6 +60,7 @@ export default function VideoPage() {
   const [copied, setCopied] = useState<string>();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const lightbox = useLightbox();
 
   const load = useCallback(async () => {
     const [nextProject, nextWorkspace] = await Promise.all([
@@ -434,12 +436,19 @@ export default function VideoPage() {
                   <div className="video-source-panel">
                     <strong>Recommended first frame</strong>
                     {shot.sourceImageAsset ? (
-                      <a
-                        className="video-source-image"
-                        href={`${apiBaseUrl}/projects/${id}/assets/${shot.sourceImageAsset.id}/content`}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Open the approved storyboard image"
+                      <button
+                        type="button"
+                        className="video-source-image zoomable"
+                        aria-label={`Enlarge the approved first frame for ${shot.shotCode}`}
+                        onClick={() =>
+                          lightbox.open([
+                            {
+                              src: `${apiBaseUrl}/projects/${id}/assets/${shot.sourceImageAsset!.id}/content`,
+                              alt: `Approved first frame for ${shot.shotCode}`,
+                              caption: `${shot.shotCode} · approved first frame`,
+                            },
+                          ])
+                        }
                       >
                         <Image
                           unoptimized
@@ -449,9 +458,9 @@ export default function VideoPage() {
                           alt={`Approved first frame for ${shot.shotCode}`}
                         />
                         <span>
-                          <ImageIcon size={13} /> Open full image
+                          <ImageIcon size={13} /> Enlarge
                         </span>
-                      </a>
+                      </button>
                     ) : (
                       <Link
                         className="video-source-missing"
@@ -722,6 +731,7 @@ export default function VideoPage() {
           })}
         </div>
       )}
+      {lightbox.element}
     </div>
   );
 }

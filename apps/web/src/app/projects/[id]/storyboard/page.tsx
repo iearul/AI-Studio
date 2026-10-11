@@ -39,6 +39,7 @@ import {
   ImageGeneratorControls,
   useImageGenerator,
 } from "@/components/image-generator";
+import { useLightbox, type LightboxImage } from "@/components/image-lightbox";
 import { apiBaseUrl, apiFetch } from "@/lib/api";
 
 const referencePreference = [
@@ -123,6 +124,7 @@ function StoryboardWorkspace() {
   const [copiedShot, setCopiedShot] = useState<string>();
   const [error, setError] = useState("");
   const generator = useImageGenerator();
+  const lightbox = useLightbox();
 
   const load = useCallback(async () => {
     const [nextProject, nextCoverage, nextHistory] = await Promise.all([
@@ -302,6 +304,13 @@ function StoryboardWorkspace() {
     );
   }
 
+  const frameShape =
+    project.aspectRatio === "9:16"
+      ? "portrait"
+      : project.aspectRatio === "1:1"
+        ? "square"
+        : "";
+
   return (
     <div className="page storyboard-page">
       <Link className="back-link" href={`/projects/${project.id}`}>
@@ -370,6 +379,25 @@ function StoryboardWorkspace() {
             const attempts = attemptsByShot.get(shot.shotId) ?? [];
             const selected = attempts.find((attempt) => attempt.selected);
             const suggestedReferences = recommendedReferences(shot);
+            const referenceImages: LightboxImage[] = suggestedReferences.map(
+              ({ entityName, reference }) => ({
+                src: `${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`,
+                alt: `${entityName} ${reference.view} reference`,
+                caption: `${entityName} · ${reference.view.replaceAll("-", " ")} view`,
+              }),
+            );
+            const attemptImages: LightboxImage[] = attempts.flatMap(
+              (attempt) =>
+                attempt.asset
+                  ? [
+                      {
+                        src: `${apiBaseUrl}/projects/${project.id}/assets/${attempt.asset.id}/content`,
+                        alt: `${shot.shotCode} ${providerNames[attempt.provider]} attempt`,
+                        caption: `${shot.shotCode} · ${providerNames[attempt.provider]}${attempt.model ? ` · ${attempt.model}` : ""}${attempt.selected ? " · approved" : ""}`,
+                      },
+                    ]
+                  : [],
+            );
             const action =
               shot.prompt
                 .split("\n")
@@ -411,21 +439,34 @@ function StoryboardWorkspace() {
                   <div className="shot-reference-strip">
                     <strong>Continuity photos</strong>
                     <div>
-                      {suggestedReferences.map(({ entityName, reference }) => (
-                        <figure key={reference.id}>
-                          <Image
-                            unoptimized
-                            width={62}
-                            height={62}
-                            src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
-                            alt={`${entityName} ${reference.view} reference`}
-                          />
-                          <figcaption>
-                            {entityName}
-                            <small>{reference.view.replaceAll("-", " ")}</small>
-                          </figcaption>
-                        </figure>
-                      ))}
+                      {suggestedReferences.map(
+                        ({ entityName, reference }, index) => (
+                          <figure key={reference.id}>
+                            <button
+                              type="button"
+                              className="zoomable"
+                              aria-label={`Enlarge ${entityName} ${reference.view} reference`}
+                              onClick={() =>
+                                lightbox.open(referenceImages, index)
+                              }
+                            >
+                              <Image
+                                unoptimized
+                                width={62}
+                                height={62}
+                                src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
+                                alt={`${entityName} ${reference.view} reference`}
+                              />
+                            </button>
+                            <figcaption>
+                              {entityName}
+                              <small>
+                                {reference.view.replaceAll("-", " ")}
+                              </small>
+                            </figcaption>
+                          </figure>
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -513,15 +554,31 @@ function StoryboardWorkspace() {
                         className={`attempt-card ${attempt.selected ? "selected" : ""}`}
                         key={attempt.id}
                       >
-                        <div className="attempt-image">
+                        <div className={`attempt-image ${frameShape}`}>
                           {attempt.asset ? (
-                            <Image
-                              unoptimized
-                              fill
-                              sizes="(max-width: 640px) 100vw, 340px"
-                              src={`${apiBaseUrl}/projects/${project.id}/assets/${attempt.asset.id}/content`}
-                              alt={`${shot.shotCode} ${attempt.provider} attempt`}
-                            />
+                            <button
+                              type="button"
+                              className="zoomable zoomable-fill"
+                              aria-label={`Enlarge ${shot.shotCode} ${providerNames[attempt.provider]} attempt`}
+                              onClick={() =>
+                                lightbox.open(
+                                  attemptImages,
+                                  attemptImages.findIndex((image) =>
+                                    image.src.endsWith(
+                                      `/assets/${attempt.asset!.id}/content`,
+                                    ),
+                                  ),
+                                )
+                              }
+                            >
+                              <Image
+                                unoptimized
+                                fill
+                                sizes="(max-width: 640px) 100vw, 340px"
+                                src={`${apiBaseUrl}/projects/${project.id}/assets/${attempt.asset.id}/content`}
+                                alt={`${shot.shotCode} ${attempt.provider} attempt`}
+                              />
+                            </button>
                           ) : (
                             <span>
                               {attempt.status === "failed" ? (
@@ -630,6 +687,7 @@ function StoryboardWorkspace() {
           })}
         </div>
       )}
+      {lightbox.element}
     </div>
   );
 }

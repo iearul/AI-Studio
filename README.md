@@ -79,9 +79,11 @@ the model after a result so the 18 GB M3 Pro remains responsive.
 
 The project workspace also provides character, location, and prop Bibles with
 stable generated IDs, editable structured details, and local JPEG/PNG/WebP reference
-uploads. Character cards provide detailed reference-photo prompts that can be
-generated with the OpenAI or Gemini image API, sending the character's existing
-views for consistency, or copied into ChatGPT.
+uploads. Every character, location, and prop card provides a detailed
+reference-photo prompt for the selected view that can be generated with the OpenAI
+or Gemini image API, sending that record's existing photos for consistency, or
+copied into ChatGPT. The shot coverage list can start a storyboard frame directly.
+Click any photo in the Bible, Storyboard, or Video workspace to view it full size.
 Shot labels resolve only by exact name or stable code; unresolved labels are shown
 instead of guessed. Each resolved shot receives a continuity prompt combining the
 creative brief, cinematography, Bible facts, and reference paths.

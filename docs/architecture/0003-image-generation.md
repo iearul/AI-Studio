@@ -25,8 +25,9 @@ from a separate ChatGPT session.
   reference photos, and estimated USD cost.
 - Shot generation sends the shot's Visual Bible photos, each entity's best view
   first, within the model's image limit and a per-provider byte budget; skipped
-  photos are recorded on the attempt. Character reference generation sends that
-  character's existing views. The prompt lists the attached photos in order.
+  photos are recorded on the attempt. Character, location, and prop reference
+  generation sends that record's existing views, at 4:5, 16:9, and 1:1
+  respectively. The prompt lists the attached photos in order.
 - Shot generation runs in the background inside the API process. A partial unique
   index allows one active paid attempt per shot; attempts still running when the
   process stops are marked failed at the next start.
@@ -47,5 +48,5 @@ from a separate ChatGPT session.
   remains free of per-request API charges.
 - An interrupted background request may still be billed by the provider even though
   no image is saved.
-- Generated character reference photos are stored like uploads and do not carry a
-  recorded cost.
+- Generated reference photos are stored like uploads and do not carry a recorded
+  cost.

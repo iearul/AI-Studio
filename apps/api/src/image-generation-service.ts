@@ -13,6 +13,7 @@ import type {
   Project,
   ReferenceCoverage,
   ReferenceImage,
+  ReferenceOwnerType,
   StoryPlan,
 } from "@ai-film-studio/contracts";
 import {
@@ -24,8 +25,9 @@ import {
   type StoryPlanRepository,
 } from "@ai-film-studio/database";
 import {
-  buildCharacterReferencePrompt,
   buildReferenceCoverage,
+  buildReferencePrompt,
+  referenceAspectRatios,
 } from "@ai-film-studio/film-engine";
 import type {
   ImageGenerationInput,
@@ -52,6 +54,20 @@ type ProviderChoice = {
   provider: ImageProvider;
   model: ImageProviderModel;
   quality: ImageQuality;
+};
+
+const ownerLabels: Record<ReferenceOwnerType, string> = {
+  character: "Character",
+  location: "Location",
+  prop: "Prop",
+};
+
+const referenceInstructions: Record<ReferenceOwnerType, string> = {
+  character:
+    "They show this same character; match the face, body, hair, wardrobe, and accessories exactly.",
+  location:
+    "They show this same location; match the layout, architecture, materials, and palette exactly.",
+  prop: "They show this same prop; match the shape, proportions, materials, colors, and markings exactly.",
 };
 
 // Most useful view first when only some photos of an entity fit in a request.
@@ -202,24 +218,35 @@ export class ImageGenerationService {
     await Promise.allSettled([...this.running]);
   }
 
-  async generateCharacterReference(
+  /** Generates a Visual Bible reference photo and stores it like an upload. */
+  async generateReference(
     projectId: string,
-    characterId: string,
+    ownerType: ReferenceOwnerType,
+    ownerId: string,
     input: CreateCloudReferenceImage,
   ): Promise<ReferenceImage> {
     const project = this.projects.getById(projectId);
     if (!project) throw new GenerationNotFoundError("Project");
-    const character = this.bible
-      .list(projectId)
-      .characters.find((candidate) => candidate.id === characterId);
-    if (!character) throw new GenerationNotFoundError("Character");
+    const bible = this.bible.list(projectId);
+    const built = buildReferencePrompt(
+      project,
+      bible,
+      ownerType,
+      ownerId,
+      input.view,
+    );
+    if (!built) throw new GenerationNotFoundError(ownerLabels[ownerType]);
     const choice = this.requireChoice(input);
-    const built = buildCharacterReferencePrompt(project, character, input.view);
+    const entity = [
+      ...bible.characters,
+      ...bible.locations,
+      ...bible.props,
+    ].find((candidate) => candidate.id === ownerId);
     const selection = await this.loadReferences(
       projectId,
       prioritize([
-        character.references.map((reference) => ({
-          label: `${character.name} (${character.code})`,
+        (entity?.references ?? []).map((reference) => ({
+          label: `${built.ownerName} (${built.ownerCode})`,
           reference,
         })),
       ]),
@@ -231,15 +258,15 @@ export class ImageGenerationService {
       prompt: withReferenceKey(
         built.prompt,
         selection.sent,
-        "They show this same character; match the face, body, hair, wardrobe, and accessories exactly.",
+        referenceInstructions[ownerType],
       ),
-      aspectRatio: "4:5",
+      aspectRatio: referenceAspectRatios[ownerType],
       references: selection.inputs,
     });
     const stored = await this.referenceImages.save({
       projectId,
-      ownerType: "character",
-      ownerId: characterId,
+      ownerType,
+      ownerId,
       originalFilename: built.filename.replace(
         /\.png$/,
         `-${choice.provider.id}.png`,
@@ -250,8 +277,8 @@ export class ImageGenerationService {
     });
     try {
       const reference = this.bible.addReference(projectId, {
-        ownerType: "character",
-        ownerId: characterId,
+        ownerType,
+        ownerId,
         view: input.view,
         ...stored,
       });

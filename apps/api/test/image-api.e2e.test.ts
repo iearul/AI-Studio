@@ -26,6 +26,16 @@ class FakeImageProvider implements ImageProvider {
   readonly maxReferenceBytes = 1024 * 1024;
   readonly requests: ImageGenerationInput[] = [];
   failWith: Error | undefined;
+  private gate: Promise<void> | undefined;
+
+  /** Keeps generations pending until the returned function is called. */
+  hold(): () => void {
+    let release!: () => void;
+    this.gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    return release;
+  }
 
   status(): ImageProviderStatus {
     return {
@@ -48,14 +58,11 @@ class FakeImageProvider implements ImageProvider {
     };
   }
 
-  generate(input: ImageGenerationInput): Promise<GeneratedImage> {
+  async generate(input: ImageGenerationInput): Promise<GeneratedImage> {
     this.requests.push(input);
-    if (this.failWith) return Promise.reject(this.failWith);
-    return Promise.resolve({
-      data: png,
-      model: "fake-model",
-      costMicros: 30_500,
-    });
+    await this.gate;
+    if (this.failWith) throw this.failWith;
+    return { data: png, model: "fake-model", costMicros: 30_500 };
   }
 }
 
@@ -201,6 +208,7 @@ describe("image API generation", () => {
   });
 
   it("generates a storyboard frame in the background with the shot's reference photos", async () => {
+    const release = provider.hold();
     const started = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${projectId}/shots/${shotId}/image-generations`,
@@ -229,6 +237,7 @@ describe("image API generation", () => {
     });
     expect(duplicate.statusCode).toBe(409);
 
+    release();
     await services.imageGenerations.settle();
     const [attempt] = services.generations.listProject(projectId).attempts;
     expect(attempt).toMatchObject({
@@ -309,5 +318,54 @@ describe("image API generation", () => {
     expect(bible.characters[0]?.references.map((item) => item.view)).toEqual(
       expect.arrayContaining(["three-quarter", "front"]),
     );
+  });
+
+  it("builds and generates a wide location reference photo", async () => {
+    const locationId = services.bible.list(projectId).locations[0]!.id;
+    const prompt = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${projectId}/locations/${locationId}/reference-prompt?view=exterior-night`,
+    });
+    expect(prompt.json()).toMatchObject({
+      ownerType: "location",
+      ownerId: locationId,
+      view: "exterior-night",
+    });
+
+    const wrongView = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${projectId}/locations/${locationId}/reference-generations`,
+      payload: {
+        provider: "openai",
+        model: "fake-model",
+        quality: "medium",
+        view: "full-body",
+        confirmation,
+      },
+    });
+    expect(wrongView.statusCode).toBe(422);
+    expect(provider.requests).toHaveLength(0);
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${projectId}/locations/${locationId}/reference-generations`,
+      payload: {
+        provider: "openai",
+        model: "fake-model",
+        quality: "medium",
+        view: "exterior-night",
+        confirmation,
+      },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({
+      ownerType: "location",
+      view: "exterior-night",
+    });
+    expect(provider.requests[0]).toMatchObject({
+      aspectRatio: "16:9",
+      references: [],
+    });
+    expect(provider.requests[0]?.prompt).toContain("LOCATION IDENTITY");
   });
 });

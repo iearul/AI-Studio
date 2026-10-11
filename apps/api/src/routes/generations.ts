@@ -6,7 +6,6 @@ import { z } from "zod";
 
 import {
   createCloudImageSchema,
-  createCloudReferenceImageSchema,
   imageReviewInputSchema,
 } from "@ai-film-studio/contracts";
 import { StoryboardAssetValidationError } from "@ai-film-studio/storage";
@@ -20,9 +19,6 @@ const attemptParamsSchema = projectParamsSchema.extend({
   attemptId: z.uuid(),
 });
 const assetParamsSchema = projectParamsSchema.extend({ assetId: z.uuid() });
-const characterParamsSchema = projectParamsSchema.extend({
-  characterId: z.uuid(),
-});
 
 export function registerGenerationRoutes(
   app: FastifyInstance,
@@ -44,22 +40,6 @@ export function registerGenerationRoutes(
         input,
       );
       return reply.status(202).send(attempt);
-    },
-  );
-
-  app.post<{ Params: { id: string; characterId: string } }>(
-    "/projects/:id/characters/:characterId/reference-generations",
-    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
-    async (request, reply) => {
-      const { id, characterId } = characterParamsSchema.parse(request.params);
-      const input = createCloudReferenceImageSchema.parse(request.body);
-      const reference =
-        await services.imageGenerations.generateCharacterReference(
-          id,
-          characterId,
-          input,
-        );
-      return reply.status(201).send(reference);
     },
   );
 

@@ -1843,6 +1843,95 @@ textarea:focus-visible {
 .shot-row > span {
   font-size: 8px;
 }
+.zoomable {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+.zoomable-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.zoomable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.lightbox-backdrop {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  padding: 60px 76px 22px;
+  background: rgba(14, 14, 12, 0.92);
+}
+.lightbox-figure {
+  margin: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+.lightbox-image {
+  position: relative;
+  min-height: 0;
+}
+.lightbox-image img {
+  object-fit: contain;
+}
+.lightbox-figure figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  color: #ece9df;
+  font-size: 11px;
+  text-align: center;
+}
+.lightbox-figure figcaption small {
+  color: #a9a69b;
+}
+.lightbox-figure figcaption a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #f4c8b2;
+}
+.lightbox-button {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+}
+.lightbox-button:hover,
+.lightbox-button:focus-visible {
+  background: rgba(255, 255, 255, 0.24);
+}
+.lightbox-close {
+  top: 12px;
+  right: 12px;
+}
+.lightbox-previous,
+.lightbox-next {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.lightbox-previous {
+  left: 16px;
+}
+.lightbox-next {
+  right: 16px;
+}
 .modal-backdrop {
   position: fixed;
   z-index: 100;
@@ -2231,6 +2320,18 @@ textarea:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.coverage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.coverage-notice {
+  margin-bottom: 12px;
+}
+.coverage-notice a {
+  margin-left: auto;
+  font-weight: 700;
 }
 .reference-grid figcaption {
   position: absolute;
@@ -2877,7 +2978,13 @@ textarea:focus-visible {
     linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent), #292923;
 }
 .attempt-image img {
-  object-fit: cover;
+  object-fit: contain;
+}
+.attempt-image.portrait {
+  aspect-ratio: 4 / 5;
+}
+.attempt-image.square {
+  aspect-ratio: 1;
 }
 .attempt-image > span {
   display: grid;
@@ -3402,8 +3509,12 @@ textarea:focus-visible {
   color: #e8e7df;
   background: #292923;
 }
+.video-source-image {
+  width: 100%;
+  padding: 0;
+}
 .video-source-image img {
-  object-fit: cover;
+  object-fit: contain;
 }
 .video-source-image > span {
   position: absolute;
@@ -3928,5 +4039,17 @@ textarea:focus-visible {
   .chat-controls {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .lightbox-backdrop {
+    padding: 60px 8px 76px;
+  }
+  .lightbox-previous,
+  .lightbox-next {
+    top: auto;
+    bottom: 14px;
+    transform: none;
   }
 }
