@@ -1,4 +1,6 @@
 export * from "./anthropic-text-provider.js";
+export * from "./audio-provider.js";
+export * from "./elevenlabs-audio-provider.js";
 export * from "./gemini-image-provider.js";
 export * from "./image-provider.js";
 export * from "./ollama-text-provider.js";
@@ -7,4 +9,5 @@ export * from "./openai-text-provider.js";
 export * from "./text-provider.js";
 export * from "./kling-video-provider.js";
 export * from "./seedance-video-provider.js";
+export * from "./veo-video-provider.js";
 export * from "./video-provider.js";

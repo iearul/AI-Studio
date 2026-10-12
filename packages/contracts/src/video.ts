@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { generatedAssetSchema, reviewStatuses } from "./generation.js";
 
-export const videoProviders = ["manual", "kling", "seedance"] as const;
-export const cloudVideoProviders = ["kling", "seedance"] as const;
+export const videoProviders = ["manual", "kling", "seedance", "veo"] as const;
+export const cloudVideoProviders = ["kling", "seedance", "veo"] as const;
 export const videoAttemptStatuses = [
   "submitting",
   "submitted",
@@ -28,6 +28,13 @@ export const videoProviderModelSchema = z.object({
   label: z.string().trim().min(1).max(120),
   supportedResolutions: z.array(z.enum(videoResolutions)).min(1),
   supportedDurationsSeconds: z.array(z.number().int().positive()).min(1),
+  /** Narrower duration choices where a resolution only allows some lengths. */
+  durationsByResolution: z
+    .partialRecord(
+      z.enum(videoResolutions),
+      z.array(z.number().int().positive()).min(1),
+    )
+    .optional(),
   supportsNativeAudio: z.boolean(),
   estimatedUsdPerSecond: z.object({
     withoutAudio: resolutionRateSchema,

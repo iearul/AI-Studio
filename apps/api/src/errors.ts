@@ -11,6 +11,9 @@ import {
   StoryPlanProjectNotFoundError,
 } from "@ai-film-studio/database";
 import {
+  AudioProviderConfigurationError,
+  AudioProviderResponseError,
+  AudioProviderUnavailableError,
   ImageProviderConfigurationError,
   ImageProviderResponseError,
   ImageProviderUnavailableError,
@@ -163,6 +166,36 @@ export function registerErrorHandler(app: FastifyInstance): void {
         type: "https://ai-film-studio.local/problems/provider-configuration",
         title: "Provider is not configured",
         status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof AudioProviderConfigurationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/audio-provider-configuration",
+        title: "Audio provider is not configured",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof AudioProviderUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/audio-provider-unavailable",
+        title: "Audio provider is unavailable",
+        status: 503,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof AudioProviderResponseError) {
+      void reply.status(502).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/audio-provider-response",
+        title: "Audio provider returned an invalid response",
+        status: 502,
         detail: error.message,
         instance: request.url,
       });

@@ -103,8 +103,10 @@ Studio, which avoids the memory pressure observed on the 18 GB M3 Pro.
 
 Open **Video** after approving a storyboard image. Every shot recommends that exact
 approved image as its first frame and supplies a motion-specific continuity prompt.
-You can create the clip manually and import MP4/MOV/WebM, or choose Kling 3.0,
-Kling 2.5 Turbo, or BytePlus Seedance 2.0 per shot. Kling 2.5 Turbo is the cheaper
+You can create the clip manually and import MP4/MOV/WebM, or choose Google Veo 3.1
+(Fast, Standard, or Lite, sound included), Kling 3.0, Kling 2.5 Turbo, or BytePlus
+Seedance 2.0 per shot. Veo uses the same `GEMINI_API_KEY` as Gemini images and makes
+4-, 6-, or 8-second 16:9 or 9:16 clips; 1080p and 4K are 8 seconds only. Kling 2.5 Turbo is the cheaper
 no-audio option and supports 5- or 10-second clips at 720p/1080p. Cloud submission
 always shows the selected model, provider duration, resolution, audio choice, and
 USD estimate in a native confirmation dialog; cancelling it makes no API request.
@@ -115,6 +117,21 @@ The API always attaches the approved storyboard image as `first_frame`. Kling 2.
 Turbo cannot receive separate character, location, or prop photos. Kling 3.0 accepts
 additional continuity references only as pre-created Kling Element IDs, so the
 current integration does not pretend that raw reference photos were sent.
+
+## Sound production
+
+Open **Sound** to give the narrator and each Bible character an ElevenLabs voice;
+the choice is stored as a voice profile so a character sounds the same in every
+scene. Each scene's narration is read by the narrator voice and its dialogue is
+voiced in one request with every speaker's own voice, in the project language
+(Bangla, English, or German). Dialogue lines written as `Name: line` are matched
+to Bible characters by name or code; an unlabelled line belongs to the scene's
+first character. Every shot can get generated sound effects and ambience at its
+own length, and the project gets an instrumental background-music track sized to
+the shot plan. Each take shows its estimated cost, runs in the background, plays
+in the page, and is approved per scene, shot, or project. Audio files are stored in
+the project folder, so they are included in backups and Google Drive sync. Joining
+clips and audio into one finished video is the next phase.
 
 To enable cloud video, add `KLING_API_KEY` and/or `SEEDANCE_API_KEY` to the ignored
 `.env.local` file and restart the API. Seedance's documented restriction on direct

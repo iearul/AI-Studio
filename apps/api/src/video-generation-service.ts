@@ -9,6 +9,7 @@ import {
   type VideoAttempt,
   type VideoProviderId,
   type VideoProviderModel,
+  type VideoResolution,
   type VideoWorkspace,
 } from "@ai-film-studio/contracts";
 import {
@@ -34,6 +35,7 @@ import type {
 const providerResultHosts: Record<VideoProviderId, string[]> = {
   kling: ["klingai.com"],
   seedance: ["volces.com", "bytepluses.com"],
+  veo: ["generativelanguage.googleapis.com"],
 };
 
 export class VideoGenerationService {
@@ -184,6 +186,7 @@ export class VideoGenerationService {
     const durationSeconds = providerDuration(
       context.shot.durationSeconds,
       model,
+      input.resolution,
     );
     if (durationSeconds === null) {
       throw new GenerationStateError(
@@ -309,7 +312,7 @@ export class VideoGenerationService {
         "downloading",
         result.resultExpiresAt,
       );
-      const response = await this.download(result.resultUrl);
+      const response = await this.download(provider, result.resultUrl);
       if (!response.body) {
         throw new VideoProviderResponseError(
           "The provider video download did not contain a response body.",
@@ -433,14 +436,16 @@ export class VideoGenerationService {
     }
   }
 
-  private async download(url: string): Promise<Response> {
+  private async download(
+    provider: VideoProvider,
+    url: string,
+  ): Promise<Response> {
     let response: Response;
+    const signal = AbortSignal.timeout(5 * 60_000);
     try {
-      response = await this.request(url, {
-        method: "GET",
-        redirect: "error",
-        signal: AbortSignal.timeout(5 * 60_000),
-      });
+      response = provider.download
+        ? await provider.download(url, signal)
+        : await this.request(url, { method: "GET", redirect: "error", signal });
     } catch (error) {
       throw new VideoProviderUnavailableError(
         "The completed provider video could not be downloaded.",
@@ -465,10 +470,14 @@ export class VideoGenerationService {
 function providerDuration(
   shotDurationSeconds: number,
   model: VideoProviderModel,
+  resolution: VideoResolution,
 ): number | null {
   const target = Math.ceil(shotDurationSeconds);
   return (
-    [...model.supportedDurationsSeconds]
+    [
+      ...(model.durationsByResolution?.[resolution] ??
+        model.supportedDurationsSeconds),
+    ]
       .sort((left, right) => left - right)
       .find((duration) => duration >= target) ?? null
   );

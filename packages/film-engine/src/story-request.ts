@@ -85,7 +85,8 @@ const responseTemplate = {
       characters: ["Character name"],
       action: "Visible scene action.",
       narration: "Narration text, or null.",
-      dialogue: "Dialogue text, or null.",
+      dialogue:
+        "Character name: spoken line, one line per speaker turn, or null.",
       estimatedDurationSeconds: 8,
       emotionalPurpose: "The scene's emotional job.",
       shots: [
@@ -154,6 +155,7 @@ Requirements:
 - Give every scene at least one shot and number shots globally as SHOT_001, SHOT_002, and so on.
 - Each shot action must describe a single visible action suitable for image-first generation.
 - Use the same exact character, location, and prop names throughout so Bible records can be inherited automatically.
+- Write dialogue as one speaker turn per line in the form "Character name: spoken line", using the exact visualBible character name, so each line can be voiced by that character.
 - Define every named character, every used location, and every recurring or visually important prop in visualBible. Do not omit an entity used by a scene or shot.
 - Give each visualBible record concrete, repeatable visual details. Avoid vague words such as "normal", "nice", or "cinematic" where a stable physical detail can be specified.
 - Keep identity, wardrobe, geography, architecture, materials, colors, and prop condition consistent across the complete plan.

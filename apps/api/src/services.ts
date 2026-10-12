@@ -1,4 +1,5 @@
 import {
+  AudioRepository,
   BackupRepository,
   BibleRepository,
   DatabaseManager,
@@ -11,24 +12,30 @@ import {
 } from "@ai-film-studio/database";
 import {
   AnthropicTextProvider,
+  ElevenLabsAudioProvider,
   GeminiImageProvider,
   KlingVideoProvider,
   OllamaTextProvider,
   OpenAiImageProvider,
   OpenAiTextProvider,
   SeedanceVideoProvider,
+  VeoVideoProvider,
   resolveAnthropicTextProviderConfig,
+  resolveElevenLabsAudioProviderConfig,
   resolveGeminiImageProviderConfig,
   resolveKlingVideoProviderConfig,
   resolveOllamaTextProviderConfig,
   resolveOpenAiImageProviderConfig,
   resolveOpenAiTextProviderConfig,
   resolveSeedanceVideoProviderConfig,
+  resolveVeoVideoProviderConfig,
+  type AudioProvider,
   type ImageProvider,
   type TextProvider,
   type VideoProvider,
 } from "@ai-film-studio/providers";
 import {
+  AudioAssetStore,
   BackupService,
   ensureStorageDirectories,
   GoogleDriveClient,
@@ -42,6 +49,7 @@ import {
   type StorageConfig,
 } from "@ai-film-studio/storage";
 
+import { AudioGenerationService } from "./audio-generation-service.js";
 import { ImageGenerationService } from "./image-generation-service.js";
 import { GoogleDriveService } from "./google-drive-service.js";
 import { StoryGenerationService } from "./story-generation-service.js";
@@ -53,6 +61,7 @@ export async function createServices(
   options: {
     textProviders?: TextProvider[];
     imageProviders?: ImageProvider[];
+    audioProvider?: AudioProvider;
     videoProviders?: VideoProvider[];
   } = {},
 ) {
@@ -67,12 +76,14 @@ export async function createServices(
   const bible = new BibleRepository(database, projects);
   const generations = new GenerationRepository(database, projects);
   const videos = new VideoRepository(database, projects);
+  const audio = new AudioRepository(database, projects);
   const backupRecords = new BackupRepository(database);
   const manifestOutbox = new ManifestOutboxRepository(database);
   const manifestStore = new ProjectManifestStore(storage.projectsPath);
   const referenceImages = new ReferenceImageStore(storage.projectsPath);
   const storyboardAssets = new StoryboardAssetStore(storage.projectsPath);
   const videoAssets = new VideoAssetStore(storage.projectsPath);
+  const audioAssets = new AudioAssetStore(storage.projectsPath);
   const googleDriveTokens = new GoogleDriveTokenStore(storage.secretsPath);
   const googleDriveClient = new GoogleDriveClient(
     {
@@ -96,6 +107,7 @@ export async function createServices(
   const videoProviders = options.videoProviders ?? [
     new KlingVideoProvider(resolveKlingVideoProviderConfig()),
     new SeedanceVideoProvider(resolveSeedanceVideoProviderConfig()),
+    new VeoVideoProvider(resolveVeoVideoProviderConfig()),
   ];
   const manifestSynchronizer = new ManifestSynchronizer(
     manifestOutbox,
@@ -119,6 +131,8 @@ export async function createServices(
           attempt.asset ? [attempt.asset] : [],
         ),
         generationAttempts: imageHistory.attempts,
+        voiceProfiles: audio.listVoiceProfiles(projectId),
+        audioAttempts: audio.listProject(projectId),
         videoAssets: videoHistory.attempts.flatMap((attempt) =>
           attempt.asset ? [attempt.asset] : [],
         ),
@@ -143,8 +157,19 @@ export async function createServices(
     manifestSynchronizer,
     imageProviders,
   );
-  // Image requests run inside this process, so none survive a restart.
+  const audioGenerations = new AudioGenerationService(
+    audio,
+    projects,
+    storyPlans,
+    bible,
+    audioAssets,
+    manifestSynchronizer,
+    options.audioProvider ??
+      new ElevenLabsAudioProvider(resolveElevenLabsAudioProviderConfig()),
+  );
+  // Image and audio requests run inside this process, so none survive a restart.
   generations.failInterrupted();
+  audio.failInterrupted();
   const storyGenerations = new StoryGenerationService(projects, textProviders);
   const videoGenerations = new VideoGenerationService(
     videos,
@@ -175,13 +200,16 @@ export async function createServices(
     bible,
     generations,
     videos,
+    audio,
     backupRecords,
     manifestOutbox,
     manifestSynchronizer,
     referenceImages,
     storyboardAssets,
     videoAssets,
+    audioAssets,
     imageGenerations,
+    audioGenerations,
     storyGenerations,
     videoGenerations,
     googleDrive,

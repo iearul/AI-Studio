@@ -30,6 +30,8 @@ export interface VideoProvider {
   status(): VideoProviderStatus;
   submit(input: VideoSubmission): Promise<{ jobId: string }>;
   poll(jobId: string): Promise<VideoProviderResult>;
+  /** Fetches a finished result when the link needs provider credentials. */
+  download?(url: string, signal: AbortSignal): Promise<Response>;
 }
 
 export class VideoProviderConfigurationError extends Error {

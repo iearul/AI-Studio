@@ -16,8 +16,11 @@ an unmistakable user action.
 - A deterministic image-to-video prompt snapshots the action, camera, lighting,
   emotional intent, frame ratio, and strict identity/geometry continuity rules.
 - Manual MP4, MOV, and WebM imports are always available and record zero API cost.
-- Kling 3.0, Kling 2.5 Turbo, and BytePlus Seedance 2.0 implement one shared
-  asynchronous provider boundary. The Kling model is selected independently for
+- Kling 3.0, Kling 2.5 Turbo, BytePlus Seedance 2.0, and Google Veo 3.1 (Fast,
+  Standard, Lite, through the Gemini API) implement one shared asynchronous provider
+  boundary. Veo always generates sound, makes 4-, 6-, or 8-second 16:9 or 9:16
+  clips with 1080p and 4K limited to 8 seconds, and its download links need the API
+  key, which is sent only to the Gemini host and never to the storage redirect. The Kling model is selected independently for
   each shot. Provider keys stay server-side in ignored environment files.
 - A paid request is accepted only with the literal server-validated confirmation
   token emitted after the UI displays provider, duration, resolution, audio choice,

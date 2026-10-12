@@ -209,9 +209,9 @@ export default function VideoPage() {
     const provider = providerMap.get(providerId);
     if (!provider) return;
     const model = selectedModel(shot.shotId, provider);
-    const duration = providerDuration(shot.durationSeconds, model);
-    if (duration === null) return;
     const resolution = selectedResolution(shot.shotId, model);
+    const duration = providerDuration(shot.durationSeconds, model, resolution);
+    if (duration === null) return;
     const generateAudio =
       model.supportsNativeAudio && Boolean(audio[shot.shotId]);
     const rate = generateAudio
@@ -333,8 +333,8 @@ export default function VideoPage() {
           <h1>Video workspace</h1>
           <p>
             Start from each approved storyboard photo. Use the prepared prompt
-            manually, or submit it to Kling or Seedance after reviewing the
-            provider charge.
+            manually, or submit it to Google Veo, Kling, or Seedance after
+            reviewing the provider charge.
           </p>
         </div>
         <div className="storyboard-metrics">
@@ -783,7 +783,7 @@ function CloudVideoControls({
   onAudio: (value: boolean) => void;
   onGenerate: () => void;
 }) {
-  const duration = providerDuration(shot.durationSeconds, model);
+  const duration = providerDuration(shot.durationSeconds, model, resolution);
   const rate = audio
     ? model.estimatedUsdPerSecond.withAudio[resolution]
     : model.estimatedUsdPerSecond.withoutAudio[resolution];
@@ -879,10 +879,14 @@ function CloudVideoControls({
 function providerDuration(
   shotDurationSeconds: number,
   model: VideoProviderModel,
+  resolution: VideoResolution,
 ): number | null {
   const target = Math.ceil(shotDurationSeconds);
   return (
-    [...model.supportedDurationsSeconds]
+    [
+      ...(model.durationsByResolution?.[resolution] ??
+        model.supportedDurationsSeconds),
+    ]
       .sort((left, right) => left - right)
       .find((duration) => duration >= target) ?? null
   );
@@ -892,6 +896,9 @@ function modelLabel(model: string | null, provider: string): string {
   if (model === "kling-2.5-turbo") return "Kling 2.5 Turbo";
   if (model === "kling-3.0") return "Kling 3.0";
   if (provider === "seedance") return "Seedance 2.0";
+  if (model?.startsWith("veo-3.1-fast")) return "Veo 3.1 Fast";
+  if (model?.startsWith("veo-3.1-lite")) return "Veo 3.1 Lite";
+  if (model?.startsWith("veo-3.1")) return "Veo 3.1";
   return model ?? provider;
 }
 

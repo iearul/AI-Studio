@@ -1,3 +1,4 @@
+export * from "./audio.js";
 export * from "./bible.js";
 export * from "./generation.js";
 export * from "./project.js";

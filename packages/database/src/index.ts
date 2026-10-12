@@ -1,3 +1,4 @@
+export * from "./audio-repository.js";
 export * from "./backup-repository.js";
 export * from "./bible-repository.js";
 export * from "./database-manager.js";

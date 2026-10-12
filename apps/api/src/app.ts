@@ -13,6 +13,7 @@ import { registerProjectRoutes } from "./routes/projects.js";
 import { registerSystemRoutes } from "./routes/system.js";
 import { registerStoryPlanRoutes } from "./routes/story-plans.js";
 import { registerVideoRoutes } from "./routes/videos.js";
+import { registerAudioRoutes } from "./routes/audio.js";
 import type { Services } from "./services.js";
 
 export async function buildApp(
@@ -74,6 +75,7 @@ export async function buildApp(
       registerSystemRoutes(api, services);
       registerChatRoutes(api);
       registerVideoRoutes(api, services);
+      registerAudioRoutes(api, services);
     },
     { prefix: "/api/v1" },
   );
