@@ -7,6 +7,8 @@ import {
   BibleProjectNotFoundError,
   GenerationNotFoundError,
   GenerationStateError,
+  KdpConflictError,
+  KdpNotFoundError,
   StoryPlanDurationError,
   StoryPlanProjectNotFoundError,
 } from "@ai-film-studio/database";
@@ -38,6 +40,8 @@ import {
   GoogleDriveOAuthStateError,
   GoogleDriveSyncBusyError,
 } from "./google-drive-service.js";
+import { KdpBudgetExceededError } from "./kdp/ai-router.js";
+import { KdpCoverValidationError } from "./kdp/kdp-service.js";
 
 export class NotFoundError extends Error {
   constructor(resource: string) {
@@ -94,7 +98,8 @@ export function registerErrorHandler(app: FastifyInstance): void {
       error instanceof BibleProjectNotFoundError ||
       error instanceof BibleEntityNotFoundError ||
       error instanceof GenerationNotFoundError ||
-      error instanceof StoryPlanProjectNotFoundError
+      error instanceof StoryPlanProjectNotFoundError ||
+      error instanceof KdpNotFoundError
     ) {
       void reply.status(404).type("application/problem+json").send({
         type: "https://ai-film-studio.local/problems/not-found",
@@ -113,6 +118,36 @@ export function registerErrorHandler(app: FastifyInstance): void {
         type: "https://ai-film-studio.local/problems/generation-state",
         title: "Generation state conflict",
         status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof KdpConflictError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/kdp-conflict",
+        title: "The book changed or the action is not allowed now",
+        status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof KdpBudgetExceededError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/kdp-budget",
+        title: "Budget limit reached",
+        status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof KdpCoverValidationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-film-studio.local/problems/kdp-cover",
+        title: "Invalid cover image",
+        status: 422,
         detail: error.message,
         instance: request.url,
       });

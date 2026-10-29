@@ -5,14 +5,22 @@ import {
 } from "@ai-film-studio/contracts";
 
 import {
+  isPermanentHttpStatus,
   parseGeneratedJson,
+  parseRetryAfter,
   positiveIntegerEnvironment,
+  requestSignal,
+  TextProviderAbortedError,
   TextProviderConfigurationError,
   TextProviderResponseError,
   TextProviderUnavailableError,
+  type GeneratedProse,
   type GeneratedText,
+  type TextCompletionRequest,
   type TextGenerationRequest,
   type TextProvider,
+  type TextRequestOptions,
+  type TextUsage,
 } from "./text-provider.js";
 
 const anthropicEfforts = ["low", "medium", "high", "xhigh", "max"] as const;
@@ -52,6 +60,10 @@ export function resolveAnthropicTextProviderConfig(): AnthropicTextProviderConfi
 export class AnthropicTextProvider implements TextProvider {
   readonly id = "anthropic" as const;
 
+  get defaultModel(): string | null {
+    return this.config.model;
+  }
+
   constructor(
     readonly config: AnthropicTextProviderConfig,
     private readonly dependencies: Dependencies = { fetch },
@@ -89,77 +101,117 @@ export class AnthropicTextProvider implements TextProvider {
   }
 
   async generate(request: TextGenerationRequest): Promise<GeneratedText> {
+    const message = await this.send(request, {
+      type: "json_schema",
+      schema: toClaudeSchema(request.schema),
+    });
+    if (message.stop_reason === "max_tokens") {
+      throw new TextProviderResponseError(
+        "Claude ran out of output tokens before finishing the response.",
+      );
+    }
+    const outputText = textOf(message);
+    if (!outputText) {
+      throw new TextProviderResponseError(
+        "Claude completed without returning a result.",
+      );
+    }
+    return {
+      output: parseGeneratedJson(outputText),
+      model: message.model,
+      usage: usageOf(message),
+    };
+  }
+
+  async complete(request: TextCompletionRequest): Promise<GeneratedProse> {
+    const message = await this.send(request, null);
+    const text = textOf(message);
+    if (!text) {
+      throw new TextProviderResponseError("Claude completed without text.");
+    }
+    return {
+      text,
+      model: message.model,
+      usage: usageOf(message),
+      truncated: message.stop_reason === "max_tokens",
+    };
+  }
+
+  private async send(
+    request: TextRequestOptions & { prompt: string },
+    format: { type: "json_schema"; schema: JsonObject } | null,
+  ): Promise<Anthropic.Beta.BetaMessage> {
     if (!this.config.apiKey) {
       throw new TextProviderConfigurationError(
-        "ANTHROPIC_API_KEY is required for Claude story generation.",
+        "ANTHROPIC_API_KEY is required for Claude generation.",
       );
     }
     // The SDK timeout only covers the wait for response headers; this signal
     // also bounds the streamed body.
-    const signal = AbortSignal.timeout(this.config.timeoutMs);
+    const { signal, timeout } = requestSignal(
+      this.config.timeoutMs,
+      request.signal,
+    );
+    const system: Anthropic.Beta.BetaTextBlockParam[] = [];
+    if (request.system) system.push({ type: "text", text: request.system });
+    if (request.cachedContext) {
+      // Stable book context: later chapters read it from the prompt cache.
+      system.push({
+        type: "text",
+        text: request.cachedContext,
+        cache_control: { type: "ephemeral" },
+      });
+    }
     let message: Anthropic.Beta.BetaMessage;
     try {
       message = await this.client(this.config.apiKey)
         .beta.messages.stream(
           {
-            model: this.config.model,
-            max_tokens: 64_000,
+            model: request.model ?? this.config.model,
+            max_tokens: request.maxOutputTokens ?? 64_000,
             thinking: { type: "adaptive" },
             output_config: {
-              effort: this.config.effort,
-              format: {
-                type: "json_schema",
-                schema: toClaudeSchema(request.schema),
-              },
+              effort: request.effort ?? this.config.effort,
+              ...(format ? { format } : {}),
             },
+            ...(system.length > 0 ? { system } : {}),
             // Re-runs a safety-classifier decline on Anthropic's recommended
             // fallback model inside the same request.
             betas: ["server-side-fallback-2026-07-01"],
             fallbacks: "default",
             messages: [{ role: "user", content: request.prompt }],
           },
-          { signal },
+          { signal, maxRetries: request.signal ? 0 : 2 },
         )
         .finalMessage();
     } catch (error) {
-      if (signal.aborted) {
-        throw new TextProviderUnavailableError(
-          "Claude story generation timed out.",
-        );
+      if (request.signal?.aborted) throw new TextProviderAbortedError();
+      if (timeout.aborted) {
+        throw new TextProviderUnavailableError("Claude generation timed out.");
       }
       const status = apiErrorStatus(error);
       throw new TextProviderUnavailableError(
         status === undefined
           ? "Claude could not be reached."
           : anthropicHttpMessage(status, "generation"),
+        {
+          status: status ?? null,
+          retryable: status === undefined || !isPermanentHttpStatus(status),
+          retryAfterMs:
+            error instanceof Anthropic.APIError
+              ? parseRetryAfter(
+                  (error.headers as Headers | undefined)?.get("retry-after"),
+                )
+              : null,
+        },
       );
     }
     if (message.stop_reason === "refusal") {
       throw new TextProviderResponseError(
-        "Claude declined to write this story plan. Revise the brief or choose another generator.",
+        "Claude declined this request. Revise the brief or choose another model.",
       );
     }
-    if (message.stop_reason === "max_tokens") {
-      throw new TextProviderResponseError(
-        "Claude ran out of output tokens before finishing the story plan.",
-      );
-    }
-    const outputText = message.content
-      .flatMap((block) => (block.type === "text" ? [block.text] : []))
-      .join("");
-    if (!outputText) {
-      throw new TextProviderResponseError(
-        "Claude completed without returning a story plan.",
-      );
-    }
-    return {
-      output: parseGeneratedJson(outputText),
-      model: message.model,
-      usage: {
-        inputTokens: message.usage.input_tokens,
-        outputTokens: message.usage.output_tokens,
-      },
-    };
+    return message;
   }
 
   private client(apiKey: string): Anthropic {
@@ -181,6 +233,21 @@ export class AnthropicTextProvider implements TextProvider {
       message,
     });
   }
+}
+
+function textOf(message: Anthropic.Beta.BetaMessage): string {
+  return message.content
+    .flatMap((block) => (block.type === "text" ? [block.text] : []))
+    .join("");
+}
+
+function usageOf(message: Anthropic.Beta.BetaMessage): TextUsage {
+  return {
+    inputTokens: message.usage.input_tokens,
+    outputTokens: message.usage.output_tokens,
+    cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: message.usage.cache_creation_input_tokens ?? 0,
+  };
 }
 
 function isAnthropicEffort(value: string): value is AnthropicEffort {

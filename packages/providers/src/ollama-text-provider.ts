@@ -6,12 +6,18 @@ import {
 import {
   parseGeneratedJson,
   positiveIntegerEnvironment,
+  requestSignal,
+  TextProviderAbortedError,
   TextProviderConfigurationError,
   TextProviderResponseError,
   TextProviderUnavailableError,
+  type GeneratedProse,
   type GeneratedText,
+  type TextCompletionRequest,
   type TextGenerationRequest,
   type TextProvider,
+  type TextRequestOptions,
+  type TextUsage,
 } from "./text-provider.js";
 
 export type OllamaTextProviderConfig = {
@@ -51,6 +57,10 @@ export function resolveOllamaTextProviderConfig(): OllamaTextProviderConfig {
 
 export class OllamaTextProvider implements TextProvider {
   readonly id = "ollama" as const;
+
+  get defaultModel(): string | null {
+    return this.config.model;
+  }
 
   constructor(
     readonly config: OllamaTextProviderConfig,
@@ -108,11 +118,60 @@ export class OllamaTextProvider implements TextProvider {
   }
 
   async generate(request: TextGenerationRequest): Promise<GeneratedText> {
-    if (!this.config.model) {
+    const { body, content } = await this.chat(request, {
+      format: toOllamaSchema(request.schema),
+      system:
+        "Return only the requested JSON object. Follow the schema exactly.",
+      temperature: 0.35,
+    });
+    return {
+      output: parseGeneratedJson(content),
+      model: this.modelOf(body, request),
+      usage: usageOf(body),
+    };
+  }
+
+  async complete(request: TextCompletionRequest): Promise<GeneratedProse> {
+    const { body, content } = await this.chat(request, {
+      format: null,
+      system: null,
+      temperature: 0.8,
+    });
+    return {
+      text: content,
+      model: this.modelOf(body, request),
+      usage: usageOf(body),
+      truncated: body.done_reason === "length",
+    };
+  }
+
+  private modelOf(body: JsonObject, request: TextRequestOptions): string {
+    return typeof body.model === "string"
+      ? body.model
+      : (request.model ?? this.config.model ?? "");
+  }
+
+  private async chat(
+    request: TextRequestOptions & { prompt: string },
+    options: {
+      format: unknown;
+      system: string | null;
+      temperature: number;
+    },
+  ): Promise<{ body: JsonObject; content: string }> {
+    const model = request.model ?? this.config.model;
+    if (!model) {
       throw new TextProviderConfigurationError(
-        "OLLAMA_STORY_MODEL is required for local story generation.",
+        "OLLAMA_STORY_MODEL is required for local generation.",
       );
     }
+    const system = [request.system ?? options.system, request.cachedContext]
+      .filter(Boolean)
+      .join("\n\n");
+    const { signal, timeout } = requestSignal(
+      this.config.timeoutMs,
+      request.signal,
+    );
     let response: Response;
     try {
       response = await this.dependencies.fetch(
@@ -121,49 +180,48 @@ export class OllamaTextProvider implements TextProvider {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            model: this.config.model,
+            model,
             stream: false,
             think: false,
             keep_alive: 0,
-            format: toOllamaSchema(request.schema),
+            ...(options.format ? { format: options.format } : {}),
             messages: [
-              {
-                role: "system",
-                content:
-                  "Return only the requested JSON object. Follow the schema exactly.",
-              },
+              ...(system ? [{ role: "system", content: system }] : []),
               { role: "user", content: request.prompt },
             ],
-            options: { temperature: 0.35, num_ctx: 32_768 },
+            options: {
+              temperature: options.temperature,
+              num_ctx: 32_768,
+              ...(request.maxOutputTokens
+                ? { num_predict: request.maxOutputTokens }
+                : {}),
+            },
           }),
-          signal: AbortSignal.timeout(this.config.timeoutMs),
+          signal,
         },
       );
-    } catch (error) {
+    } catch {
+      if (request.signal?.aborted) throw new TextProviderAbortedError();
       throw new TextProviderUnavailableError(
-        error instanceof DOMException && error.name === "TimeoutError"
-          ? "Local story generation timed out."
+        timeout.aborted
+          ? "Local generation timed out."
           : "Ollama could not be reached.",
       );
     }
     if (!response.ok) {
-      throw new TextProviderUnavailableError(await ollamaHttpMessage(response));
+      throw new TextProviderUnavailableError(
+        await ollamaHttpMessage(response),
+        { status: response.status, retryable: response.status >= 500 },
+      );
     }
     const body = asObject(await safeJson(response));
     const message = asObject(body?.message);
     if (!body || typeof message?.content !== "string") {
       throw new TextProviderResponseError(
-        "Ollama completed without returning a story plan.",
+        "Ollama completed without returning a result.",
       );
     }
-    return {
-      output: parseGeneratedJson(message.content),
-      model: typeof body.model === "string" ? body.model : this.config.model,
-      usage: {
-        inputTokens: integerProperty(body, "prompt_eval_count"),
-        outputTokens: integerProperty(body, "eval_count"),
-      },
-    };
+    return { body, content: message.content };
   }
 
   private status(
@@ -255,6 +313,15 @@ function asObject(value: unknown): JsonObject | undefined {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as JsonObject)
     : undefined;
+}
+
+function usageOf(body: JsonObject): TextUsage {
+  return {
+    inputTokens: integerProperty(body, "prompt_eval_count"),
+    outputTokens: integerProperty(body, "eval_count"),
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
 }
 
 function integerProperty(object: JsonObject, name: string): number | null {

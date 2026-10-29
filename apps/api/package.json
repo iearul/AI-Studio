@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-film-studio/book-engine": "workspace:^",
+    "@ai-film-studio/book-export": "workspace:^",
     "@ai-film-studio/contracts": "workspace:*",
     "@ai-film-studio/database": "workspace:*",
     "@ai-film-studio/film-engine": "workspace:*",

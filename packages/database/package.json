@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-film-studio/book-engine": "workspace:^",
     "@ai-film-studio/contracts": "workspace:*",
     "better-sqlite3": "^12.2.0"
   },

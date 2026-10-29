@@ -1,9 +1,15 @@
+import path from "node:path";
+
+import { kdpLocalOwnerId } from "@ai-film-studio/contracts";
 import {
   AudioRepository,
   BackupRepository,
   BibleRepository,
   DatabaseManager,
   GenerationRepository,
+  KdpBookRepository,
+  KdpJobRepository,
+  KdpStoryRepository,
   ManifestOutboxRepository,
   ProjectRepository,
   SettingsRepository,
@@ -49,7 +55,16 @@ import {
   type StorageConfig,
 } from "@ai-film-studio/storage";
 
+import type { FastifyRequest } from "fastify";
+
 import { AudioGenerationService } from "./audio-generation-service.js";
+import { KdpAiRouter } from "./kdp/ai-router.js";
+import { BookFileStore } from "./kdp/book-files.js";
+import { KdpExportService } from "./kdp/export-service.js";
+import { KdpJobRunner, type JobRunnerOptions } from "./kdp/job-runner.js";
+import { KdpService } from "./kdp/kdp-service.js";
+import { KdpPipeline } from "./kdp/pipeline.js";
+import { KdpProvenanceService } from "./kdp/provenance-service.js";
 import { ImageGenerationService } from "./image-generation-service.js";
 import { GoogleDriveService } from "./google-drive-service.js";
 import { StoryGenerationService } from "./story-generation-service.js";
@@ -63,6 +78,15 @@ export async function createServices(
     imageProviders?: ImageProvider[];
     audioProvider?: AudioProvider;
     videoProviders?: VideoProvider[];
+    /** KDP Story Studio providers; defaults to the story text providers. */
+    kdpTextProviders?: TextProvider[];
+    kdpSleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
+    kdpRunner?: JobRunnerOptions;
+    /**
+     * The app has no login: every request belongs to the local owner. A future
+     * login only replaces this function.
+     */
+    resolveOwner?: (request: FastifyRequest) => string;
   } = {},
 ) {
   const storage: StorageConfig = resolveStorageConfig();
@@ -189,9 +213,60 @@ export async function createServices(
     storage.backupsPath,
   );
 
+  const kdpBooks = new KdpBookRepository(database);
+  const kdpStory = new KdpStoryRepository(database);
+  const kdpJobs = new KdpJobRepository(database);
+  const bookFiles = new BookFileStore(
+    path.resolve(
+      storage.workspaceRoot,
+      process.env.BOOKS_PATH ??
+        path.join(path.dirname(storage.projectsPath), "books"),
+    ),
+  );
+  const kdpAi = new KdpAiRouter(
+    options.kdpTextProviders ?? textProviders,
+    kdpJobs,
+    options.kdpSleep,
+  );
+  const kdpProvenance = new KdpProvenanceService(kdpBooks, kdpStory, kdpJobs);
+  const kdpPipeline = new KdpPipeline(kdpBooks, kdpStory, kdpAi);
+  const kdpRunner = new KdpJobRunner(
+    kdpJobs,
+    kdpPipeline.handlers(),
+    options.kdpRunner,
+  );
+  const kdp = {
+    books: kdpBooks,
+    story: kdpStory,
+    jobs: kdpJobs,
+    files: bookFiles,
+    ai: kdpAi,
+    pipeline: kdpPipeline,
+    runner: kdpRunner,
+    provenance: kdpProvenance,
+    service: new KdpService(
+      kdpBooks,
+      kdpStory,
+      kdpJobs,
+      kdpAi,
+      kdpRunner,
+      bookFiles,
+      kdpProvenance,
+    ),
+    exports: new KdpExportService(
+      kdpBooks,
+      kdpStory,
+      kdpJobs,
+      bookFiles,
+      kdpProvenance,
+    ),
+    resolveOwner: options.resolveOwner ?? (() => kdpLocalOwnerId),
+  };
+
   await manifestSynchronizer.drain();
 
   return {
+    kdp,
     storage,
     database,
     projects,

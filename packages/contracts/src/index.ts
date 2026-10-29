@@ -6,3 +6,7 @@ export * from "./story-plan.js";
 export * from "./story-generation.js";
 export * from "./system.js";
 export * from "./video.js";
+export * from "./kdp-book.js";
+export * from "./kdp-common.js";
+export * from "./kdp-publishing.js";
+export * from "./kdp-story.js";

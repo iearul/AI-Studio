@@ -4,14 +4,22 @@ import {
 } from "@ai-film-studio/contracts";
 
 import {
+  isPermanentHttpStatus,
   parseGeneratedJson,
+  parseRetryAfter,
   positiveIntegerEnvironment,
+  requestSignal,
+  TextProviderAbortedError,
   TextProviderConfigurationError,
   TextProviderResponseError,
   TextProviderUnavailableError,
+  type GeneratedProse,
   type GeneratedText,
+  type TextCompletionRequest,
   type TextGenerationRequest,
   type TextProvider,
+  type TextRequestOptions,
+  type TextUsage,
 } from "./text-provider.js";
 
 export type OpenAiTextProviderConfig = {
@@ -38,6 +46,10 @@ export function resolveOpenAiTextProviderConfig(): OpenAiTextProviderConfig {
 
 export class OpenAiTextProvider implements TextProvider {
   readonly id = "openai" as const;
+
+  get defaultModel(): string | null {
+    return this.config.model;
+  }
 
   constructor(
     readonly config: OpenAiTextProviderConfig,
@@ -82,11 +94,67 @@ export class OpenAiTextProvider implements TextProvider {
   }
 
   async generate(request: TextGenerationRequest): Promise<GeneratedText> {
-    if (!this.config.apiKey) {
-      throw new TextProviderConfigurationError(
-        "OPENAI_API_KEY is required for OpenAI story generation.",
+    const body = await this.send(request, {
+      format: {
+        type: "json_schema",
+        name: request.schemaName,
+        strict: true,
+        schema: request.schema,
+      },
+    });
+    const outputText = responseOutputText(body);
+    if (!outputText) {
+      throw new TextProviderResponseError(
+        "OpenAI completed without returning a result.",
       );
     }
+    return {
+      output: parseGeneratedJson(outputText),
+      model: this.modelOf(body, request),
+      usage: usageOf(body),
+    };
+  }
+
+  async complete(request: TextCompletionRequest): Promise<GeneratedProse> {
+    const body = await this.send(request, null);
+    const text = responseOutputText(body);
+    if (!text) {
+      throw new TextProviderResponseError("OpenAI completed without text.");
+    }
+    const details = asObject(body.incomplete_details);
+    return {
+      text,
+      model: this.modelOf(body, request),
+      usage: usageOf(body),
+      truncated:
+        body.status === "incomplete" && details?.reason === "max_output_tokens",
+    };
+  }
+
+  private modelOf(body: JsonObject, request: TextRequestOptions): string {
+    return typeof body.model === "string"
+      ? body.model
+      : (request.model ?? this.config.model);
+  }
+
+  private async send(
+    request: TextRequestOptions & { prompt: string },
+    text: JsonObject | null,
+  ): Promise<JsonObject> {
+    if (!this.config.apiKey) {
+      throw new TextProviderConfigurationError(
+        "OPENAI_API_KEY is required for OpenAI generation.",
+      );
+    }
+    // The stable context goes first so OpenAI's automatic prefix cache can
+    // reuse it across chapters.
+    const instructions = [request.system, request.cachedContext]
+      .filter(Boolean)
+      .join("\n\n");
+    const { signal, timeout } = requestSignal(
+      this.config.timeoutMs,
+      request.signal,
+    );
     let response: Response;
     try {
       response = await this.dependencies.fetch(
@@ -98,32 +166,32 @@ export class OpenAiTextProvider implements TextProvider {
             "content-type": "application/json",
           },
           body: JSON.stringify({
-            model: this.config.model,
+            model: request.model ?? this.config.model,
             store: false,
+            ...(instructions ? { instructions } : {}),
             input: request.prompt,
-            max_output_tokens: 32_768,
-            text: {
-              format: {
-                type: "json_schema",
-                name: request.schemaName,
-                strict: true,
-                schema: request.schema,
-              },
-            },
+            max_output_tokens: request.maxOutputTokens ?? 32_768,
+            ...(text ? { text } : {}),
           }),
-          signal: AbortSignal.timeout(this.config.timeoutMs),
+          signal,
         },
       );
-    } catch (error) {
+    } catch {
+      if (request.signal?.aborted) throw new TextProviderAbortedError();
       throw new TextProviderUnavailableError(
-        error instanceof DOMException && error.name === "TimeoutError"
-          ? "OpenAI story generation timed out."
+        timeout.aborted
+          ? "OpenAI generation timed out."
           : "OpenAI could not be reached.",
       );
     }
     if (!response.ok) {
       throw new TextProviderUnavailableError(
         openAiHttpMessage(response.status, "generation"),
+        {
+          status: response.status,
+          retryable: !isPermanentHttpStatus(response.status),
+          retryAfterMs: parseRetryAfter(response.headers.get("retry-after")),
+        },
       );
     }
     const body = asObject(await safeJson(response));
@@ -132,21 +200,7 @@ export class OpenAiTextProvider implements TextProvider {
         "OpenAI returned an invalid response.",
       );
     }
-    const outputText = responseOutputText(body);
-    if (!outputText) {
-      throw new TextProviderResponseError(
-        "OpenAI completed without returning a story plan.",
-      );
-    }
-    const usage = asObject(body.usage);
-    return {
-      output: parseGeneratedJson(outputText),
-      model: typeof body.model === "string" ? body.model : this.config.model,
-      usage: {
-        inputTokens: integerProperty(usage, "input_tokens"),
-        outputTokens: integerProperty(usage, "output_tokens"),
-      },
-    };
+    return body;
   }
 
   private status(
@@ -201,6 +255,22 @@ function integerProperty(
   return typeof value === "number" && Number.isInteger(value) && value >= 0
     ? value
     : null;
+}
+
+function usageOf(body: JsonObject): TextUsage {
+  const usage = asObject(body.usage);
+  const input = integerProperty(usage, "input_tokens");
+  const cached = integerProperty(
+    asObject(usage?.input_tokens_details),
+    "cached_tokens",
+  );
+  return {
+    // OpenAI counts cached tokens inside input_tokens; split them for pricing.
+    inputTokens: input === null ? null : input - (cached ?? 0),
+    outputTokens: integerProperty(usage, "output_tokens"),
+    cacheReadTokens: cached ?? 0,
+    cacheWriteTokens: 0,
+  };
 }
 
 function responseOutputText(body: JsonObject): string | undefined {

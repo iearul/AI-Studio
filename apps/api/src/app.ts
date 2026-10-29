@@ -14,6 +14,7 @@ import { registerSystemRoutes } from "./routes/system.js";
 import { registerStoryPlanRoutes } from "./routes/story-plans.js";
 import { registerVideoRoutes } from "./routes/videos.js";
 import { registerAudioRoutes } from "./routes/audio.js";
+import { registerKdpRoutes } from "./routes/kdp.js";
 import type { Services } from "./services.js";
 
 export async function buildApp(
@@ -36,7 +37,7 @@ export async function buildApp(
   });
   await app.register(cors, {
     credentials: false,
-    methods: ["GET", "POST", "PUT", "PATCH", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     origin(origin, callback) {
       if (!origin) {
         callback(null, true);
@@ -76,6 +77,7 @@ export async function buildApp(
       registerChatRoutes(api);
       registerVideoRoutes(api, services);
       registerAudioRoutes(api, services);
+      registerKdpRoutes(api, services);
     },
     { prefix: "/api/v1" },
   );
@@ -89,6 +91,10 @@ export async function buildApp(
     app.addHook("onReady", () => {
       void services.videoGenerations.refreshPending();
     });
+    // Book jobs run in this process and resume from their checkpoints after
+    // a restart.
+    app.addHook("onReady", () => services.kdp.runner.start());
   }
+  app.addHook("onClose", () => services.kdp.runner.stop());
   return app;
 }

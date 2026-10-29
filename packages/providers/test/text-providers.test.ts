@@ -103,7 +103,12 @@ describe("story text providers", () => {
     expect(generated).toEqual({
       output: { story: { title: "Test" } },
       model: "gpt-5.4-mini-2026-03-17",
-      usage: { inputTokens: 120, outputTokens: 45 },
+      usage: {
+        inputTokens: 120,
+        outputTokens: 45,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+      },
     });
   });
 
@@ -199,7 +204,12 @@ describe("story text providers", () => {
     expect(generated).toEqual({
       output: { story: { title: "Test" } },
       model: "claude-opus-5-5",
-      usage: { inputTokens: 120, outputTokens: 45 },
+      usage: {
+        inputTokens: 120,
+        outputTokens: 45,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+      },
     });
   });
 
@@ -302,7 +312,12 @@ describe("story text providers", () => {
       },
     });
     expect(generated.output).toEqual({ story: { title: "Local" } });
-    expect(generated.usage).toEqual({ inputTokens: 88, outputTokens: 34 });
+    expect(generated.usage).toEqual({
+      inputTokens: 88,
+      outputTokens: 34,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    });
   });
 
   it("turns Ollama grammar failures into an actionable error", async () => {
