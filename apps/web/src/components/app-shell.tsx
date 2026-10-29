@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookOpenText,
   Clapperboard,
   FolderKanban,
   Gauge,
@@ -16,6 +17,7 @@ import type { ReactNode } from "react";
 const navigation = [
   { href: "/", label: "Studio", icon: Gauge },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/kdp", label: "KDP Story Studio", icon: BookOpenText },
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

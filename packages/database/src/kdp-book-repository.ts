@@ -192,6 +192,15 @@ export class KdpBookRepository {
 
   // --- Author profiles ----------------------------------------------------------
 
+  /** True once the owner has had any pen name, including deleted ones. */
+  hasEverHadAuthor(ownerId: string): boolean {
+    return (
+      this.db
+        .prepare("SELECT 1 FROM kdp_author_profiles WHERE owner_id = ? LIMIT 1")
+        .get(ownerId) !== undefined
+    );
+  }
+
   listAuthors(ownerId: string): AuthorProfile[] {
     const rows = this.db
       .prepare(

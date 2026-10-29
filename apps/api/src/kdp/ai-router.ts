@@ -162,6 +162,29 @@ export class KdpAiRouter {
     }).costMicros;
   }
 
+  /** Cost of a call with the given token counts on the task's current route. */
+  estimateTokensMicros(
+    settings: KdpSettings,
+    book: Book,
+    task: KdpTask,
+    inputTokens: number,
+    outputTokens: number,
+  ): number {
+    const route = this.resolve(settings, book, task);
+    const output = Math.round(
+      outputTokens *
+        (route.providerId === "anthropic"
+          ? thinkingFactor[route.effort ?? "high"]
+          : 1.15),
+    );
+    return computeCostMicros(settings, route.providerId, route.model ?? "", {
+      inputTokens,
+      outputTokens: output,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    }).costMicros;
+  }
+
   private checkBudget(context: AiCallContext, estimate: number): void {
     if (estimate === 0) return;
     const budget = this.budgetMicros(context.settings, context.book);

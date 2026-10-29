@@ -8,6 +8,7 @@ import type {
   KdpJob,
   KdpProviderHealth,
   KdpSettings,
+  KdpTask,
   PassageOperationInput,
   PassageResult,
   StartKdpJob,
@@ -146,8 +147,111 @@ export class KdpService {
       idempotencyKey,
       input: rest,
     });
-    if (result.created && this.runner.isRunning) this.runner.kick();
-    return result;
+    if (!result.created) return result;
+    this.jobs.progress(result.job.id, {
+      estimatedCostMicros: this.estimateJob(ownerId, book.id, input),
+    });
+    if (this.runner.isRunning) this.runner.kick();
+    return { job: this.jobs.requireJob(result.job.id), created: true };
+  }
+
+  /**
+   * Rough cost of a job before it runs, from typical token counts per stage
+   * and the current routing and prices. Actual cost is recorded per call.
+   */
+  estimateJob(
+    ownerId: string,
+    bookId: string,
+    input: Omit<StartKdpJob, "idempotencyKey">,
+  ): number {
+    const book = this.books.require(ownerId, bookId);
+    const settings = this.settings(ownerId);
+    const estimate = (
+      task: KdpTask,
+      inputTokens: number,
+      outputTokens: number,
+    ) =>
+      this.ai.estimateTokensMicros(
+        settings,
+        book,
+        task,
+        inputTokens,
+        outputTokens,
+      );
+    const chapters = this.story.listChapterItems(book.id);
+    const tokensFor = (words: number) => Math.round(words * 1.4);
+    switch (input.kind) {
+      case "concepts":
+        return estimate("idea", 2_500, 3_500);
+      case "bible":
+        return estimate("architect", 3_000, 9_000);
+      case "architecture":
+        return estimate("architect", 10_000, 5_000);
+      case "outline": {
+        if (input.chapterIds?.length)
+          return input.chapterIds.length * estimate("architect", 14_000, 900);
+        const count = book.brief.chapterCount;
+        const architecture = this.story.getBible(book.id)?.bible.architecture
+          ? 0
+          : estimate("architect", 10_000, 5_000);
+        return (
+          architecture + estimate("architect", 12_000, 600 * count + 1_000)
+        );
+      }
+      case "draft": {
+        const selected = chapters
+          .filter(
+            (chapter) =>
+              !input.chapterIds || input.chapterIds.includes(chapter.id),
+          )
+          .filter((chapter) =>
+            input.inspectOnly
+              ? chapter.wordCount > 0
+              : !chapter.locked &&
+                chapter.status !== "approved" &&
+                (input.regenerate === true || chapter.wordCount === 0),
+          );
+        return selected.reduce(
+          (sum, chapter) =>
+            sum +
+            (input.inspectOnly
+              ? 0
+              : estimate("writer", 25_000, tokensFor(chapter.targetWords))) +
+            estimate(
+              "inspector",
+              15_000 + tokensFor(chapter.targetWords),
+              2_500,
+            ),
+          0,
+        );
+      }
+      case "editorial": {
+        const manuscript = tokensFor(
+          chapters.reduce((sum, chapter) => sum + chapter.wordCount, 0),
+        );
+        const passes = input.passes ?? [
+          "developmental",
+          "continuity",
+          "line",
+          "copy",
+          "originality",
+        ];
+        return passes.reduce(
+          (sum, pass) =>
+            sum +
+            estimate(
+              pass === "copy" ? "proofreader" : "reviewer",
+              manuscript + 10_000,
+              6_000,
+            ),
+          0,
+        );
+      }
+      case "metadata":
+        return estimate("metadata", 5_000 + chapters.length * 200, 2_500);
+      case "cover-prompts":
+        return estimate("cover", 3_000, 3_000);
+    }
   }
 
   job(ownerId: string, bookId: string, jobId: string): KdpJob {

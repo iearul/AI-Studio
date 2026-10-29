@@ -137,6 +137,43 @@ To enable cloud video, add `KLING_API_KEY` and/or `SEEDANCE_API_KEY` to the igno
 `.env.local` file and restart the API. Seedance's documented restriction on direct
 real-human face reference images is displayed in the workspace.
 
+## KDP Story Studio
+
+Open **KDP Story Studio** in the sidebar to write original fiction eBooks and
+prepare everything for a manual upload to Amazon KDP. The pipeline never writes
+a book in one request; each stage is a background job with saved checkpoints:
+
+1. **Create New Story**: theme, genre, length, language and pen name, with
+   optional voice, content and series settings.
+2. **Story Blueprint**: three concepts, the story bible, the plot architecture
+   and editable chapter cards (drag to reorder, lock, regenerate single cards).
+3. **Draft**: chapters are written in order with the bible, outline, earlier
+   summaries and established facts; each chapter is inspected for continuity.
+   Locked and approved chapters are never changed.
+4. **Chapter Editor**: rich-text editing with autosave, revisions and restore,
+   AI help on a selected passage (you accept or reject every change), continuity
+   warnings and the story bible beside the text.
+5. **Editorial Review**, **Cover Studio**, **KDP Metadata** and **Export &
+   Publish**: AI editorial passes, cover prompts and a typography composer for
+   1600 × 2560 covers, an editable KDP listing with rule checks, AI-content
+   disclosure answers, and EPUB/DOCX/ZIP exports validated with EPUBCheck.
+
+Jobs run in the API process and continue without the browser; after a restart
+they resume from their last checkpoint. Each book has an AI budget (default
+$20, change it in **KDP Story Studio → Settings**); a job stops before a call
+that would exceed it and can be resumed after raising the budget. Text models
+are chosen per task in the same settings page; by default Claude writes and
+reviews, OpenAI handles listing, cover prompts, proofreading and continuity
+inspection.
+
+EPUB validation uses EPUBCheck when it is installed (`brew install epubcheck`),
+plus built-in structural and Kindle checks. Passing them does not mean KDP has
+approved the file. Book files live in `data/books/`. The researched KDP rules
+and their sources are in [`docs/kdp/kdp-rules-reference.md`](docs/kdp/kdp-rules-reference.md);
+the design is in [`docs/architecture/0008-kdp-story-studio.md`](docs/architecture/0008-kdp-story-studio.md).
+Before relying on the paid providers, follow
+[`docs/kdp/real-provider-checklist.md`](docs/kdp/real-provider-checklist.md).
+
 ## Google Drive backup
 
 AI Film Studio uses the least-privilege `drive.file` OAuth scope and creates this

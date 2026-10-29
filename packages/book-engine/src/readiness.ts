@@ -155,13 +155,17 @@ export function evaluateReadiness(input: ReadinessInput): BookReadiness {
           "Title and author match.",
       });
     } else {
+      const confirmed =
+        (cover.settings as { textConfirmedByAuthor?: unknown })
+          .textConfirmedByAuthor === true;
       add({
         id: "cover-text",
         area: "cover",
         label: "Cover text matches the listing",
-        status: "warn",
-        detail:
-          "This cover was uploaded finished; confirm it shows the same title and author name as the listing.",
+        status: confirmed ? "pass" : "warn",
+        detail: confirmed
+          ? "You confirmed that the uploaded cover shows the listing's title and author name."
+          : "This cover was uploaded finished; confirm it shows the same title and author name as the listing.",
       });
     }
   }

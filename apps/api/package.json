@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch src/server.ts",
+    "kdp:mock": "tsx test/kdp-mock-server.ts",
     "lint": "eslint src test",
     "start": "node dist/server.js",
     "test": "vitest run",

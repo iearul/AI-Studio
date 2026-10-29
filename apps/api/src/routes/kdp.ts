@@ -82,7 +82,9 @@ export function registerKdpRoutes(
   /** First visit: offer the default pen name so a book can be created at once. */
   const ensureAuthors = (ownerId: string) => {
     const authors = kdp.books.listAuthors(ownerId);
-    if (authors.length > 0) return authors;
+    // Only a first visit gets the default; a deleted default stays deleted.
+    if (authors.length > 0 || kdp.books.hasEverHadAuthor(ownerId))
+      return authors;
     kdp.books.createAuthor(ownerId, defaultAuthorProfile);
     return kdp.books.listAuthors(ownerId);
   };
@@ -351,6 +353,7 @@ export function registerKdpRoutes(
         recordRevision:
           input.mode === "manual" || input.aiOperation !== undefined,
         baseRevisionCount: input.baseRevisionCount,
+        snapshotAfterMs: 10 * 60_000,
         note:
           input.note ??
           (input.aiOperation ? `Accepted AI ${input.aiOperation}` : null),
@@ -456,6 +459,24 @@ export function registerKdpRoutes(
       return reply.status(result.created ? 202 : 200).send(result);
     },
   );
+
+  app.post("/kdp/books/:bookId/jobs/estimate", (request) => {
+    const { bookId } = bookParams.parse(request.params);
+    const input = startKdpJobSchema
+      .omit({ idempotencyKey: true })
+      .parse(request.body);
+    const book = kdp.books.require(owner(request), bookId);
+    const settings = kdp.service.settings(owner(request));
+    return {
+      estimatedCostMicros: kdp.service.estimateJob(
+        owner(request),
+        bookId,
+        input,
+      ),
+      spentMicros: kdp.jobs.spentMicros(bookId),
+      budgetMicros: kdp.ai.budgetMicros(settings, book),
+    };
+  });
 
   app.get("/kdp/books/:bookId/jobs", (request) => {
     const { bookId } = bookParams.parse(request.params);

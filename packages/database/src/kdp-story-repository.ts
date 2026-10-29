@@ -148,6 +148,8 @@ export type SaveChapterTextInput = {
   baseRevisionCount?: number;
   /** AI writes are refused on locked or approved chapters. */
   allowLocked?: boolean;
+  /** Autosave also snapshots a revision when the last one is this old. */
+  snapshotAfterMs?: number;
 };
 
 export class KdpStoryRepository {
@@ -541,11 +543,20 @@ export class KdpStoryRepository {
       }
       const source = nextContentSource(chapter.contentSource, input.source);
       const textChanged = content !== chapter.content;
+      // Revisions compare with the last revision, not the working copy, so
+      // text that autosave already stored still gets its manual revision.
+      const last = this.db
+        .prepare(
+          "SELECT content, created_at FROM kdp_chapter_revisions WHERE chapter_id = ? ORDER BY revision_number DESC LIMIT 1",
+        )
+        .get(chapterId) as { content: string; created_at: string } | undefined;
+      const differsFromLast = !last || last.content !== content;
+      const snapshotDue =
+        input.snapshotAfterMs !== undefined &&
+        (!last ||
+          Date.now() - Date.parse(last.created_at) >= input.snapshotAfterMs);
       let revisionCount = chapter.revisionCount;
-      if (
-        input.recordRevision &&
-        (textChanged || chapter.revisionCount === 0)
-      ) {
+      if ((input.recordRevision || snapshotDue) && differsFromLast) {
         revisionCount += 1;
         this.db
           .prepare(

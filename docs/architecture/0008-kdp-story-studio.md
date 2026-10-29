@@ -130,6 +130,41 @@ KDP rules in `book-engine`.
 verification date); `book-engine/src/kdp-rules.ts` encodes the same version.
 The UI shows the verification date so stale rules are visible.
 
+### Editorial engine and honesty rules
+
+- Craft guidance is genre-level: `book-engine/src/craft.ts` holds the 20 prose
+  principles, stock-phrase and cliché watchlists, and craft profiles
+  (psychological suspense, classic detective, gothic horror, domestic thriller,
+  literary suspense, romantic suspense). The app has no browsing tool, so no
+  author research runs at generation time; profiles describe techniques and
+  never ask a model to imitate a living author's prose.
+- A free deterministic style check (dash, ellipsis and question density,
+  fragments, rhythm, clichés, stock phrases, repeated n-grams, repeated chapter
+  openings and endings) runs after every drafted chapter and on demand.
+- Provenance is derived from revision sources. Drafts, expansions and passage
+  rewrites are AI-generated; accepted grammar or editorial fixes on human text are
+  AI-assisted. A manual override may add AI involvement but never remove it
+  (`409`), so generated text can never be marked human-written.
+- Reports say what they are: AI review is not professional editing, EPUBCheck
+  passing is not KDP approval, the originality pass flags risks and gives no
+  score or clearance.
+
+### Costs
+
+Every provider call is logged with tokens, duration and cost. Before a job is
+queued the API estimates its cost from typical token counts and the current
+routing (`POST /kdp/books/:id/jobs/estimate`); the job panel shows actual against
+estimated. Claude prices come from Anthropic's published table; OpenAI prices are
+placeholders flagged as unverified until the user confirms them in Settings.
+
+### Not in this version
+
+- Author photo upload (the profile has no photo route yet).
+- PDF reading proof and the paperback workflow (trim, bleed, spine width).
+- Google Drive sync of `data/books/` files; the database backup covers rows, and
+  the publisher kit ZIP plus the project-backup JSON cover a book's files.
+- Chapter numbers in canon facts do not follow a later reorder of chapters.
+
 ## Consequences
 
 - Film features keep their code paths; shared changes are additive (optional

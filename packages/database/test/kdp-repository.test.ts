@@ -175,6 +175,14 @@ describe("KDP repositories", () => {
         baseRevisionCount: 0,
       }),
     ).toThrow(KdpConflictError);
+    // A manual save after autosave still records the edit as a revision.
+    const manual = story.saveChapterText(book.id, first!.id, {
+      content: "Ilse *ran* home.\n\n* * *\n\nShe stopped.",
+      source: "user-edit",
+      recordRevision: true,
+      baseRevisionCount: 1,
+    });
+    expect(manual.revisionCount).toBe(2);
     story.updateChapter(book.id, first!.id, { locked: true });
     expect(() =>
       story.saveChapterText(book.id, first!.id, {
@@ -192,12 +200,13 @@ describe("KDP repositories", () => {
     const revisions = story.listRevisions(book.id, first!.id);
     expect(revisions.map((revision) => revision.source)).toEqual([
       "user-edit",
+      "user-edit",
       "ai-draft",
     ]);
     const restored = story.restoreRevision(
       book.id,
       first!.id,
-      revisions[1]!.id,
+      revisions[2]!.id,
     );
     expect(restored.content).toBe("Ilse *ran*.\n\n* * *\n\nShe stopped.");
     expect(story.revisionSources(book.id).get(first!.id)).toContain("ai-draft");

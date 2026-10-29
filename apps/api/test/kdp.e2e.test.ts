@@ -255,6 +255,17 @@ describe("KDP Story Studio API", () => {
     const draft = await job(book.id, { kind: "draft" });
     expect(draft.status).toBe("succeeded");
     expect(draft.result).toMatchObject({ drafted: 10, skipped: [] });
+    expect(draft.estimatedCostMicros).toBeGreaterThan(0);
+    const estimate = await call<{
+      estimatedCostMicros: number;
+      budgetMicros: number;
+    }>({
+      method: "POST",
+      url: `/kdp/books/${book.id}/jobs/estimate`,
+      payload: { kind: "draft", regenerate: true },
+    });
+    expect(estimate.estimatedCostMicros).toBeGreaterThan(0);
+    expect(estimate.budgetMicros).toBe(20_000_000);
 
     const items = (
       await call<{ items: ChapterListItem[] }>({
@@ -815,6 +826,29 @@ describe("KDP Story Studio API", () => {
       url: `/api/v1/kdp/books/${book.id}/covers/${stored.id}/file`,
     });
     expect(file.statusCode).toBe(200);
+  });
+
+  it("offers the default pen name once and lets it stay deleted", async () => {
+    const owner = { "x-test-owner": "owner-c" };
+    const { items } = await call<{ items: Array<{ id: string }> }>({
+      method: "GET",
+      url: "/kdp/authors",
+      headers: owner,
+    });
+    expect(items).toHaveLength(1);
+    await call(
+      { method: "DELETE", url: `/kdp/authors/${items[0]!.id}`, headers: owner },
+      204,
+    );
+    expect(
+      (
+        await call<{ items: unknown[] }>({
+          method: "GET",
+          url: "/kdp/authors",
+          headers: owner,
+        })
+      ).items,
+    ).toEqual([]);
   });
 
   it("enforces project ownership", async () => {
