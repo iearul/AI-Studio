@@ -1,5 +1,5 @@
 {
-  "name": "@ai-film-studio/storage",
+  "name": "@ai-studio/storage",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -18,11 +18,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-film-studio/contracts": "workspace:*",
-    "@ai-film-studio/database": "workspace:*"
+    "@ai-studio/contracts": "workspace:*",
+    "@ai-studio/database": "workspace:*"
   },
   "devDependencies": {
-    "@ai-film-studio/tooling": "workspace:*",
+    "@ai-studio/tooling": "workspace:*",
     "@types/node": "^24.3.0",
     "eslint": "^9.34.0",
     "typescript": "^5.9.2",

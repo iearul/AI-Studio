@@ -2,7 +2,7 @@ import {
   bibleSchema,
   projectSchema,
   storyPlanSchema,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { describe, expect, it } from "vitest";
 
 import { buildReferenceCoverage } from "../src/shot-prompt.js";

@@ -1,4 +1,3 @@
-import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 
 import type { FastifyInstance } from "fastify";
@@ -7,10 +6,11 @@ import { z } from "zod";
 import {
   createCloudVideoSchema,
   videoReviewInputSchema,
-} from "@ai-film-studio/contracts";
-import { VideoAssetValidationError } from "@ai-film-studio/storage";
+} from "@ai-studio/contracts";
+import { VideoAssetValidationError } from "@ai-studio/storage";
 
 import { NotFoundError } from "../errors.js";
+import { sendRangedFile } from "./ranged-file.js";
 import type { Services } from "../services.js";
 
 const projectParamsSchema = z.object({ id: z.uuid() });
@@ -102,46 +102,12 @@ export function registerVideoRoutes(
       } catch {
         throw new NotFoundError("Video asset file");
       }
-      const range = parseRange(request.headers.range, info.size);
-      reply
-        .type(asset.mimeType)
-        .header("Accept-Ranges", "bytes")
-        .header("Cache-Control", "private, max-age=3600, immutable")
-        .header("Cross-Origin-Resource-Policy", "cross-origin");
-      if (!range) {
-        return reply
-          .header("Content-Length", info.size)
-          .send(createReadStream(absolutePath));
-      }
-      return reply
-        .status(206)
-        .header("Content-Length", range.end - range.start + 1)
-        .header(
-          "Content-Range",
-          `bytes ${range.start}-${range.end}/${info.size}`,
-        )
-        .send(createReadStream(absolutePath, range));
+      return sendRangedFile(
+        request,
+        reply,
+        { absolutePath, size: info.size, mimeType: asset.mimeType },
+        () => new VideoAssetValidationError("Invalid video byte range."),
+      );
     },
   );
-}
-
-function parseRange(
-  value: string | undefined,
-  size: number,
-): { start: number; end: number } | undefined {
-  if (!value) return undefined;
-  const match = /^bytes=(\d+)-(\d*)$/.exec(value.trim());
-  if (!match) throw new VideoAssetValidationError("Invalid video byte range.");
-  const start = Number(match[1]);
-  const requestedEnd = match[2] ? Number(match[2]) : size - 1;
-  if (
-    !Number.isSafeInteger(start) ||
-    !Number.isSafeInteger(requestedEnd) ||
-    start < 0 ||
-    requestedEnd < start ||
-    start >= size
-  ) {
-    throw new VideoAssetValidationError("Invalid video byte range.");
-  }
-  return { start, end: Math.min(requestedEnd, size - 1) };
 }

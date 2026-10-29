@@ -11,7 +11,7 @@ import {
   type VideoHistory,
   type VideoProviderId,
   type VideoResolution,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   GenerationNotFoundError,

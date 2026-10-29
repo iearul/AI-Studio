@@ -234,7 +234,7 @@ export class GoogleDriveClient {
           name,
           mimeType: "application/vnd.google-apps.folder",
           parents: [parentId],
-          appProperties: { owner: "ai-film-studio" },
+          appProperties: { owner: "ai-studio" },
         }),
       },
     );
@@ -482,6 +482,13 @@ export function driveMimeType(filename: string): string {
       ".mp4": "video/mp4",
       ".mov": "video/quicktime",
       ".webm": "video/webm",
+      ".epub": "application/epub+zip",
+      ".docx":
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ".zip": "application/zip",
+      ".html": "text/html",
+      ".md": "text/markdown",
+      ".txt": "text/plain",
     }[extension] ?? "application/octet-stream"
   );
 }

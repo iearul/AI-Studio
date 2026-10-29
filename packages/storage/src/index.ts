@@ -1,3 +1,4 @@
+export * from "./audio-asset-store.js";
 export * from "./backup-service.js";
 export * from "./manifest-synchronizer.js";
 export * from "./google-drive-client.js";

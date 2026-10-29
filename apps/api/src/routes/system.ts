@@ -6,7 +6,7 @@ import { z } from "zod";
 import {
   restoreBackupSchema,
   updateSettingsSchema,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import type { Services } from "../services.js";
 
@@ -22,7 +22,7 @@ export function registerSystemRoutes(
 ): void {
   app.get("/health", () => ({
     status: "ok",
-    service: "ai-film-studio-api",
+    service: "ai-studio-api",
     time: new Date().toISOString(),
   }));
 
@@ -125,5 +125,5 @@ function oauthResultPage(success: boolean, message: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Google Drive ${success ? "connected" : "connection failed"}</title><style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#f7f6f1;color:#171714;font:16px system-ui}.card{max-width:520px;margin:24px;padding:32px;border:1px solid #e6e4dd;border-radius:18px;background:#fffefa;box-shadow:0 18px 55px #25221914}h1{font:500 32px Georgia,serif}p{color:#6f6f67;line-height:1.6}</style></head><body><main class="card"><h1>${success ? "Google Drive connected" : "Connection failed"}</h1><p>${safeMessage}</p><p>You can close this tab and return to AI Film Studio Settings.</p></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Google Drive ${success ? "connected" : "connection failed"}</title><style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#f7f6f1;color:#171714;font:16px system-ui}.card{max-width:520px;margin:24px;padding:32px;border:1px solid #e6e4dd;border-radius:18px;background:#fffefa;box-shadow:0 18px 55px #25221914}h1{font:500 32px Georgia,serif}p{color:#6f6f67;line-height:1.6}</style></head><body><main class="card"><h1>${success ? "Google Drive connected" : "Connection failed"}</h1><p>${safeMessage}</p><p>You can close this tab and return to AI Studio Settings.</p></main></body></html>`;
 }

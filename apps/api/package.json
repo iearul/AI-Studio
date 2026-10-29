@@ -1,22 +1,25 @@
 {
-  "name": "@ai-film-studio/api",
+  "name": "@ai-studio/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch src/server.ts",
+    "kdp:mock": "tsx test/kdp-mock-server.ts",
     "lint": "eslint src test",
     "start": "node dist/server.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-film-studio/contracts": "workspace:*",
-    "@ai-film-studio/database": "workspace:*",
-    "@ai-film-studio/film-engine": "workspace:*",
-    "@ai-film-studio/providers": "workspace:*",
-    "@ai-film-studio/storage": "workspace:*",
+    "@ai-studio/book-engine": "workspace:^",
+    "@ai-studio/book-export": "workspace:^",
+    "@ai-studio/contracts": "workspace:*",
+    "@ai-studio/database": "workspace:*",
+    "@ai-studio/film-engine": "workspace:*",
+    "@ai-studio/providers": "workspace:*",
+    "@ai-studio/storage": "workspace:*",
     "@fastify/cors": "^11.1.0",
     "@fastify/helmet": "^13.0.1",
     "@fastify/multipart": "^10.1.1",
@@ -26,7 +29,7 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
-    "@ai-film-studio/tooling": "workspace:*",
+    "@ai-studio/tooling": "workspace:*",
     "@types/node": "^24.3.0",
     "eslint": "^9.34.0",
     "tsx": "^4.20.5",

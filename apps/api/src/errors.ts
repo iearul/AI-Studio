@@ -7,17 +7,25 @@ import {
   BibleProjectNotFoundError,
   GenerationNotFoundError,
   GenerationStateError,
+  KdpConflictError,
+  KdpNotFoundError,
   StoryPlanDurationError,
   StoryPlanProjectNotFoundError,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 import {
+  AudioProviderConfigurationError,
+  AudioProviderResponseError,
+  AudioProviderUnavailableError,
+  ImageProviderConfigurationError,
+  ImageProviderResponseError,
+  ImageProviderUnavailableError,
   TextProviderConfigurationError,
   TextProviderResponseError,
   TextProviderUnavailableError,
   VideoProviderConfigurationError,
   VideoProviderResponseError,
   VideoProviderUnavailableError,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 import {
   BackupIntegrityError,
   BackupNotFoundError,
@@ -26,12 +34,19 @@ import {
   GoogleDriveUnavailableError,
   ReferenceImageValidationError,
   VideoAssetValidationError,
-} from "@ai-film-studio/storage";
+} from "@ai-studio/storage";
 
 import {
   GoogleDriveOAuthStateError,
   GoogleDriveSyncBusyError,
 } from "./google-drive-service.js";
+import { KdpBudgetExceededError } from "./kdp/ai-router.js";
+import {
+  DictationBusyError,
+  DictationInputError,
+  DictationUnavailableError,
+} from "./kdp/dictation.js";
+import { KdpCoverValidationError } from "./kdp/kdp-service.js";
 
 export class NotFoundError extends Error {
   constructor(resource: string) {
@@ -59,7 +74,7 @@ function validationErrors(error: ZodError): Record<string, string[]> {
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setNotFoundHandler((request, reply) => {
     void reply.status(404).type("application/problem+json").send({
-      type: "https://ai-film-studio.local/problems/not-found",
+      type: "https://ai-studio.local/problems/not-found",
       title: "Not found",
       status: 404,
       detail: "The requested endpoint does not exist.",
@@ -73,7 +88,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
         .status(422)
         .type("application/problem+json")
         .send({
-          type: "https://ai-film-studio.local/problems/validation",
+          type: "https://ai-studio.local/problems/validation",
           title: "Validation failed",
           status: 422,
           detail: "One or more request fields are invalid.",
@@ -88,10 +103,11 @@ export function registerErrorHandler(app: FastifyInstance): void {
       error instanceof BibleProjectNotFoundError ||
       error instanceof BibleEntityNotFoundError ||
       error instanceof GenerationNotFoundError ||
-      error instanceof StoryPlanProjectNotFoundError
+      error instanceof StoryPlanProjectNotFoundError ||
+      error instanceof KdpNotFoundError
     ) {
       void reply.status(404).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/not-found",
+        type: "https://ai-studio.local/problems/not-found",
         title: "Not found",
         status: 404,
         detail: error.message,
@@ -104,7 +120,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       error instanceof StoryGenerationBusyError
     ) {
       void reply.status(409).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/generation-state",
+        type: "https://ai-studio.local/problems/generation-state",
         title: "Generation state conflict",
         status: 409,
         detail: error.message,
@@ -112,9 +128,69 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
+    if (error instanceof KdpConflictError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/kdp-conflict",
+        title: "The book changed or the action is not allowed now",
+        status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof KdpBudgetExceededError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/kdp-budget",
+        title: "Budget limit reached",
+        status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof KdpCoverValidationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/kdp-cover",
+        title: "Invalid cover image",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof DictationInputError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/dictation-input",
+        title: "Invalid recording",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof DictationBusyError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/dictation-busy",
+        title: "Transcription is busy",
+        status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof DictationUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/dictation-unavailable",
+        title: "Voice input is unavailable",
+        status: 503,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
     if (error instanceof GoogleDriveSyncBusyError) {
       void reply.status(409).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/google-drive-sync",
+        type: "https://ai-studio.local/problems/google-drive-sync",
         title: "Google Drive sync is already running",
         status: 409,
         detail: error.message,
@@ -127,7 +203,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       error instanceof GoogleDriveOAuthStateError
     ) {
       void reply.status(422).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/google-drive-configuration",
+        type: "https://ai-studio.local/problems/google-drive-configuration",
         title: "Google Drive is not ready",
         status: 422,
         detail: error.message,
@@ -137,7 +213,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof GoogleDriveUnavailableError) {
       void reply.status(503).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/google-drive-unavailable",
+        type: "https://ai-studio.local/problems/google-drive-unavailable",
         title: "Google Drive is unavailable",
         status: 503,
         detail: error.message,
@@ -147,7 +223,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof GoogleDriveResponseError) {
       void reply.status(502).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/google-drive-response",
+        type: "https://ai-studio.local/problems/google-drive-response",
         title: "Google Drive returned an invalid response",
         status: 502,
         detail: error.message,
@@ -157,7 +233,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof TextProviderConfigurationError) {
       void reply.status(422).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/provider-configuration",
+        type: "https://ai-studio.local/problems/provider-configuration",
         title: "Provider is not configured",
         status: 422,
         detail: error.message,
@@ -165,9 +241,69 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
       return;
     }
+    if (error instanceof AudioProviderConfigurationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/audio-provider-configuration",
+        title: "Audio provider is not configured",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof AudioProviderUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/audio-provider-unavailable",
+        title: "Audio provider is unavailable",
+        status: 503,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof AudioProviderResponseError) {
+      void reply.status(502).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/audio-provider-response",
+        title: "Audio provider returned an invalid response",
+        status: 502,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof ImageProviderConfigurationError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/image-provider-configuration",
+        title: "Image provider is not configured",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof ImageProviderUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/image-provider-unavailable",
+        title: "Image provider is unavailable",
+        status: 503,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof ImageProviderResponseError) {
+      void reply.status(502).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/image-provider-response",
+        title: "Image provider returned an invalid response",
+        status: 502,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
     if (error instanceof VideoProviderConfigurationError) {
       void reply.status(422).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/video-provider-configuration",
+        type: "https://ai-studio.local/problems/video-provider-configuration",
         title: "Video provider is not configured",
         status: 422,
         detail: error.message,
@@ -177,7 +313,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof TextProviderUnavailableError) {
       void reply.status(503).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/provider-unavailable",
+        type: "https://ai-studio.local/problems/provider-unavailable",
         title: "Provider is unavailable",
         status: 503,
         detail: error.message,
@@ -187,7 +323,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof VideoProviderUnavailableError) {
       void reply.status(503).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/video-provider-unavailable",
+        type: "https://ai-studio.local/problems/video-provider-unavailable",
         title: "Video provider is unavailable",
         status: 503,
         detail: error.message,
@@ -197,7 +333,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof TextProviderResponseError) {
       void reply.status(502).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/provider-response",
+        type: "https://ai-studio.local/problems/provider-response",
         title: "Provider returned an invalid response",
         status: 502,
         detail: error.message,
@@ -207,7 +343,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof VideoProviderResponseError) {
       void reply.status(502).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/video-provider-response",
+        type: "https://ai-studio.local/problems/video-provider-response",
         title: "Video provider returned an invalid response",
         status: 502,
         detail: error.message,
@@ -217,7 +353,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof BibleConflictError) {
       void reply.status(409).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/conflict",
+        type: "https://ai-studio.local/problems/conflict",
         title: "Record already exists",
         status: 409,
         detail: error.message,
@@ -227,7 +363,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof StoryPlanDurationError) {
       void reply.status(422).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/plan-duration",
+        type: "https://ai-studio.local/problems/plan-duration",
         title: "Shot plan is too long",
         status: 422,
         detail: error.message,
@@ -237,7 +373,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     if (error instanceof BackupIntegrityError) {
       void reply.status(409).type("application/problem+json").send({
-        type: "https://ai-film-studio.local/problems/backup-integrity",
+        type: "https://ai-studio.local/problems/backup-integrity",
         title: "Backup integrity check failed",
         status: 409,
         detail: error.message,
@@ -253,7 +389,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
         .status(422)
         .type("application/problem+json")
         .send({
-          type: "https://ai-film-studio.local/problems/reference-image",
+          type: "https://ai-studio.local/problems/reference-image",
           title:
             error instanceof VideoAssetValidationError
               ? "Invalid video asset"
@@ -275,7 +411,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
         .status(status)
         .type("application/problem+json")
         .send({
-          type: "https://ai-film-studio.local/problems/request",
+          type: "https://ai-studio.local/problems/request",
           title: status === 413 ? "Upload is too large" : "Invalid request",
           status,
           detail:
@@ -289,7 +425,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     request.log.error({ err: error }, "Unhandled request error");
     void reply.status(500).type("application/problem+json").send({
-      type: "https://ai-film-studio.local/problems/internal",
+      type: "https://ai-studio.local/problems/internal",
       title: "Internal server error",
       status: 500,
       detail: "The operation could not be completed.",

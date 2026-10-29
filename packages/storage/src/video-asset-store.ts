@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { open, mkdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
 
-import type { VideoAsset } from "@ai-film-studio/contracts";
+import type { VideoAsset } from "@ai-studio/contracts";
 
 export const maximumVideoBytes = 512 * 1024 * 1024;
 

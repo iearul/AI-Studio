@@ -61,7 +61,7 @@ const png = Buffer.from(
 );
 
 function multipartImage(buffer: Buffer, mimeType = "image/png") {
-  const boundary = "film-studio-test-boundary";
+  const boundary = "ai-studio-test-boundary";
   return {
     contentType: `multipart/form-data; boundary=${boundary}`,
     payload: Buffer.concat([
@@ -81,8 +81,8 @@ describe("Phase 3 API", () => {
   let projectId: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-bible-api-"));
-    process.env.DATABASE_PATH = path.join(directory, "film-studio.sqlite");
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-bible-api-"));
+    process.env.DATABASE_PATH = path.join(directory, "ai-studio.sqlite");
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");
@@ -266,8 +266,10 @@ describe("Phase 3 API", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
-      characterId,
-      characterCode: "CHAR_RAHIM_001",
+      ownerType: "character",
+      ownerId: characterId,
+      ownerCode: "CHAR_RAHIM_001",
+      ownerName: "Rahim",
       view: "profile",
       filename: "rahim-profile-reference.png",
       ready: false,

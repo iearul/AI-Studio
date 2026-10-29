@@ -1,4 +1,4 @@
-import type { VideoProviderStatus } from "@ai-film-studio/contracts";
+import type { VideoProviderStatus } from "@ai-studio/contracts";
 
 import {
   type VideoProvider,

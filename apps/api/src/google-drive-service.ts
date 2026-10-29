@@ -10,19 +10,32 @@ import {
   type DriveBackupResult,
   type DriveSyncResult,
   type IntegrationStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import type {
   BackupService,
   GoogleDriveClient,
   ManifestSynchronizer,
-} from "@ai-film-studio/storage";
-import { driveMimeType } from "@ai-film-studio/storage";
+} from "@ai-studio/storage";
+import { driveMimeType } from "@ai-studio/storage";
 
 const oauthStateLifetimeMs = 10 * 60_000;
+// Film Studio keeps its original folder; KDP Story Studio gets its own.
+const kdpBooksFolder = ["OSPO", "KDP-Story-Studio", "books"];
+
+/** KDP Story Studio books: one folder per book id under `path`. */
+export type DriveBookSource = {
+  path: string;
+  activeIds(): string[];
+  /** Writes the book's `book.json` data backup into its folder. */
+  writeBackupFile(bookId: string): Promise<void>;
+};
 
 export class GoogleDriveService {
   private readonly oauthStates = new Map<string, number>();
   private syncing = false;
+  // Drive uploads run one at a time so two syncs never race to create the
+  // same folder twice.
+  private queue: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly client: GoogleDriveClient,
@@ -30,6 +43,7 @@ export class GoogleDriveService {
     private readonly manifests: ManifestSynchronizer,
     private readonly projectsPath: string,
     private readonly backupsPath: string,
+    private readonly books: DriveBookSource,
   ) {}
 
   async status(): Promise<IntegrationStatus> {
@@ -75,7 +89,7 @@ export class GoogleDriveService {
       connectedAt: credentials.connectedAt,
       lastSyncAt: credentials.lastSyncAt ?? null,
       message:
-        "Connected with limited drive.file access. AI Film Studio can manage only the OSPO files and folders it creates.",
+        "Connected with limited drive.file access. AI Studio can manage only the OSPO files and folders it creates.",
     });
   }
 
@@ -141,53 +155,104 @@ export class GoogleDriveService {
     if (this.syncing) throw new GoogleDriveSyncBusyError();
     this.syncing = true;
     try {
-      await this.manifests.drain();
-      const workspace = await this.client.ensureWorkspace();
-      const backup = await this.backups.create("manual");
-      let uploadedFiles = 0;
-      let uploadedBytes = 0;
-      for (const filePath of await regularFiles(this.projectsPath)) {
-        const relativePath = path.relative(this.projectsPath, filePath);
-        const segments = relativePath.split(path.sep);
-        const info = await stat(filePath);
-        await this.client.uploadFile({
-          localPath: filePath,
-          remotePath: ["OSPO", "AI-Film-Studio", "projects", ...segments],
-          mimeType: driveMimeType(filePath),
-        });
-        uploadedFiles += 1;
-        uploadedBytes += info.size;
-      }
-      const backupPath = path.join(
-        this.backupsPath,
-        path.basename(backup.filename),
-      );
-      const backupInfo = await stat(backupPath);
-      await this.client.uploadFile({
-        localPath: backupPath,
-        remotePath: [
-          "OSPO",
-          "AI-Film-Studio",
-          "backups",
-          "database",
-          backup.filename,
-        ],
-        mimeType: "application/vnd.sqlite3",
-      });
-      uploadedFiles += 1;
-      uploadedBytes += backupInfo.size;
-      const completedAt = new Date().toISOString();
-      await this.client.markSynced(completedAt);
-      return driveSyncResultSchema.parse({
-        ...workspace,
-        uploadedFiles,
-        uploadedBytes,
-        backup,
-        completedAt,
-      });
+      return await this.exclusive(() => this.syncEverything());
     } finally {
       this.syncing = false;
     }
+  }
+
+  /**
+   * Mirrors one KDP book into `OSPO/KDP-Story-Studio/books/<id>`. Does nothing
+   * while Drive is not connected; the next full sync catches up.
+   */
+  async syncBook(bookId: string): Promise<void> {
+    if (!this.client.configured() || !(await this.client.connection())) return;
+    await this.exclusive(async () => {
+      await this.books.writeBackupFile(bookId);
+      await this.uploadBook(bookId);
+    });
+  }
+
+  private async syncEverything(): Promise<DriveSyncResult> {
+    await this.manifests.drain();
+    const workspace = await this.client.ensureWorkspace();
+    const backup = await this.backups.create("manual");
+    let uploadedFiles = 0;
+    let uploadedBytes = 0;
+    for (const filePath of await regularFiles(this.projectsPath)) {
+      const relativePath = path.relative(this.projectsPath, filePath);
+      const segments = relativePath.split(path.sep);
+      const info = await stat(filePath);
+      await this.client.uploadFile({
+        localPath: filePath,
+        remotePath: ["OSPO", "AI-Film-Studio", "projects", ...segments],
+        mimeType: driveMimeType(filePath),
+      });
+      uploadedFiles += 1;
+      uploadedBytes += info.size;
+    }
+    for (const bookId of this.books.activeIds()) {
+      await this.books.writeBackupFile(bookId);
+      const book = await this.uploadBook(bookId);
+      uploadedFiles += book.files;
+      uploadedBytes += book.bytes;
+    }
+    const backupPath = path.join(
+      this.backupsPath,
+      path.basename(backup.filename),
+    );
+    const backupInfo = await stat(backupPath);
+    await this.client.uploadFile({
+      localPath: backupPath,
+      remotePath: [
+        "OSPO",
+        "AI-Film-Studio",
+        "backups",
+        "database",
+        backup.filename,
+      ],
+      mimeType: "application/vnd.sqlite3",
+    });
+    uploadedFiles += 1;
+    uploadedBytes += backupInfo.size;
+    const completedAt = new Date().toISOString();
+    await this.client.markSynced(completedAt);
+    return driveSyncResultSchema.parse({
+      ...workspace,
+      uploadedFiles,
+      uploadedBytes,
+      backup,
+      completedAt,
+    });
+  }
+
+  private async uploadBook(
+    bookId: string,
+  ): Promise<{ files: number; bytes: number }> {
+    const directory = path.join(this.books.path, bookId);
+    let files = 0;
+    let bytes = 0;
+    for (const filePath of await regularFiles(directory)) {
+      const segments = path.relative(directory, filePath).split(path.sep);
+      const info = await stat(filePath);
+      await this.client.uploadFile({
+        localPath: filePath,
+        remotePath: [...kdpBooksFolder, bookId, ...segments],
+        mimeType: driveMimeType(filePath),
+      });
+      files += 1;
+      bytes += info.size;
+    }
+    return { files, bytes };
+  }
+
+  private exclusive<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(task);
+    this.queue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
   }
 
   private pruneStates(): void {

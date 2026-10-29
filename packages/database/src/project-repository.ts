@@ -6,7 +6,7 @@ import {
   type Project,
   type ProjectListQuery,
   type UpdateProjectInput,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 

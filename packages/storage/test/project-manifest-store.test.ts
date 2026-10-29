@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { projectSchema } from "@ai-film-studio/contracts";
+import { projectSchema } from "@ai-studio/contracts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ProjectManifestStore } from "../src/project-manifest-store.js";
@@ -11,7 +11,7 @@ describe("ProjectManifestStore", () => {
   let directory: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-manifest-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-manifest-"));
   });
 
   afterEach(async () => {

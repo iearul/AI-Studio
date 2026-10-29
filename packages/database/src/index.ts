@@ -1,3 +1,4 @@
+export * from "./audio-repository.js";
 export * from "./backup-repository.js";
 export * from "./bible-repository.js";
 export * from "./database-manager.js";
@@ -8,3 +9,6 @@ export * from "./project-repository.js";
 export * from "./settings-repository.js";
 export * from "./story-plan-repository.js";
 export * from "./video-repository.js";
+export * from "./kdp-book-repository.js";
+export * from "./kdp-job-repository.js";
+export * from "./kdp-story-repository.js";

@@ -7,7 +7,7 @@ import type {
   IntegrationStatus,
   Settings,
   StorageStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   CheckCircle2,
   Cloud,
@@ -102,7 +102,7 @@ export default function SettingsPage() {
     setMessage(undefined);
     const popup = window.open(
       `${apiBaseUrl}/integrations/google-drive/connect`,
-      "ai-film-studio-google-drive",
+      "ai-studio-google-drive",
       "popup,width=620,height=760",
     );
     if (!popup) {
@@ -383,7 +383,8 @@ export default function SettingsPage() {
                 </strong>
                 <p>{drive.message}</p>
                 <small>
-                  Drive path: OSPO/AI-Film-Studio · permission: drive.file
+                  Drive folders: OSPO/AI-Film-Studio (films) ·
+                  OSPO/KDP-Story-Studio (books) · permission: drive.file
                 </small>
               </div>
             </div>
@@ -438,7 +439,7 @@ export default function SettingsPage() {
                   ) : (
                     <CloudUpload size={16} />
                   )}
-                  Sync projects &amp; backup
+                  Sync projects, books &amp; backup
                 </button>
                 {drive.rootFolderUrl && (
                   <a

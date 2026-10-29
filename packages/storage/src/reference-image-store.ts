@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { ReferenceOwnerType } from "@ai-film-studio/contracts";
+import type { ReferenceOwnerType } from "@ai-studio/contracts";
 
 export type SupportedImage = {
   mimeType: "image/jpeg" | "image/png" | "image/webp";

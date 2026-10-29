@@ -24,7 +24,7 @@ describe("ProjectRepository", () => {
   let manager: DatabaseManager;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-database-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-database-"));
     manager = new DatabaseManager(path.join(directory, "test.sqlite"));
     await manager.open();
   });

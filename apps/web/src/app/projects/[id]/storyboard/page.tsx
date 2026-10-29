@@ -1,13 +1,14 @@
 "use client";
 
-import type {
-  ImageAttempt,
-  ImageHistory,
-  Project,
-  ReferenceCoverage,
-  ReferenceImage,
-  ShotReferenceContext,
-} from "@ai-film-studio/contracts";
+import {
+  paidImageConfirmation,
+  type ImageAttempt,
+  type ImageHistory,
+  type Project,
+  type ReferenceCoverage,
+  type ReferenceImage,
+  type ShotReferenceContext,
+} from "@ai-studio/contracts";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -33,6 +34,12 @@ import {
   useState,
 } from "react";
 
+import {
+  confirmImageGeneration,
+  ImageGeneratorControls,
+  useImageGenerator,
+} from "@/components/image-generator";
+import { useLightbox, type LightboxImage } from "@/components/image-lightbox";
 import { apiBaseUrl, apiFetch } from "@/lib/api";
 
 const referencePreference = [
@@ -76,6 +83,29 @@ export default function StoryboardPage() {
   );
 }
 
+const providerNames: Record<ImageAttempt["provider"], string> = {
+  manual: "Manual import",
+  openai: "OpenAI",
+  gemini: "Gemini",
+  comfyui: "Legacy local attempt",
+};
+
+function isActiveCloudAttempt(attempt: ImageAttempt): boolean {
+  return (
+    attempt.provider !== "manual" &&
+    attempt.provider !== "comfyui" &&
+    (attempt.status === "queued" || attempt.status === "generating")
+  );
+}
+
+function referenceCount(shot: ShotReferenceContext): number {
+  return [
+    ...shot.characters,
+    ...(shot.location ? [shot.location] : []),
+    ...shot.props,
+  ].reduce((total, entity) => total + entity.references.length, 0);
+}
+
 function StoryboardSkeleton() {
   return (
     <div className="page">
@@ -93,6 +123,8 @@ function StoryboardWorkspace() {
   const [busy, setBusy] = useState<string>();
   const [copiedShot, setCopiedShot] = useState<string>();
   const [error, setError] = useState("");
+  const generator = useImageGenerator();
+  const lightbox = useLightbox();
 
   const load = useCallback(async () => {
     const [nextProject, nextCoverage, nextHistory] = await Promise.all([
@@ -124,6 +156,15 @@ function StoryboardWorkspace() {
     };
   }, [load]);
 
+  const generating = history?.attempts.some(isActiveCloudAttempt) ?? false;
+  useEffect(() => {
+    if (!generating) return;
+    const interval = window.setInterval(() => {
+      void load().catch(() => undefined);
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, [generating, load]);
+
   const attemptsByShot = useMemo(() => {
     const grouped = new Map<string, ImageAttempt[]>();
     for (const attempt of history?.attempts ?? []) {
@@ -145,6 +186,38 @@ function StoryboardWorkspace() {
       setError(
         "The prompt could not be copied. Please copy it from the Visual Bible.",
       );
+    }
+  }
+
+  async function generateFrame(shot: ShotReferenceContext) {
+    const resolved = generator.resolved;
+    if (!resolved?.provider.configured) return;
+    if (
+      !confirmImageGeneration(resolved, shot.shotCode, referenceCount(shot))
+    ) {
+      return;
+    }
+    setBusy(`generate-${shot.shotId}`);
+    setError("");
+    try {
+      await apiFetch(`/projects/${id}/shots/${shot.shotId}/image-generations`, {
+        method: "POST",
+        body: JSON.stringify({
+          provider: resolved.provider.id,
+          model: resolved.model.id,
+          quality: resolved.quality.id,
+          confirmation: paidImageConfirmation,
+        }),
+      });
+      await load();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The image could not be generated.",
+      );
+    } finally {
+      setBusy(undefined);
     }
   }
 
@@ -231,6 +304,13 @@ function StoryboardWorkspace() {
     );
   }
 
+  const frameShape =
+    project.aspectRatio === "9:16"
+      ? "portrait"
+      : project.aspectRatio === "1:1"
+        ? "square"
+        : "";
+
   return (
     <div className="page storyboard-page">
       <Link className="back-link" href={`/projects/${project.id}`}>
@@ -243,9 +323,8 @@ function StoryboardWorkspace() {
           </span>
           <h1>Storyboard review</h1>
           <p>
-            Copy each continuity-safe prompt into ChatGPT or Gemini, paste or
-            drop the generated alternatives here, and approve one frame per
-            shot.
+            Generate each frame with an image API, or import one made in
+            ChatGPT. Approve one frame per shot.
           </p>
         </div>
         <div className="storyboard-metrics">
@@ -261,22 +340,22 @@ function StoryboardWorkspace() {
         </div>
       </header>
 
-      <section className="provider-banner online">
-        <span className="provider-icon">
-          <ImagePlus size={20} />
+      <section className="image-generator-panel">
+        <span className="eyebrow">
+          <ImagePlus size={14} /> Image generator
         </span>
-        <div>
-          <strong>ChatGPT / Gemini image workflow</strong>
-          <p>
-            Copy the prepared prompt, create the image externally, then paste,
-            drop, or choose it here. AI Film Studio does not run a local image
-            model.
+        {generator.resolved ? (
+          <ImageGeneratorControls
+            providers={generator.providers}
+            resolved={generator.resolved}
+            onChange={generator.setChoice}
+            disabled={Boolean(busy)}
+          />
+        ) : (
+          <p className="image-generator-note warn">
+            {generator.error || "Loading image providers…"}
           </p>
-          <small>No local image-model memory usage</small>
-        </div>
-        <span className="provider-state">
-          <CheckCircle2 size={14} /> Manual
-        </span>
+        )}
       </section>
 
       {error && (
@@ -300,6 +379,25 @@ function StoryboardWorkspace() {
             const attempts = attemptsByShot.get(shot.shotId) ?? [];
             const selected = attempts.find((attempt) => attempt.selected);
             const suggestedReferences = recommendedReferences(shot);
+            const referenceImages: LightboxImage[] = suggestedReferences.map(
+              ({ entityName, reference }) => ({
+                src: `${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`,
+                alt: `${entityName} ${reference.view} reference`,
+                caption: `${entityName} · ${reference.view.replaceAll("-", " ")} view`,
+              }),
+            );
+            const attemptImages: LightboxImage[] = attempts.flatMap(
+              (attempt) =>
+                attempt.asset
+                  ? [
+                      {
+                        src: `${apiBaseUrl}/projects/${project.id}/assets/${attempt.asset.id}/content`,
+                        alt: `${shot.shotCode} ${providerNames[attempt.provider]} attempt`,
+                        caption: `${shot.shotCode} · ${providerNames[attempt.provider]}${attempt.model ? ` · ${attempt.model}` : ""}${attempt.selected ? " · approved" : ""}`,
+                      },
+                    ]
+                  : [],
+            );
             const action =
               shot.prompt
                 .split("\n")
@@ -339,23 +437,36 @@ function StoryboardWorkspace() {
 
                 {suggestedReferences.length > 0 && (
                   <div className="shot-reference-strip">
-                    <strong>Recommended continuity photos to attach</strong>
+                    <strong>Continuity photos</strong>
                     <div>
-                      {suggestedReferences.map(({ entityName, reference }) => (
-                        <figure key={reference.id}>
-                          <Image
-                            unoptimized
-                            width={62}
-                            height={62}
-                            src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
-                            alt={`${entityName} ${reference.view} reference`}
-                          />
-                          <figcaption>
-                            {entityName}
-                            <small>{reference.view.replaceAll("-", " ")}</small>
-                          </figcaption>
-                        </figure>
-                      ))}
+                      {suggestedReferences.map(
+                        ({ entityName, reference }, index) => (
+                          <figure key={reference.id}>
+                            <button
+                              type="button"
+                              className="zoomable"
+                              aria-label={`Enlarge ${entityName} ${reference.view} reference`}
+                              onClick={() =>
+                                lightbox.open(referenceImages, index)
+                              }
+                            >
+                              <Image
+                                unoptimized
+                                width={62}
+                                height={62}
+                                src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
+                                alt={`${entityName} ${reference.view} reference`}
+                              />
+                            </button>
+                            <figcaption>
+                              {entityName}
+                              <small>
+                                {reference.view.replaceAll("-", " ")}
+                              </small>
+                            </figcaption>
+                          </figure>
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -363,6 +474,26 @@ function StoryboardWorkspace() {
                 <div className="storyboard-controls">
                   <button
                     className="button primary"
+                    disabled={
+                      !shot.ready ||
+                      Boolean(busy) ||
+                      !generator.resolved?.provider.configured ||
+                      attempts.some(isActiveCloudAttempt)
+                    }
+                    onClick={() => void generateFrame(shot)}
+                  >
+                    {busy === `generate-${shot.shotId}` ||
+                    attempts.some(isActiveCloudAttempt) ? (
+                      <LoaderCircle className="spinner" size={15} />
+                    ) : (
+                      <Sparkles size={15} />
+                    )}
+                    {attempts.some(isActiveCloudAttempt)
+                      ? "Generating…"
+                      : `Generate with ${generator.resolved ? providerNames[generator.resolved.provider.id] : "API"}`}
+                  </button>
+                  <button
+                    className="button secondary"
                     disabled={!shot.ready || Boolean(busy)}
                     onClick={() => void copyPrompt(shot.shotId, shot.prompt)}
                   >
@@ -414,8 +545,7 @@ function StoryboardWorkspace() {
 
                 {attempts.length === 0 ? (
                   <div className="attempts-empty">
-                    No attempts yet. Create an image in ChatGPT with the copied
-                    prompt, then import it above.
+                    No attempts yet. Generate a frame or import one above.
                   </div>
                 ) : (
                   <div className="attempt-grid">
@@ -424,15 +554,31 @@ function StoryboardWorkspace() {
                         className={`attempt-card ${attempt.selected ? "selected" : ""}`}
                         key={attempt.id}
                       >
-                        <div className="attempt-image">
+                        <div className={`attempt-image ${frameShape}`}>
                           {attempt.asset ? (
-                            <Image
-                              unoptimized
-                              fill
-                              sizes="(max-width: 640px) 100vw, 340px"
-                              src={`${apiBaseUrl}/projects/${project.id}/assets/${attempt.asset.id}/content`}
-                              alt={`${shot.shotCode} ${attempt.provider} attempt`}
-                            />
+                            <button
+                              type="button"
+                              className="zoomable zoomable-fill"
+                              aria-label={`Enlarge ${shot.shotCode} ${providerNames[attempt.provider]} attempt`}
+                              onClick={() =>
+                                lightbox.open(
+                                  attemptImages,
+                                  attemptImages.findIndex((image) =>
+                                    image.src.endsWith(
+                                      `/assets/${attempt.asset!.id}/content`,
+                                    ),
+                                  ),
+                                )
+                              }
+                            >
+                              <Image
+                                unoptimized
+                                fill
+                                sizes="(max-width: 640px) 100vw, 340px"
+                                src={`${apiBaseUrl}/projects/${project.id}/assets/${attempt.asset.id}/content`}
+                                alt={`${shot.shotCode} ${attempt.provider} attempt`}
+                              />
+                            </button>
                           ) : (
                             <span>
                               {attempt.status === "failed" ? (
@@ -443,7 +589,9 @@ function StoryboardWorkspace() {
                               {attempt.status === "queued"
                                 ? "Queued"
                                 : attempt.status === "generating"
-                                  ? `${attempt.job?.progress ?? 0}%`
+                                  ? attempt.job
+                                    ? `${attempt.job.progress}%`
+                                    : "Generating…"
                                   : "No preview"}
                             </span>
                           )}
@@ -459,9 +607,8 @@ function StoryboardWorkspace() {
                         <div className="attempt-body">
                           <div className="attempt-title">
                             <strong>
-                              {attempt.provider === "manual"
-                                ? "Manual import"
-                                : "Legacy local attempt"}
+                              {providerNames[attempt.provider]}
+                              {attempt.model ? ` · ${attempt.model}` : ""}
                             </strong>
                             <small>
                               {new Date(attempt.createdAt).toLocaleString()}
@@ -469,7 +616,12 @@ function StoryboardWorkspace() {
                           </div>
                           <div className="attempt-facts">
                             <span>
-                              Seed <b>{attempt.seed ?? "—"}</b>
+                              Quality{" "}
+                              <b>
+                                {typeof attempt.settings.quality === "string"
+                                  ? attempt.settings.quality
+                                  : "—"}
+                              </b>
                             </span>
                             <span>
                               Time{" "}
@@ -535,6 +687,7 @@ function StoryboardWorkspace() {
           })}
         </div>
       )}
+      {lightbox.element}
     </div>
   );
 }
@@ -546,9 +699,9 @@ function formatDuration(milliseconds: number | null): string {
 }
 
 function formatCost(micros: number, currency: string): string {
-  if (micros === 0) return "€0.00";
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
+    maximumFractionDigits: micros > 0 && micros < 100_000 ? 3 : 2,
   }).format(micros / 1_000_000);
 }

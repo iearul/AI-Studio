@@ -9,7 +9,7 @@ import {
   type ReferenceOwnerType,
   type Shot,
   type StoryPlan,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 type NamedEntity = Character | Location | Prop;
 

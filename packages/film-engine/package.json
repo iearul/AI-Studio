@@ -1,5 +1,5 @@
 {
-  "name": "@ai-film-studio/film-engine",
+  "name": "@ai-studio/film-engine",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -18,10 +18,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-film-studio/contracts": "workspace:*"
+    "@ai-studio/contracts": "workspace:*"
   },
   "devDependencies": {
-    "@ai-film-studio/tooling": "workspace:*",
+    "@ai-studio/tooling": "workspace:*",
     "eslint": "^9.34.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"

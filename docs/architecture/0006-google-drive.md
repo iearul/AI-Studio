@@ -39,3 +39,14 @@ to unrelated files already present in the user's Drive.
   backups therefore follow a future explicit retention/cleanup policy.
 - Live acceptance requires a Google Cloud OAuth client and user consent, while all
   deterministic behavior is covered with isolated automated tests.
+
+## Update 2026-10-29: KDP Story Studio folder
+
+The app is now called AI Studio and has more than one studio. Film Studio keeps
+`OSPO/AI-Film-Studio` unchanged. KDP Story Studio books go to
+`OSPO/KDP-Story-Studio/books/<book id>/`: a `book.json` data backup plus the
+book's covers and exports. Creating or duplicating a book uploads its folder at
+once when Drive is connected; a full sync re-uploads every book that is not in
+the trash. Database snapshots still go to `OSPO/AI-Film-Studio/backups/database`
+and cover the whole app. Drive uploads run one at a time so concurrent syncs
+cannot create a folder twice. Later studios get their own sibling folder.

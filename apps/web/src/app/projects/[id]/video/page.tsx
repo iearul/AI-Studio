@@ -9,8 +9,8 @@ import type {
   VideoResolution,
   VideoShotPlan,
   VideoWorkspace,
-} from "@ai-film-studio/contracts";
-import { paidVideoConfirmation } from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
+import { paidVideoConfirmation } from "@ai-studio/contracts";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -38,6 +38,7 @@ import {
   useState,
 } from "react";
 
+import { useLightbox } from "@/components/image-lightbox";
 import { apiBaseUrl, apiFetch, formatBytes } from "@/lib/api";
 
 type ProviderChoice = "manual" | VideoProviderId;
@@ -59,6 +60,7 @@ export default function VideoPage() {
   const [copied, setCopied] = useState<string>();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const lightbox = useLightbox();
 
   const load = useCallback(async () => {
     const [nextProject, nextWorkspace] = await Promise.all([
@@ -207,9 +209,9 @@ export default function VideoPage() {
     const provider = providerMap.get(providerId);
     if (!provider) return;
     const model = selectedModel(shot.shotId, provider);
-    const duration = providerDuration(shot.durationSeconds, model);
-    if (duration === null) return;
     const resolution = selectedResolution(shot.shotId, model);
+    const duration = providerDuration(shot.durationSeconds, model, resolution);
+    if (duration === null) return;
     const generateAudio =
       model.supportsNativeAudio && Boolean(audio[shot.shotId]);
     const rate = generateAudio
@@ -331,8 +333,8 @@ export default function VideoPage() {
           <h1>Video workspace</h1>
           <p>
             Start from each approved storyboard photo. Use the prepared prompt
-            manually, or submit it to Kling or Seedance after reviewing the
-            provider charge.
+            manually, or submit it to Google Veo, Kling, or Seedance after
+            reviewing the provider charge.
           </p>
         </div>
         <div className="storyboard-metrics">
@@ -434,12 +436,19 @@ export default function VideoPage() {
                   <div className="video-source-panel">
                     <strong>Recommended first frame</strong>
                     {shot.sourceImageAsset ? (
-                      <a
-                        className="video-source-image"
-                        href={`${apiBaseUrl}/projects/${id}/assets/${shot.sourceImageAsset.id}/content`}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Open the approved storyboard image"
+                      <button
+                        type="button"
+                        className="video-source-image zoomable"
+                        aria-label={`Enlarge the approved first frame for ${shot.shotCode}`}
+                        onClick={() =>
+                          lightbox.open([
+                            {
+                              src: `${apiBaseUrl}/projects/${id}/assets/${shot.sourceImageAsset!.id}/content`,
+                              alt: `Approved first frame for ${shot.shotCode}`,
+                              caption: `${shot.shotCode} · approved first frame`,
+                            },
+                          ])
+                        }
                       >
                         <Image
                           unoptimized
@@ -449,9 +458,9 @@ export default function VideoPage() {
                           alt={`Approved first frame for ${shot.shotCode}`}
                         />
                         <span>
-                          <ImageIcon size={13} /> Open full image
+                          <ImageIcon size={13} /> Enlarge
                         </span>
-                      </a>
+                      </button>
                     ) : (
                       <Link
                         className="video-source-missing"
@@ -722,6 +731,7 @@ export default function VideoPage() {
           })}
         </div>
       )}
+      {lightbox.element}
     </div>
   );
 }
@@ -773,7 +783,7 @@ function CloudVideoControls({
   onAudio: (value: boolean) => void;
   onGenerate: () => void;
 }) {
-  const duration = providerDuration(shot.durationSeconds, model);
+  const duration = providerDuration(shot.durationSeconds, model, resolution);
   const rate = audio
     ? model.estimatedUsdPerSecond.withAudio[resolution]
     : model.estimatedUsdPerSecond.withoutAudio[resolution];
@@ -869,10 +879,14 @@ function CloudVideoControls({
 function providerDuration(
   shotDurationSeconds: number,
   model: VideoProviderModel,
+  resolution: VideoResolution,
 ): number | null {
   const target = Math.ceil(shotDurationSeconds);
   return (
-    [...model.supportedDurationsSeconds]
+    [
+      ...(model.durationsByResolution?.[resolution] ??
+        model.supportedDurationsSeconds),
+    ]
       .sort((left, right) => left - right)
       .find((duration) => duration >= target) ?? null
   );
@@ -882,6 +896,9 @@ function modelLabel(model: string | null, provider: string): string {
   if (model === "kling-2.5-turbo") return "Kling 2.5 Turbo";
   if (model === "kling-3.0") return "Kling 3.0";
   if (provider === "seedance") return "Seedance 2.0";
+  if (model?.startsWith("veo-3.1-fast")) return "Veo 3.1 Fast";
+  if (model?.startsWith("veo-3.1-lite")) return "Veo 3.1 Lite";
+  if (model?.startsWith("veo-3.1")) return "Veo 3.1";
   return model ?? provider;
 }
 

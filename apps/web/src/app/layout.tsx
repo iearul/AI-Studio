@@ -4,9 +4,13 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 
 import "./globals.css";
+import "./kdp.css";
+import "./kdp-library.css";
+import "./kdp-writing.css";
+import "./kdp-publishing.css";
 
 export const metadata: Metadata = {
-  title: { default: "AI Film Studio", template: "%s · AI Film Studio" },
+  title: { default: "AI Studio", template: "%s · AI Studio" },
   description: "A private, local-first AI filmmaking workspace.",
 };
 

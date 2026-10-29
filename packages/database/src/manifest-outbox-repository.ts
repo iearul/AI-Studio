@@ -1,4 +1,4 @@
-import type { Project } from "@ai-film-studio/contracts";
+import type { Project } from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 

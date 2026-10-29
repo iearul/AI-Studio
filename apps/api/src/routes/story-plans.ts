@@ -3,8 +3,8 @@ import type { FastifyInstance } from "fastify";
 import {
   storyGenerationInputSchema,
   storyPlanInputSchema,
-} from "@ai-film-studio/contracts";
-import { buildStoryRequest } from "@ai-film-studio/film-engine";
+} from "@ai-studio/contracts";
+import { buildStoryRequest } from "@ai-studio/film-engine";
 
 import { NotFoundError } from "../errors.js";
 import type { Services } from "../services.js";

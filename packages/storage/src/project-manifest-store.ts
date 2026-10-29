@@ -2,6 +2,7 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type {
+  AudioAttempt,
   Character,
   GeneratedAsset,
   ImageAttempt,
@@ -14,7 +15,8 @@ import type {
   Story,
   VideoAsset,
   VideoAttempt,
-} from "@ai-film-studio/contracts";
+  VoiceProfile,
+} from "@ai-studio/contracts";
 
 export type ProjectManifestContent = {
   story?: Story | null;
@@ -28,6 +30,8 @@ export type ProjectManifestContent = {
   generationAttempts?: ImageAttempt[];
   videoAssets?: VideoAsset[];
   videoAttempts?: VideoAttempt[];
+  voiceProfiles?: VoiceProfile[];
+  audioAttempts?: AudioAttempt[];
 };
 
 export type ProjectManifestV1 = {
@@ -45,6 +49,8 @@ export type ProjectManifestV1 = {
   generationAttempts: ImageAttempt[];
   videoAssets: VideoAsset[];
   videoAttempts: VideoAttempt[];
+  voiceProfiles: VoiceProfile[];
+  audioAttempts: AudioAttempt[];
 };
 
 export class ProjectManifestStore {
@@ -73,6 +79,8 @@ export class ProjectManifestStore {
       generationAttempts: content.generationAttempts ?? [],
       videoAssets: content.videoAssets ?? [],
       videoAttempts: content.videoAttempts ?? [],
+      voiceProfiles: content.voiceProfiles ?? [],
+      audioAttempts: content.audioAttempts ?? [],
     };
     await writeFile(temporary, `${JSON.stringify(manifest, null, 2)}\n`, {
       encoding: "utf8",

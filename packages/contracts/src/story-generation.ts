@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import { storyPlanGenerationSchema } from "./story-plan.js";
 
-export const automaticStoryProviderIds = ["openai", "ollama"] as const;
+export const automaticStoryProviderIds = [
+  "openai",
+  "anthropic",
+  "ollama",
+] as const;
 
 export const storyProviderStatusSchema = z.object({
   id: z.enum(automaticStoryProviderIds),

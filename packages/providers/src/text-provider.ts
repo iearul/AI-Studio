@@ -2,24 +2,60 @@ import type {
   AutomaticStoryProviderId,
   StoryGenerationUsage,
   StoryProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
-export type TextGenerationRequest = {
+export type TextEffort = "low" | "medium" | "high" | "xhigh" | "max";
+
+/** Options shared by structured and prose requests; all are optional. */
+export type TextRequestOptions = {
+  /** Replaces the provider's default instruction. */
+  system?: string;
+  /** Stable context reused across calls; providers cache it when they can. */
+  cachedContext?: string;
+  /** Overrides the model configured in `.env.local`. */
+  model?: string;
+  /** Claude thinking effort; ignored by other providers. */
+  effort?: TextEffort;
+  maxOutputTokens?: number;
+  /** Cancels the request; the provider throws TextProviderAbortedError. */
+  signal?: AbortSignal;
+};
+
+export type TextGenerationRequest = TextRequestOptions & {
   prompt: string;
   schemaName: string;
   schema: Record<string, unknown>;
 };
 
+export type TextCompletionRequest = TextRequestOptions & { prompt: string };
+
+export type TextUsage = StoryGenerationUsage & {
+  cacheReadTokens?: number | null;
+  cacheWriteTokens?: number | null;
+};
+
 export type GeneratedText = {
   output: unknown;
   model: string;
-  usage: StoryGenerationUsage;
+  usage: TextUsage;
+};
+
+export type GeneratedProse = {
+  text: string;
+  model: string;
+  usage: TextUsage;
+  /** The output limit cut the text off. */
+  truncated: boolean;
 };
 
 export interface TextProvider {
   readonly id: AutomaticStoryProviderId;
+  /** The model from `.env.local`, used when a request names none. */
+  readonly defaultModel?: string | null;
   getStatus(): Promise<StoryProviderStatus>;
   generate(request: TextGenerationRequest): Promise<GeneratedText>;
+  /** Free-form prose; used for long-form writing. */
+  complete?(request: TextCompletionRequest): Promise<GeneratedProse>;
 }
 
 export class TextProviderConfigurationError extends Error {
@@ -30,10 +66,65 @@ export class TextProviderConfigurationError extends Error {
 }
 
 export class TextProviderUnavailableError extends Error {
-  constructor(message: string) {
+  /** Timeouts, rate limits, overload and 5xx are worth retrying. */
+  readonly retryable: boolean;
+  readonly retryAfterMs: number | null;
+  readonly status: number | null;
+
+  constructor(
+    message: string,
+    options: {
+      retryable?: boolean;
+      retryAfterMs?: number | null;
+      status?: number | null;
+    } = {},
+  ) {
     super(message);
     this.name = "TextProviderUnavailableError";
+    this.retryable = options.retryable ?? true;
+    this.retryAfterMs = options.retryAfterMs ?? null;
+    this.status = options.status ?? null;
   }
+}
+
+export class TextProviderAbortedError extends Error {
+  constructor() {
+    super("The request was cancelled.");
+    this.name = "TextProviderAbortedError";
+  }
+}
+
+/** Combines a caller's cancellation signal with the provider timeout. */
+export function requestSignal(
+  timeoutMs: number,
+  signal: AbortSignal | undefined,
+): { signal: AbortSignal; timeout: AbortSignal } {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  return {
+    signal: signal ? AbortSignal.any([timeout, signal]) : timeout,
+    timeout,
+  };
+}
+
+/** HTTP statuses that will not succeed on retry. */
+export function isPermanentHttpStatus(status: number): boolean {
+  return (
+    status === 400 ||
+    status === 401 ||
+    status === 403 ||
+    status === 404 ||
+    status === 422
+  );
+}
+
+export function parseRetryAfter(
+  value: string | null | undefined,
+): number | null {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const date = Date.parse(value);
+  return Number.isNaN(date) ? null : Math.max(0, date - Date.now());
 }
 
 export class TextProviderResponseError extends Error {

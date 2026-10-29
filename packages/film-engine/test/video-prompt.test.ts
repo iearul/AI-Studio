@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Project, Shot } from "@ai-film-studio/contracts";
+import type { Project, Shot } from "@ai-studio/contracts";
 
 import { buildVideoPrompt } from "../src/video-prompt.js";
 

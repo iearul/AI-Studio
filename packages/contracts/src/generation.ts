@@ -1,8 +1,16 @@
 import { z } from "zod";
 
-import { referenceImageSchema } from "./bible.js";
+import { referenceImageSchema, referenceViews } from "./bible.js";
 
-export const generationProviders = ["comfyui", "manual"] as const;
+export const generationProviders = [
+  "comfyui",
+  "manual",
+  "openai",
+  "gemini",
+] as const;
+export const cloudImageProviders = ["openai", "gemini"] as const;
+export const paidImageConfirmation =
+  "I AUTHORIZE THIS PAID GENERATION" as const;
 export const generationStatuses = [
   "queued",
   "preparing",
@@ -94,8 +102,59 @@ export const imageReviewInputSchema = z.object({
   decision: z.enum(["approve", "reject"]),
 });
 
+export const imageQualitySchema = z.object({
+  id: z.string().trim().min(1).max(40),
+  label: z.string().trim().min(1).max(80),
+  estimatedUsdPerImage: z.number().nonnegative(),
+});
+
+export const imageProviderModelSchema = z.object({
+  id: z.string().trim().min(1).max(120),
+  label: z.string().trim().min(1).max(120),
+  qualities: z.array(imageQualitySchema).min(1),
+  maxReferenceImages: z.number().int().nonnegative(),
+  pricingMessage: z.string(),
+});
+
+export const imageProviderStatusSchema = z.object({
+  id: z.enum(cloudImageProviders),
+  label: z.string(),
+  configured: z.boolean(),
+  message: z.string(),
+  defaultModel: z.string(),
+  models: z.array(imageProviderModelSchema).min(1),
+});
+
+export const imageProviderListSchema = z.object({
+  providers: z.array(imageProviderStatusSchema),
+});
+
+const cloudImageRequestFields = {
+  provider: z.enum(cloudImageProviders),
+  model: z.string().trim().min(1).max(120),
+  quality: z.string().trim().min(1).max(40),
+  confirmation: z.literal(paidImageConfirmation),
+};
+
+export const createCloudImageSchema = z.object(cloudImageRequestFields);
+
+export const createCloudReferenceImageSchema = z.object({
+  ...cloudImageRequestFields,
+  view: z.enum(referenceViews),
+});
+
 export type GeneratedAsset = z.infer<typeof generatedAssetSchema>;
 export type GenerationJob = z.infer<typeof generationJobSchema>;
 export type ImageAttempt = z.infer<typeof imageAttemptSchema>;
 export type ImageHistory = z.infer<typeof imageHistorySchema>;
 export type ImageReviewInput = z.infer<typeof imageReviewInputSchema>;
+export type CloudImageProviderId = z.infer<
+  typeof imageProviderStatusSchema
+>["id"];
+export type ImageQuality = z.infer<typeof imageQualitySchema>;
+export type ImageProviderModel = z.infer<typeof imageProviderModelSchema>;
+export type ImageProviderStatus = z.infer<typeof imageProviderStatusSchema>;
+export type CreateCloudImage = z.infer<typeof createCloudImageSchema>;
+export type CreateCloudReferenceImage = z.infer<
+  typeof createCloudReferenceImageSchema
+>;

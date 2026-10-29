@@ -1,6 +1,6 @@
 "use client";
 
-import type { Project } from "@ai-film-studio/contracts";
+import type { Project } from "@ai-studio/contracts";
 import { ArrowRight, Film, Plus, Smartphone, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";

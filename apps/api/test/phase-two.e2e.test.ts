@@ -2,15 +2,12 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import type {
-  StoryPlanInput,
-  StoryProviderStatus,
-} from "@ai-film-studio/contracts";
+import type { StoryPlanInput, StoryProviderStatus } from "@ai-studio/contracts";
 import type {
   GeneratedText,
   TextGenerationRequest,
   TextProvider,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -157,8 +154,8 @@ describe("Phase 2 API", () => {
   let textProvider: MockTextProvider;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-story-api-"));
-    process.env.DATABASE_PATH = path.join(directory, "film-studio.sqlite");
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-story-api-"));
+    process.env.DATABASE_PATH = path.join(directory, "ai-studio.sqlite");
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");

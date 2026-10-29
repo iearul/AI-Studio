@@ -26,8 +26,8 @@ describe("Phase 1 API", () => {
   let app: FastifyInstance;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-api-"));
-    process.env.DATABASE_PATH = path.join(directory, "film-studio.sqlite");
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-api-"));
+    process.env.DATABASE_PATH = path.join(directory, "ai-studio.sqlite");
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");

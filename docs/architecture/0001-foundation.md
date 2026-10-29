@@ -5,7 +5,7 @@
 
 ## Context
 
-AI Film Studio is a single-user application that must survive provider changes,
+AI Studio is a single-user application that must survive provider changes,
 preserve expensive generation history, and move cleanly between Macs. It does not
 need public hosting, identity, billing, or multi-tenancy. The first milestone must
 support durable project creation, reopening, backup, and restore before AI work is

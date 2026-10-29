@@ -22,6 +22,23 @@ export const referenceViews = [
   "other",
 ] as const;
 
+export const referenceViewsByOwnerType = {
+  character: [
+    "front",
+    "three-quarter",
+    "profile",
+    "full-body",
+    "neutral",
+    "expression",
+    "other",
+  ],
+  location: ["exterior-day", "exterior-night", "interior", "detail", "other"],
+  prop: ["front", "three-quarter", "profile", "detail", "other"],
+} as const satisfies Record<
+  (typeof referenceOwnerTypes)[number],
+  ReadonlyArray<(typeof referenceViews)[number]>
+>;
+
 export const characterInputSchema = z.object({
   name: z.string().trim().min(2).max(160),
   age: z.number().int().min(0).max(150).nullable().default(null),
@@ -196,6 +213,18 @@ export const referenceCoverageSchema = z.object({
   }),
 });
 
+export const referencePromptSchema = z.object({
+  ownerType: z.enum(referenceOwnerTypes),
+  ownerId: z.uuid(),
+  ownerCode: z.string(),
+  ownerName: z.string(),
+  view: z.enum(referenceViews),
+  filename: z.string().min(1).max(255),
+  prompt: z.string().min(1).max(30000),
+  ready: z.boolean(),
+  missingDetails: z.array(z.string()),
+});
+
 export const characterReferencePromptSchema = z.object({
   characterId: z.uuid(),
   characterCode: z.string(),
@@ -206,6 +235,7 @@ export const characterReferencePromptSchema = z.object({
   missingDetails: z.array(z.string()),
 });
 
+export type ReferencePrompt = z.infer<typeof referencePromptSchema>;
 export type CharacterInput = z.input<typeof characterInputSchema>;
 export type LocationInput = z.input<typeof locationInputSchema>;
 export type PropInput = z.input<typeof propInputSchema>;

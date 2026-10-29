@@ -1,22 +1,26 @@
 "use client";
 
-import type {
-  Bible,
-  Character,
-  CharacterReferencePrompt,
-  Location,
-  Project,
-  Prop,
-  ReferenceCoverage,
-  ReferenceImage,
-  ReferenceView,
-} from "@ai-film-studio/contracts";
+import {
+  paidImageConfirmation,
+  type Bible,
+  type Character,
+  type Location,
+  type Project,
+  type Prop,
+  type ReferenceCoverage,
+  referenceViewsByOwnerType,
+  type ReferenceImage,
+  type ReferenceOwnerType,
+  type ReferencePrompt,
+  type ReferenceView,
+} from "@ai-studio/contracts";
 import {
   ArrowLeft,
   Check,
   CheckCircle2,
   Copy,
   ImagePlus,
+  LoaderCircle,
   MapPin,
   Package,
   PencilLine,
@@ -40,6 +44,12 @@ import {
   useState,
 } from "react";
 
+import {
+  confirmImageGeneration,
+  ImageGeneratorControls,
+  useImageGenerator,
+} from "@/components/image-generator";
+import { useLightbox } from "@/components/image-lightbox";
 import { apiBaseUrl, apiFetch } from "@/lib/api";
 
 type BibleKind = "characters" | "locations" | "props";
@@ -61,18 +71,16 @@ const tabs: Array<{
   { kind: "props", label: "Props", singular: "prop", icon: Package },
 ];
 
-const viewsByKind: Record<BibleKind, ReferenceView[]> = {
-  characters: [
-    "front",
-    "three-quarter",
-    "profile",
-    "full-body",
-    "neutral",
-    "expression",
-    "other",
-  ],
-  locations: ["exterior-day", "exterior-night", "interior", "detail", "other"],
-  props: ["front", "three-quarter", "profile", "detail", "other"],
+const viewsByKind: Record<BibleKind, readonly ReferenceView[]> = {
+  characters: referenceViewsByOwnerType.character,
+  locations: referenceViewsByOwnerType.location,
+  props: referenceViewsByOwnerType.prop,
+};
+
+const kindByOwnerType: Record<ReferenceOwnerType, BibleKind> = {
+  character: "characters",
+  location: "locations",
+  prop: "props",
 };
 
 function list(value: FormDataEntryValue | null): string[] {
@@ -254,9 +262,14 @@ function BibleWorkspace() {
   const [editing, setEditing] = useState<BibleEntity>();
   const [busy, setBusy] = useState(false);
   const [promptBusy, setPromptBusy] = useState<string>();
-  const [referencePrompt, setReferencePrompt] =
-    useState<CharacterReferencePrompt>();
+  const [referencePrompt, setReferencePrompt] = useState<ReferencePrompt>();
   const [referencePromptCopied, setReferencePromptCopied] = useState(false);
+  const [referenceGenerating, setReferenceGenerating] = useState(false);
+  const [referenceError, setReferenceError] = useState("");
+  const generator = useImageGenerator();
+  const lightbox = useLightbox();
+  const [frameBusy, setFrameBusy] = useState<string>();
+  const [frameMessage, setFrameMessage] = useState("");
   const [selectedViews, setSelectedViews] = useState<
     Record<string, ReferenceView>
   >({});
@@ -393,26 +406,110 @@ function BibleWorkspace() {
     window.setTimeout(() => setCopiedShot(undefined), 1500);
   }
 
-  async function openCharacterPrompt(
-    character: Character,
+  async function openReferencePrompt(
+    entityKind: BibleKind,
+    entity: BibleEntity,
     view: ReferenceView,
   ) {
-    setPromptBusy(character.id);
+    setPromptBusy(entity.id);
     setError("");
     try {
-      const result = await apiFetch<CharacterReferencePrompt>(
-        `/projects/${id}/characters/${character.id}/reference-prompt?view=${encodeURIComponent(view)}`,
+      const result = await apiFetch<ReferencePrompt>(
+        `/projects/${id}/${entityKind}/${entity.id}/reference-prompt?view=${encodeURIComponent(view)}`,
       );
       setReferencePromptCopied(false);
+      setReferenceError("");
       setReferencePrompt(result);
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : "Could not prepare the character reference prompt.",
+          : "Could not prepare the reference prompt.",
       );
     } finally {
       setPromptBusy(undefined);
+    }
+  }
+
+  async function generateReference() {
+    const resolved = generator.resolved;
+    if (!referencePrompt || !resolved?.provider.configured) return;
+    const entity = [
+      ...(bible?.characters ?? []),
+      ...(bible?.locations ?? []),
+      ...(bible?.props ?? []),
+    ].find((candidate) => candidate.id === referencePrompt.ownerId);
+    if (
+      !confirmImageGeneration(
+        resolved,
+        `${referencePrompt.ownerName} · ${referencePrompt.view.replaceAll("-", " ")} view`,
+        entity?.references.length ?? 0,
+      )
+    ) {
+      return;
+    }
+    setReferenceGenerating(true);
+    setReferenceError("");
+    try {
+      await apiFetch(
+        `/projects/${id}/${kindByOwnerType[referencePrompt.ownerType]}/${referencePrompt.ownerId}/reference-generations`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            provider: resolved.provider.id,
+            model: resolved.model.id,
+            quality: resolved.quality.id,
+            view: referencePrompt.view,
+            confirmation: paidImageConfirmation,
+          }),
+        },
+      );
+      setReferencePrompt(undefined);
+      await loadBible();
+    } catch (reason) {
+      setReferenceError(
+        reason instanceof Error
+          ? reason.message
+          : "The reference photo could not be generated.",
+      );
+    } finally {
+      setReferenceGenerating(false);
+    }
+  }
+
+  async function generateFrame(shot: ReferenceCoverage["shots"][number]) {
+    const resolved = generator.resolved;
+    if (!resolved?.provider.configured) return;
+    const references = [
+      ...shot.characters,
+      ...(shot.location ? [shot.location] : []),
+      ...shot.props,
+    ].reduce((total, entity) => total + entity.references.length, 0);
+    if (!confirmImageGeneration(resolved, shot.shotCode, references)) return;
+    setFrameBusy(shot.shotId);
+    setFrameMessage("");
+    setError("");
+    try {
+      await apiFetch(`/projects/${id}/shots/${shot.shotId}/image-generations`, {
+        method: "POST",
+        body: JSON.stringify({
+          provider: resolved.provider.id,
+          model: resolved.model.id,
+          quality: resolved.quality.id,
+          confirmation: paidImageConfirmation,
+        }),
+      });
+      setFrameMessage(
+        `${shot.shotCode} is generating. Review and approve it in Storyboard.`,
+      );
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The frame could not be generated.",
+      );
+    } finally {
+      setFrameBusy(undefined);
     }
   }
 
@@ -542,38 +639,49 @@ function BibleWorkspace() {
                   </header>
                   <h3>{entity.name}</h3>
                   <p>{entitySummary(kind, entity)}</p>
-                  {kind === "characters" && (
-                    <button
-                      className="button secondary character-prompt-button"
-                      disabled={Boolean(promptBusy)}
-                      onClick={() =>
-                        void openCharacterPrompt(
-                          entity as Character,
-                          selectedView,
-                        )
-                      }
-                    >
-                      {promptBusy === entity.id ? (
-                        "Preparing…"
-                      ) : (
-                        <>
-                          <Sparkles size={14} /> Prompt for{" "}
-                          {selectedView.replaceAll("-", " ")}
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    className="button secondary character-prompt-button"
+                    disabled={Boolean(promptBusy)}
+                    onClick={() =>
+                      void openReferencePrompt(kind, entity, selectedView)
+                    }
+                  >
+                    {promptBusy === entity.id ? (
+                      "Preparing…"
+                    ) : (
+                      <>
+                        <Sparkles size={14} /> Photo for{" "}
+                        {selectedView.replaceAll("-", " ")}
+                      </>
+                    )}
+                  </button>
                   {entity.references.length > 0 ? (
                     <div className="reference-grid">
-                      {entity.references.map((reference) => (
+                      {entity.references.map((reference, index) => (
                         <figure key={reference.id}>
-                          <Image
-                            unoptimized
-                            src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
-                            alt={`${entity.name} ${reference.view} reference`}
-                            width={112}
-                            height={82}
-                          />
+                          <button
+                            type="button"
+                            className="zoomable zoomable-fill"
+                            aria-label={`Enlarge ${entity.name} ${reference.view} reference`}
+                            onClick={() =>
+                              lightbox.open(
+                                entity.references.map((item) => ({
+                                  src: `${apiBaseUrl}/projects/${project.id}/references/${item.id}/content`,
+                                  alt: `${entity.name} ${item.view} reference`,
+                                  caption: `${entity.name} · ${item.view.replaceAll("-", " ")} view · ${item.originalFilename}`,
+                                })),
+                                index,
+                              )
+                            }
+                          >
+                            <Image
+                              unoptimized
+                              src={`${apiBaseUrl}/projects/${project.id}/references/${reference.id}/content`}
+                              alt={`${entity.name} ${reference.view} reference`}
+                              width={112}
+                              height={82}
+                            />
+                          </button>
                           <figcaption>
                             {reference.view.replaceAll("-", " ")}
                           </figcaption>
@@ -623,6 +731,13 @@ function BibleWorkspace() {
             <span>{coverage.totals.withoutImages} images pending</span>
           </div>
         </div>
+        {frameMessage && (
+          <div className="notice success coverage-notice" role="status">
+            <CheckCircle2 size={16} />
+            <span>{frameMessage}</span>
+            <Link href={`/projects/${id}/storyboard`}>Open Storyboard</Link>
+          </div>
+        )}
         {coverage.shots.length === 0 ? (
           <div className="coverage-empty">
             Build the story plan first to see per-shot continuity coverage.
@@ -655,17 +770,35 @@ function BibleWorkspace() {
                     </div>
                   )}
                   <pre>{shot.prompt}</pre>
-                  <button
-                    className="button secondary copy-prompt"
-                    onClick={() => void copyPrompt(shot.shotId, shot.prompt)}
-                  >
-                    {copiedShot === shot.shotId ? (
-                      <Check size={15} />
-                    ) : (
-                      <Copy size={15} />
-                    )}
-                    {copiedShot === shot.shotId ? "Copied" : "Copy prompt"}
-                  </button>
+                  <div className="coverage-actions">
+                    <button
+                      className="button primary"
+                      disabled={
+                        !shot.ready ||
+                        Boolean(frameBusy) ||
+                        !generator.resolved?.provider.configured
+                      }
+                      onClick={() => void generateFrame(shot)}
+                    >
+                      {frameBusy === shot.shotId ? (
+                        <LoaderCircle className="spinner" size={15} />
+                      ) : (
+                        <Sparkles size={15} />
+                      )}
+                      Generate frame
+                    </button>
+                    <button
+                      className="button secondary copy-prompt"
+                      onClick={() => void copyPrompt(shot.shotId, shot.prompt)}
+                    >
+                      {copiedShot === shot.shotId ? (
+                        <Check size={15} />
+                      ) : (
+                        <Copy size={15} />
+                      )}
+                      {copiedShot === shot.shotId ? "Copied" : "Copy prompt"}
+                    </button>
+                  </div>
                 </div>
               </details>
             ))}
@@ -729,16 +862,20 @@ function BibleWorkspace() {
                 <Sparkles size={19} />
               </span>
               <div>
-                <h2 id="reference-prompt-title">Character reference prompt</h2>
+                <h2 id="reference-prompt-title">
+                  {referencePrompt.ownerName} ·{" "}
+                  {referencePrompt.view.replaceAll("-", " ")}
+                </h2>
                 <p>
-                  Copy this into ChatGPT or Gemini image creation, then attach
-                  the result as the {referencePrompt.view.replaceAll("-", " ")}{" "}
-                  view.
+                  Generate the {referencePrompt.view.replaceAll("-", " ")} view
+                  with an image API, or copy the prompt into ChatGPT and upload
+                  the result.
                 </p>
               </div>
               <button
                 className="icon-button"
-                aria-label="Close character reference prompt"
+                aria-label="Close reference prompt"
+                disabled={referenceGenerating}
                 onClick={() => setReferencePrompt(undefined)}
               >
                 <X size={19} />
@@ -750,8 +887,8 @@ function BibleWorkspace() {
                 <span>
                   Better consistency needs:{" "}
                   {referencePrompt.missingDetails.join(", ")}. You can still use
-                  this prompt; ChatGPT will choose the missing details and the
-                  uploaded image becomes their source of truth.
+                  this prompt; the image model will choose the missing details
+                  and the saved image becomes their source of truth.
                 </span>
               </div>
             )}
@@ -768,15 +905,45 @@ function BibleWorkspace() {
 
             <textarea
               className="reference-prompt-text"
-              aria-label="Character reference prompt text"
+              aria-label="Reference prompt text"
               readOnly
               value={referencePrompt.prompt}
             />
+
+            {generator.resolved && (
+              <ImageGeneratorControls
+                providers={generator.providers}
+                resolved={generator.resolved}
+                onChange={generator.setChoice}
+                disabled={referenceGenerating}
+              />
+            )}
+            {referenceError && (
+              <div className="notice error">
+                <span>{referenceError}</span>
+              </div>
+            )}
 
             <footer className="reference-prompt-footer">
               <span>Suggested filename: {referencePrompt.filename}</span>
               <button
                 className="button primary"
+                disabled={
+                  referenceGenerating ||
+                  !generator.resolved?.provider.configured
+                }
+                onClick={() => void generateReference()}
+              >
+                {referenceGenerating ? (
+                  <LoaderCircle className="spinner" size={15} />
+                ) : (
+                  <Sparkles size={15} />
+                )}
+                {referenceGenerating ? "Generating…" : "Generate with API"}
+              </button>
+              <button
+                className="button secondary"
+                disabled={referenceGenerating}
                 onClick={() => void copyCharacterPrompt()}
               >
                 {referencePromptCopied ? (
@@ -790,6 +957,7 @@ function BibleWorkspace() {
           </section>
         </div>
       )}
+      {lightbox.element}
     </div>
   );
 }

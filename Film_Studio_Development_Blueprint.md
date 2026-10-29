@@ -1,4 +1,8 @@
-# Personal AI Film Studio — Development Blueprint
+# Film Studio — Development Blueprint
+
+> The app is now called **AI Studio**. This blueprint covers its Film Studio
+> module; KDP Story Studio is described in
+> [`docs/architecture/0008-kdp-story-studio.md`](docs/architecture/0008-kdp-story-studio.md).
 
 ## 1. Goal
 
@@ -1129,7 +1133,7 @@ AI files can be large.
 Use a cache such as:
 
 ```text
-~/AI-Film-Studio/cache/
+~/AI-Studio/cache/
 ```
 
 Example:
@@ -1653,7 +1657,7 @@ The SQLite file contains important metadata.
 Example:
 
 ```text
-data/film-studio.sqlite
+data/ai-studio.sqlite
 ```
 
 Automatically back it up to:
@@ -1665,8 +1669,8 @@ Google Drive/OSPO/AI-Film-Studio/backups/database/
 Example:
 
 ```text
-film-studio-2026-09-10.sqlite
-film-studio-2026-09-11.sqlite
+ai-studio-2026-09-10.sqlite
+ai-studio-2026-09-11.sqlite
 ...
 ```
 
@@ -1745,7 +1749,7 @@ Eventually aim for:
 
 ```bash
 git clone <repository>
-cd ai-film-studio
+cd AI-Studio
 ./setup.sh
 ```
 
@@ -1813,7 +1817,7 @@ Do not force every component into Docker if native Apple Silicon acceleration wo
 Example:
 
 ```text
-ai-film-studio/
+AI-Studio/
 │
 ├── apps/
 │   ├── web/
@@ -2539,6 +2543,9 @@ project's source of truth.
 | 2026-09-11 | Local image runtime | Remove ComfyUI Desktop, models, adapters, workflows, worker, API routes, and UI controls | Accepted and completed |
 | 2026-09-11 | Character image workflow | Deterministic detailed reference-photo prompt, manual ChatGPT image creation, verified upload, and local continuity reuse | Accepted |
 | 2026-09-11 | Manual image intake | The selected character angle controls its prompt; character and storyboard inputs accept picker, file drop, or clipboard image paste; shot prompts target ChatGPT Images or Gemini | Accepted |
+| 2026-10-11 | Cloud image providers | OpenAI GPT Image and Google Gemini behind one image boundary, selectable per request, with Bible reference photos attached and literal paid confirmation | Accepted |
+| 2026-10-11 | Google Veo video | Veo 3.1 (Fast, Standard, Lite) through the Gemini API as a third cloud video provider, sharing `GEMINI_API_KEY`; downloads send the key only to the Gemini host | Accepted |
+| 2026-10-11 | Audio provider | ElevenLabs for narration, multi-speaker dialogue, sound effects, and instrumental music; voice profiles per narrator and character | Accepted |
 | 2026-09-12 | Google Drive boundary | OAuth 2.0 with least-privilege `drive.file`; a fixed visible `OSPO/AI-Film-Studio` hierarchy; private local refresh-token storage; idempotent resumable uploads; local backups succeed independently of Drive | Accepted |
 
 ## Milestone progress
@@ -2559,7 +2566,8 @@ project's source of truth.
 - [ ] Phase 5B — Local Video (intentionally not installed on this Mac)
 - [x] Phase 6A — Kling and Seedance cloud-video adapters and UI
 - [ ] Phase 6B — Live paid-provider acceptance test (requires user API key/credit)
-- [ ] Phase 7 — Audio
+- [x] Phase 7A — ElevenLabs narration, dialogue voices, sound effects, and music
+- [ ] Phase 7B — Subtitles
 - [ ] Phase 8 — Draft Renderer
 - [ ] Phase 9 — Long Video Features
 

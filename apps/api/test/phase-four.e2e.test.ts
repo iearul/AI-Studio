@@ -14,7 +14,7 @@ const png = Buffer.from(
 );
 
 function multipartImage(buffer: Buffer, mimeType = "image/png") {
-  const boundary = "film-studio-storyboard-boundary";
+  const boundary = "ai-studio-storyboard-boundary";
   return {
     contentType: `multipart/form-data; boundary=${boundary}`,
     payload: Buffer.concat([
@@ -35,10 +35,8 @@ describe("Phase 4 API", () => {
   let shotId: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(
-      path.join(tmpdir(), "film-studio-generation-api-"),
-    );
-    process.env.DATABASE_PATH = path.join(directory, "film-studio.sqlite");
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-generation-api-"));
+    process.env.DATABASE_PATH = path.join(directory, "ai-studio.sqlite");
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");

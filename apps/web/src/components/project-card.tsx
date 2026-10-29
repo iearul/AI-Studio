@@ -1,4 +1,4 @@
-import type { Project } from "@ai-film-studio/contracts";
+import type { Project } from "@ai-studio/contracts";
 import { ArrowUpRight, Clock3, Film, Smartphone } from "lucide-react";
 import Link from "next/link";
 
