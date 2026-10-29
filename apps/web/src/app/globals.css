@@ -137,6 +137,38 @@ textarea:focus-visible {
 .nav-link.active svg {
   color: var(--accent);
 }
+.nav-group {
+  display: grid;
+  gap: 4px;
+}
+.nav-group-toggle {
+  width: 100%;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+.nav-group-toggle.current {
+  color: var(--ink);
+}
+.nav-chevron {
+  margin-left: auto;
+  transition: transform 0.18s ease;
+}
+.nav-group-toggle[aria-expanded="false"] .nav-chevron {
+  transform: rotate(-90deg);
+}
+.nav-group-items {
+  display: grid;
+  gap: 4px;
+  margin-left: 21px;
+  padding-left: 9px;
+  border-left: 1px solid var(--line);
+}
+.nav-sublink {
+  min-height: 38px;
+  font-size: 13.5px;
+}
 .sidebar-spacer {
   flex: 1;
 }

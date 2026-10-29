@@ -2,6 +2,7 @@
 
 import {
   BookOpenText,
+  ChevronDown,
   Clapperboard,
   FolderKanban,
   Gauge,
@@ -9,18 +10,104 @@ import {
   MessageSquare,
   Settings,
   Sparkles,
+  WandSparkles,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
-const navigation = [
-  { href: "/", label: "Studio", icon: Gauge },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
+type NavItem = { href: string; label: string; icon: LucideIcon };
+type NavGroup = { label: string; icon: LucideIcon; items: NavItem[] };
+
+const navigation: Array<NavItem | NavGroup> = [
+  {
+    label: "Film Studio",
+    icon: Clapperboard,
+    items: [
+      { href: "/", label: "Studio", icon: Gauge },
+      { href: "/projects", label: "Projects", icon: FolderKanban },
+    ],
+  },
   { href: "/kdp", label: "KDP Story Studio", icon: BookOpenText },
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
+
+const navItems = navigation.flatMap((entry) =>
+  "items" in entry ? entry.items : [entry],
+);
+
+function isActive(href: string, pathname: string): boolean {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+function NavLink({
+  item,
+  pathname,
+  className = "nav-link",
+}: {
+  item: NavItem;
+  pathname: string;
+  className?: string;
+}) {
+  const Icon = item.icon;
+  const active = isActive(item.href, pathname);
+  return (
+    <Link
+      href={item.href}
+      className={active ? `${className} active` : className}
+      aria-current={active ? "page" : undefined}
+    >
+      <Icon size={18} />
+      <span>{item.label}</span>
+    </Link>
+  );
+}
+
+function NavGroupLinks({
+  group,
+  pathname,
+}: {
+  group: NavGroup;
+  pathname: string;
+}) {
+  const [open, setOpen] = useState(true);
+  const Icon = group.icon;
+  const containsActive = group.items.some((item) =>
+    isActive(item.href, pathname),
+  );
+  return (
+    <div className="nav-group">
+      <button
+        type="button"
+        className={
+          containsActive
+            ? "nav-link nav-group-toggle current"
+            : "nav-link nav-group-toggle"
+        }
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <Icon size={18} />
+        <span>{group.label}</span>
+        <ChevronDown className="nav-chevron" size={16} />
+      </button>
+      {open && (
+        <div className="nav-group-items">
+          {group.items.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              className="nav-link nav-sublink"
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -29,28 +116,25 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="sidebar">
         <Link className="brand" href="/" aria-label="AI Studio home">
           <span className="brand-mark">
-            <Clapperboard size={20} />
+            <WandSparkles size={20} />
           </span>
           <span>
-            <strong>Film Studio</strong>
-            <small>AI production desk</small>
+            <strong>AI Studio</strong>
+            <small>Films &amp; books desk</small>
           </span>
         </Link>
         <nav aria-label="Primary navigation">
-          {navigation.map(({ href, label, icon: Icon }) => {
-            const active =
-              href === "/" ? pathname === "/" : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={active ? "nav-link active" : "nav-link"}
-              >
-                <Icon size={18} />
-                <span>{label}</span>
-              </Link>
-            );
-          })}
+          {navigation.map((entry) =>
+            "items" in entry ? (
+              <NavGroupLinks
+                key={entry.label}
+                group={entry}
+                pathname={pathname}
+              />
+            ) : (
+              <NavLink key={entry.href} item={entry} pathname={pathname} />
+            ),
+          )}
         </nav>
         <div className="sidebar-spacer" />
         <div className="local-badge">
@@ -75,12 +159,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="mobile-header">
           <Link className="brand" href="/">
             <span className="brand-mark">
-              <Clapperboard size={18} />
+              <WandSparkles size={18} />
             </span>
-            <strong>Film Studio</strong>
+            <strong>AI Studio</strong>
           </Link>
           <nav aria-label="Mobile navigation">
-            {navigation.map(({ href, label, icon: Icon }) => (
+            {navItems.map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href} aria-label={label}>
                 <Icon size={19} />
               </Link>
