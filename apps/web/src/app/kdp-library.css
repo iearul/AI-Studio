@@ -688,6 +688,58 @@
 .kdp-wiz-field-label span {
   color: var(--accent-dark);
 }
+.kdp-wiz-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+}
+.kdp-dictation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.kdp-dictation .icon-only {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+.kdp-dictation-live {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--kdp-bad);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.kdp-dictation-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--kdp-bad);
+  transition: transform 90ms linear;
+}
+.kdp-dictation-note {
+  flex-basis: 100%;
+  color: var(--kdp-bad);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kdp-dictation-dot {
+    transition: none;
+  }
+}
+@media (max-width: 480px) {
+  .kdp-dictation-word {
+    display: none;
+  }
+}
 .field small.kdp-wiz-help {
   align-self: flex-start;
   color: var(--muted);

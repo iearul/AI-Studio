@@ -35,6 +35,7 @@ import {
   type RefObject,
 } from "react";
 
+import { DictationButton } from "@/components/kdp/dictation-button";
 import { readableErrors } from "@/components/kdp/library/form-errors";
 import {
   ChapterPreview,
@@ -73,6 +74,7 @@ import {
   type FieldErrors,
   type WizardForm,
 } from "@/components/kdp/library/wizard-model";
+import { appendDictation } from "@/lib/dictation";
 import {
   errorMessage,
   formatWords,
@@ -118,10 +120,12 @@ function StepHeading({
 function IdeaStep({
   form,
   set,
+  setForm,
   errors,
 }: {
   form: WizardForm;
   set: Setter;
+  setForm: (update: (current: WizardForm) => WizardForm) => void;
   errors: FieldErrors;
 }) {
   const genreId = useId();
@@ -137,7 +141,17 @@ function IdeaStep({
         maxLength={4000}
         placeholder="A night nurse notices that the same patient is admitted every Tuesday under a different name…"
         error={errors.theme}
-        help={`${form.theme.length}/4,000`}
+        help={`${form.theme.length}/4,000 · Type, dictate, or both.`}
+        action={
+          <DictationButton
+            onText={(text) =>
+              setForm((current) => ({
+                ...current,
+                theme: appendDictation(current.theme, text, 4000),
+              }))
+            }
+          />
+        }
       />
       <div className="field">
         <label htmlFor={genreId} className="kdp-wiz-field-label">
@@ -1055,7 +1069,7 @@ export default function NewStoryPage() {
             >
               A sentence or a page — whatever you have.
             </StepHeading>
-            <IdeaStep form={form} set={set} errors={errors} />
+            <IdeaStep form={form} set={set} setForm={setForm} errors={errors} />
           </>
         )}
         {stepId === "length" && (

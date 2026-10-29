@@ -19,6 +19,7 @@ export function TextField({
   help,
   full = false,
   required = false,
+  action,
 }: {
   label: string;
   value: string;
@@ -30,6 +31,8 @@ export function TextField({
   help?: ReactNode;
   full?: boolean;
   required?: boolean;
+  /** Extra control next to the label, such as voice input. */
+  action?: ReactNode;
 }) {
   const id = useId();
   const describedBy =
@@ -47,10 +50,13 @@ export function TextField({
   };
   return (
     <div className={`field${full ? " full" : ""}`}>
-      <label htmlFor={id} className="kdp-wiz-field-label">
-        {label}
-        {required && <span aria-hidden="true"> *</span>}
-      </label>
+      <div className="kdp-wiz-label-row">
+        <label htmlFor={id} className="kdp-wiz-field-label">
+          {label}
+          {required && <span aria-hidden="true"> *</span>}
+        </label>
+        {action}
+      </div>
       {rows ? (
         <textarea
           {...shared}

@@ -157,6 +157,20 @@ routing (`POST /kdp/books/:id/jobs/estimate`); the job panel shows actual agains
 estimated. Claude prices come from Anthropic's published table; OpenAI prices are
 placeholders flagged as unverified until the user confirms them in Settings.
 
+### Voice prompts
+
+The theme field in Create New Story accepts dictation. The browser records mono
+audio with an AudioWorklet, averages it down to 16 kHz and uploads 16-bit PCM WAV
+to `POST /kdp/dictation`. The API runs `apps/api/scripts/dictate.py` (mlx-whisper,
+`whisper-large-v3-turbo`, language auto-detected) in a short-lived process, one
+clip at a time, at most two minutes, and passes it only `HOME`, `PATH` and cache
+variables, never the API keys. Local Whisper was chosen over browser speech
+recognition (sends audio to Google or Apple) and OpenAI transcription (cost,
+cloud): audio stays on the Mac, and any language works. The cost is a few seconds
+of waiting after Stop instead of live text, and voice input only works on Apple
+Silicon with mlx-whisper installed; elsewhere `GET /kdp/dictation` reports why
+and the button is disabled.
+
 ### Not in this version
 
 - Author photo upload (the profile has no photo route yet).

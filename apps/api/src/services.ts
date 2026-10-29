@@ -60,6 +60,7 @@ import type { FastifyRequest } from "fastify";
 import { AudioGenerationService } from "./audio-generation-service.js";
 import { KdpAiRouter } from "./kdp/ai-router.js";
 import { BookFileStore } from "./kdp/book-files.js";
+import { DictationService } from "./kdp/dictation.js";
 import { KdpExportService } from "./kdp/export-service.js";
 import { KdpJobRunner, type JobRunnerOptions } from "./kdp/job-runner.js";
 import { KdpService } from "./kdp/kdp-service.js";
@@ -82,6 +83,8 @@ export async function createServices(
     kdpTextProviders?: TextProvider[];
     kdpSleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
     kdpRunner?: JobRunnerOptions;
+    /** Speech-to-text for voice prompts; defaults to local mlx-whisper. */
+    kdpDictation?: DictationService;
     /**
      * The app has no login: every request belongs to the local owner. A future
      * login only replaces this function.
@@ -252,6 +255,7 @@ export async function createServices(
       bookFiles,
       kdpProvenance,
     ),
+    dictation: options.kdpDictation ?? new DictationService(),
     resolveOwner: options.resolveOwner ?? (() => kdpLocalOwnerId),
   };
   const googleDrive = new GoogleDriveService(

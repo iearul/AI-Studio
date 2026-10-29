@@ -41,6 +41,11 @@ import {
   GoogleDriveSyncBusyError,
 } from "./google-drive-service.js";
 import { KdpBudgetExceededError } from "./kdp/ai-router.js";
+import {
+  DictationBusyError,
+  DictationInputError,
+  DictationUnavailableError,
+} from "./kdp/dictation.js";
 import { KdpCoverValidationError } from "./kdp/kdp-service.js";
 
 export class NotFoundError extends Error {
@@ -148,6 +153,36 @@ export function registerErrorHandler(app: FastifyInstance): void {
         type: "https://ai-studio.local/problems/kdp-cover",
         title: "Invalid cover image",
         status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof DictationInputError) {
+      void reply.status(422).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/dictation-input",
+        title: "Invalid recording",
+        status: 422,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof DictationBusyError) {
+      void reply.status(409).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/dictation-busy",
+        title: "Transcription is busy",
+        status: 409,
+        detail: error.message,
+        instance: request.url,
+      });
+      return;
+    }
+    if (error instanceof DictationUnavailableError) {
+      void reply.status(503).type("application/problem+json").send({
+        type: "https://ai-studio.local/problems/dictation-unavailable",
+        title: "Voice input is unavailable",
+        status: 503,
         detail: error.message,
         instance: request.url,
       });

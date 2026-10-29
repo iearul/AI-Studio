@@ -55,6 +55,13 @@ const exportFileParams = bookParams.extend({
   filename: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,120}$/),
 });
 
+const dictationQuerySchema = z.object({
+  language: z
+    .string()
+    .regex(/^(auto|[a-z]{2,3})$/)
+    .default("auto"),
+});
+
 const approvalSchema = z.object({
   field: z.enum(["manuscript", "listing"]),
   approved: z.boolean(),
@@ -88,6 +95,32 @@ export function registerKdpRoutes(
     kdp.books.createAuthor(ownerId, defaultAuthorProfile);
     return kdp.books.listAuthors(ownerId);
   };
+
+  // --- Voice prompts -----------------------------------------------------------
+
+  app.get("/kdp/dictation", () => kdp.dictation.status());
+
+  app.post(
+    "/kdp/dictation",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const { language } = dictationQuerySchema.parse(request.query);
+      const upload = await request.file({
+        limits: { files: 1, fileSize: 6 * 1024 * 1024, parts: 1 },
+      });
+      if (!upload)
+        throw new z.ZodError([
+          {
+            code: "custom",
+            path: ["file"],
+            message: "A recording is required.",
+            input: undefined,
+          },
+        ]);
+      const audio = await upload.toBuffer();
+      return kdp.dictation.transcribe(audio, language);
+    },
+  );
 
   /** A new book gets its own Drive folder at once when Drive is connected. */
   const syncToDrive = (request: FastifyRequest, bookId: string) => {

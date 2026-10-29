@@ -144,7 +144,9 @@ prepare everything for a manual upload to Amazon KDP. The pipeline never writes
 a book in one request; each stage is a background job with saved checkpoints:
 
 1. **Create New Story**: theme, genre, length, language and pen name, with
-   optional voice, content and series settings.
+   optional voice, content and series settings. **Dictate** next to the theme
+   records a spoken idea and adds the text after what you typed; local Whisper
+   (`mlx-whisper`, see below) transcribes it, so the audio never leaves the Mac.
 2. **Story Blueprint**: three concepts, the story bible, the plot architecture
    and editable chapter cards (drag to reorder, lock, regenerate single cards).
 3. **Draft**: chapters are written in order with the bible, outline, earlier
@@ -165,6 +167,11 @@ that would exceed it and can be resumed after raising the budget. Text models
 are chosen per task in the same settings page; by default Claude writes and
 reviews, OpenAI handles listing, cover prompts, proofreading and continuity
 inspection.
+
+Voice input runs `apps/api/scripts/dictate.py` with the Python from
+`~/.local/share/mlx-whisper/venv` (override with `KDP_WHISPER_PYTHON`; model
+with `KDP_WHISPER_MODEL`, default `mlx-community/whisper-large-v3-turbo`). It
+needs Apple Silicon. Without it the Dictate button is disabled and says why.
 
 EPUB validation uses EPUBCheck when it is installed (`brew install epubcheck`),
 plus built-in structural and Kindle checks. Passing them does not mean KDP has
