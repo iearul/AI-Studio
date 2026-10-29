@@ -89,6 +89,13 @@ export function registerKdpRoutes(
     return kdp.books.listAuthors(ownerId);
   };
 
+  /** A new book gets its own Drive folder at once when Drive is connected. */
+  const syncToDrive = (request: FastifyRequest, bookId: string) => {
+    void services.googleDrive.syncBook(bookId).catch((error: unknown) => {
+      request.log.warn({ err: error }, "Google Drive book sync failed");
+    });
+  };
+
   // --- Reference data, settings, providers ----------------------------------
 
   app.get("/kdp/reference", () => ({
@@ -174,6 +181,7 @@ export function registerKdpRoutes(
         owner(request),
         createBookSchema.parse(request.body),
       );
+      syncToDrive(request, book.id);
       return reply.status(201).send(kdp.books.summary(owner(request), book.id));
     },
   );
@@ -208,6 +216,7 @@ export function registerKdpRoutes(
   app.post("/kdp/books/:bookId/duplicate", (request, reply) => {
     const { bookId } = bookParams.parse(request.params);
     const copy = kdp.books.duplicate(owner(request), bookId);
+    syncToDrive(request, copy.id);
     return reply.status(201).send(kdp.books.summary(owner(request), copy.id));
   });
 

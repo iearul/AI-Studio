@@ -611,6 +611,20 @@ ${answers.map((answer) => `<tr><td>${answer.label}</td><td>${answer.classificati
     );
   }
 
+  /** Writes `book.json`, the `backup` data, into the book's own folder. */
+  async writeBackupFile(bookId: string): Promise<void> {
+    const book = this.books.getById(bookId);
+    if (!book) return;
+    const author = book.authorProfileId
+      ? (this.books.getAuthor(book.ownerId, book.authorProfileId) ?? null)
+      : null;
+    await this.files.write(
+      book.id,
+      "book.json",
+      JSON.stringify(this.backup(book, author), null, 2),
+    );
+  }
+
   /** Everything needed to understand and rebuild the project, as data. */
   backup(book: Book, author: AuthorProfile | null): Record<string, unknown> {
     const chapters = this.story.listChapters(book.id);

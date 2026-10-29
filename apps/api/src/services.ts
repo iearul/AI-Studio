@@ -205,14 +205,6 @@ export async function createServices(
     manifestSynchronizer,
     videoProviders,
   );
-  const googleDrive = new GoogleDriveService(
-    googleDriveClient,
-    backups,
-    manifestSynchronizer,
-    storage.projectsPath,
-    storage.backupsPath,
-  );
-
   const kdpBooks = new KdpBookRepository(database);
   const kdpStory = new KdpStoryRepository(database);
   const kdpJobs = new KdpJobRepository(database);
@@ -262,6 +254,18 @@ export async function createServices(
     ),
     resolveOwner: options.resolveOwner ?? (() => kdpLocalOwnerId),
   };
+  const googleDrive = new GoogleDriveService(
+    googleDriveClient,
+    backups,
+    manifestSynchronizer,
+    storage.projectsPath,
+    storage.backupsPath,
+    {
+      path: bookFiles.root,
+      activeIds: () => kdpBooks.activeIds(),
+      writeBackupFile: (bookId) => kdp.exports.writeBackupFile(bookId),
+    },
+  );
 
   await manifestSynchronizer.drain();
 

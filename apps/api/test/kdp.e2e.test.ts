@@ -19,7 +19,7 @@ import type {
 } from "@ai-studio/contracts";
 import { readZip, findEpubCheck } from "@ai-studio/book-export";
 import type { FastifyInstance, InjectOptions } from "fastify";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../src/app.js";
 import { createServices, type Services } from "../src/services.js";
@@ -158,6 +158,18 @@ describe("KDP Story Studio API", () => {
     });
     return { book, chapters };
   }
+
+  it("hands every new or duplicated book to Google Drive", async () => {
+    const syncBook = vi
+      .spyOn(services.googleDrive, "syncBook")
+      .mockResolvedValue();
+    const book = await createThriller();
+    const copy = await call<BookSummary>(
+      { method: "POST", url: `/kdp/books/${book.id}/duplicate` },
+      201,
+    );
+    expect(syncBook.mock.calls).toEqual([[book.id], [copy.id]]);
+  });
 
   it("takes a 20,000-word thriller from theme to outline", async () => {
     const book = await createThriller();

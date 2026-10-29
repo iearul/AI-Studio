@@ -383,7 +383,8 @@ export default function SettingsPage() {
                 </strong>
                 <p>{drive.message}</p>
                 <small>
-                  Drive path: OSPO/AI-Film-Studio · permission: drive.file
+                  Drive folders: OSPO/AI-Film-Studio (films) ·
+                  OSPO/KDP-Story-Studio (books) · permission: drive.file
                 </small>
               </div>
             </div>
@@ -438,7 +439,7 @@ export default function SettingsPage() {
                   ) : (
                     <CloudUpload size={16} />
                   )}
-                  Sync projects &amp; backup
+                  Sync projects, books &amp; backup
                 </button>
                 {drive.rootFolderUrl && (
                   <a

@@ -181,10 +181,15 @@ visible hierarchy in your own Drive:
 
 ```text
 OSPO/
-└── AI-Film-Studio/
-    ├── projects/          manifests, reference images, storyboards and videos
-    └── backups/database/  verified SQLite snapshots
+├── AI-Film-Studio/            Film Studio
+│   ├── projects/              manifests, reference images, storyboards and videos
+│   └── backups/database/      verified SQLite snapshots of the whole app
+└── KDP-Story-Studio/          KDP Story Studio
+    └── books/<book id>/       book.json (all book data), covers and exports
 ```
+
+A new KDP book gets its folder as soon as it is created (when Drive is
+connected); **Sync projects, books & backup** uploads everything again.
 
 Create a Google OAuth 2.0 **Web application** client, enable the Google Drive API,
 and register this exact authorized redirect URI:
@@ -195,7 +200,7 @@ http://127.0.0.1:4100/api/v1/integrations/google-drive/callback
 
 Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the Git-ignored `.env.local`,
 restart `pnpm dev`, then open **Settings → Connect Google Drive**. After Google
-consent, choose **Sync projects & backup**. The refresh token is stored only in
+consent, choose **Sync projects, books & backup**. The refresh token is stored only in
 `data/secrets/google-drive.json` with owner-only file permissions; it is never sent
 to the browser or included in project manifests. **Backup now** always keeps the
 verified local backup even when Drive is disconnected or unavailable.

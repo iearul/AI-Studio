@@ -444,6 +444,17 @@ export class KdpBookRepository {
     return row ? mapBook(row) : undefined;
   }
 
+  /** Every book that is not in the trash, across owners (Drive sync). */
+  activeIds(): string[] {
+    return (
+      this.db
+        .prepare(
+          "SELECT id FROM kdp_books WHERE deleted_at IS NULL ORDER BY created_at",
+        )
+        .all() as Array<{ id: string }>
+    ).map((row) => row.id);
+  }
+
   create(ownerId: string, input: CreateBookInput): Book {
     const parsed = createBookSchema.parse(input);
     const author = this.requireAuthor(ownerId, parsed.authorProfileId);
