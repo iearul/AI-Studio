@@ -7,7 +7,7 @@ import {
   type Project,
   type Voice,
   type VoiceProfile,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   AlertTriangle,
   ArrowLeft,

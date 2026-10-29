@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConceptRecord, StoryConcept } from "@ai-film-studio/contracts";
+import type { ConceptRecord, StoryConcept } from "@ai-studio/contracts";
 import {
   Check,
   Lightbulb,

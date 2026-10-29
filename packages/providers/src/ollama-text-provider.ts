@@ -1,7 +1,7 @@
 import {
   storyProviderStatusSchema,
   type StoryProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   parseGeneratedJson,
@@ -276,7 +276,7 @@ async function ollamaHttpMessage(response: Response): Promise<string> {
   const body = asObject(await safeJson(response));
   const detail = nestedErrorMessage(body?.error);
   if (detail?.toLowerCase().includes("failed to parse grammar")) {
-    return "Ollama could not apply the structured story format. Restart AI Film Studio and try again.";
+    return "Ollama could not apply the structured story format. Restart AI Studio and try again.";
   }
   if (detail?.toLowerCase().includes("memory")) {
     return "Ollama does not have enough free memory for story generation. Close memory-heavy applications and try again.";

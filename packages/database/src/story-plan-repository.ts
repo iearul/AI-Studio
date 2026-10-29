@@ -13,7 +13,7 @@ import {
   type Story,
   type StoryPlan,
   type StoryPlanInput,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 import type { ProjectRepository } from "./project-repository.js";

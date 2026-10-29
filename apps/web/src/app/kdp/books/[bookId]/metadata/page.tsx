@@ -1,6 +1,6 @@
 "use client";
 
-import type { BookMetadataRecord } from "@ai-film-studio/contracts";
+import type { BookMetadataRecord } from "@ai-studio/contracts";
 import { LoaderCircle, Sparkles } from "lucide-react";
 import { useCallback, useMemo } from "react";
 

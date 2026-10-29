@@ -4,15 +4,15 @@ import type {
   AuthorProfile,
   BookSummary,
   PointOfView,
-} from "@ai-film-studio/contracts";
-import { pointsOfView } from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
+import { pointsOfView } from "@ai-studio/contracts";
 import {
   craftProfiles,
   getLengthPreset,
   lengthPresets,
   lengthWarnings,
   planChapterWords,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 import {
   ArrowLeft,
   ArrowRight,

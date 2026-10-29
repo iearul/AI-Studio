@@ -5,7 +5,7 @@ import type {
   ConceptRecord,
   KdpJob,
   StoryBibleRecord,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { BookOpenText, Compass, Feather, Landmark, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";

@@ -23,11 +23,11 @@ import {
   type RevisionSource,
   type StoryBible,
   type StoryBibleRecord,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   countManuscriptWords,
   normalizeManuscript,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 
 import type { DatabaseManager } from "./database-manager.js";
 import { KdpConflictError, KdpNotFoundError } from "./kdp-book-repository.js";

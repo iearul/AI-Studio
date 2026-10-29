@@ -1,4 +1,4 @@
-import type { Project, Shot } from "@ai-film-studio/contracts";
+import type { Project, Shot } from "@ai-studio/contracts";
 
 export function buildVideoPrompt(project: Project, shot: Shot): string {
   return [

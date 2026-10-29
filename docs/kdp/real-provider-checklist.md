@@ -27,4 +27,4 @@ with the default routing; set the book budget to $2 to be safe.
    from <https://openai.com/api/pricing>.
 
 Report anything that fails with the job's error message (shown in the job panel)
-and the time it happened; the server log is `~/Library/Logs/AI-Film-Studio/app.log`.
+and the time it happened; the server log is `~/Library/Logs/AI-Studio/app.log`.

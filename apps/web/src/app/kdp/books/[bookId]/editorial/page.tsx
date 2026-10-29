@@ -6,7 +6,7 @@ import type {
   EditorialKind,
   EditorialReview,
   IssueSeverity,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { ListChecks, LoaderCircle, ScanSearch, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 

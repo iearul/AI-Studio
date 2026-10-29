@@ -16,7 +16,7 @@ import type {
   VideoAsset,
   VideoAttempt,
   VoiceProfile,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 export type ProjectManifestContent = {
   story?: Story | null;

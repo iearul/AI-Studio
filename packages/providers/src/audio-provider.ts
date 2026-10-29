@@ -1,4 +1,4 @@
-import type { AudioProviderStatus, Voice } from "@ai-film-studio/contracts";
+import type { AudioProviderStatus, Voice } from "@ai-studio/contracts";
 
 export type GeneratedAudio = {
   data: Buffer;

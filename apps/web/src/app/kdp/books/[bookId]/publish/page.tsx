@@ -4,7 +4,7 @@ import type {
   BookExport,
   BookReadiness,
   PublicationRecord,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { Info } from "lucide-react";
 import { useCallback, useMemo } from "react";
 

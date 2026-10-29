@@ -1,6 +1,6 @@
 "use client";
 
-import type { CoverAsset } from "@ai-film-studio/contracts";
+import type { CoverAsset } from "@ai-studio/contracts";
 import { useCallback, useMemo, useState } from "react";
 
 import { useBook } from "@/components/kdp/book-context";

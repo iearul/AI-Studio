@@ -5,7 +5,7 @@ import type {
   Scene,
   Shot,
   StoryPlan,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 const speakerPattern = /^\s*([^:]{1,80}?)\s*:\s*(.+)$/;
 

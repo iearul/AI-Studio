@@ -21,7 +21,7 @@ describe("ReferenceImageStore", () => {
   let store: ReferenceImageStore;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-references-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-references-"));
     store = new ReferenceImageStore(directory);
   });
 

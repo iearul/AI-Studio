@@ -13,21 +13,21 @@ import type {
   PassageResult,
   StartKdpJob,
   UpdateKdpSettings,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   defaultKdpSettings,
   evaluateReadiness,
   passagePrompt,
   plainTextToManuscript,
   validateCoverImage,
-} from "@ai-film-studio/book-engine";
-import { inspectImage } from "@ai-film-studio/book-export";
+} from "@ai-studio/book-engine";
+import { inspectImage } from "@ai-studio/book-export";
 import {
   KdpConflictError,
   type KdpBookRepository,
   type KdpJobRepository,
   type KdpStoryRepository,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 
 import type { KdpAiRouter } from "./ai-router.js";
 import type { BookFileStore } from "./book-files.js";

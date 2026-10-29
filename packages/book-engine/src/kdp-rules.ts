@@ -1,4 +1,4 @@
-import type { ImageValidation } from "@ai-film-studio/contracts";
+import type { ImageValidation } from "@ai-studio/contracts";
 
 /**
  * KDP eBook rules as researched in docs/kdp/kdp-rules-reference.md. KDP changes

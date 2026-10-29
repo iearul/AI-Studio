@@ -33,7 +33,7 @@ import {
   type UpdateAuthorProfile,
   type UpdateBook,
   type UpdatePublicationRecord,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 

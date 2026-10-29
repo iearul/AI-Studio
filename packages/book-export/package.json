@@ -1,5 +1,5 @@
 {
-  "name": "@ai-film-studio/book-export",
+  "name": "@ai-studio/book-export",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -18,14 +18,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-film-studio/book-engine": "workspace:*",
-    "@ai-film-studio/contracts": "workspace:*",
+    "@ai-studio/book-engine": "workspace:*",
+    "@ai-studio/contracts": "workspace:*",
     "docx": "^9.15.0",
     "fast-xml-parser": "^5.11.2",
     "fflate": "^0.8.3"
   },
   "devDependencies": {
-    "@ai-film-studio/tooling": "workspace:*",
+    "@ai-studio/tooling": "workspace:*",
     "@types/node": "^24.3.0",
     "eslint": "^9.34.0",
     "typescript": "^5.9.2",

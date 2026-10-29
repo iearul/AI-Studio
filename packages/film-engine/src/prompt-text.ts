@@ -1,4 +1,4 @@
-import type { ReferenceView } from "@ai-film-studio/contracts";
+import type { ReferenceView } from "@ai-studio/contracts";
 
 export function detail(
   label: string,

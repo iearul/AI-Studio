@@ -7,8 +7,8 @@ import type {
   KdpAiRun,
   KdpCostSummary,
   KdpJob,
-} from "@ai-film-studio/contracts";
-import { kdpTaskLabels } from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
+import { kdpTaskLabels } from "@ai-studio/contracts";
 import { ArrowDown, ArrowUp, Gauge, Settings2 } from "lucide-react";
 import { useState } from "react";
 

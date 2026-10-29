@@ -14,7 +14,7 @@ from a separate ChatGPT session.
 
 ## Decision
 
-- AI Film Studio builds detailed prompts for character references and individual
+- AI Studio builds detailed prompts for character references and individual
   shots. No local image model is installed or started.
 - OpenAI GPT Image and Google Gemini implement one image provider boundary and are
   selectable per request. OpenAI uses the Images API (`/v1/images/edits` when

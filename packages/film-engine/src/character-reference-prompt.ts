@@ -4,7 +4,7 @@ import {
   type CharacterReferencePrompt,
   type Project,
   type ReferenceView,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   compact,

@@ -114,7 +114,7 @@ export function registerChatRoutes(app: FastifyInstance): void {
           .status(422)
           .type("application/problem+json")
           .send({
-            type: "https://ai-film-studio.local/problems/provider-configuration",
+            type: "https://ai-studio.local/problems/provider-configuration",
             title: "Ollama is not configured",
             status: 422,
             detail:
@@ -146,7 +146,7 @@ export function registerChatRoutes(app: FastifyInstance): void {
           .status(503)
           .type("application/problem+json")
           .send({
-            type: "https://ai-film-studio.local/problems/provider-unavailable",
+            type: "https://ai-studio.local/problems/provider-unavailable",
             title: "Ollama is unavailable",
             status: 503,
             detail:
@@ -162,7 +162,7 @@ export function registerChatRoutes(app: FastifyInstance): void {
           .status(502)
           .type("application/problem+json")
           .send({
-            type: "https://ai-film-studio.local/problems/provider-response",
+            type: "https://ai-studio.local/problems/provider-response",
             title: "Ollama returned an error",
             status: 502,
             detail: `Ollama chat returned HTTP ${response.status}.`,
@@ -175,7 +175,7 @@ export function registerChatRoutes(app: FastifyInstance): void {
       const content = body?.message?.content;
       if (!body || typeof content !== "string" || content.length === 0) {
         return reply.status(502).type("application/problem+json").send({
-          type: "https://ai-film-studio.local/problems/provider-response",
+          type: "https://ai-studio.local/problems/provider-response",
           title: "Ollama returned an empty message",
           status: 502,
           detail: "The model replied without any text.",

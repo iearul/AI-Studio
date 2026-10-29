@@ -7,7 +7,7 @@ export function findWorkspaceRoot(start = process.cwd()): string {
     if (existsSync(path.join(current, "pnpm-workspace.yaml"))) return current;
     const parent = path.dirname(current);
     if (parent === current) {
-      throw new Error("Unable to locate the AI Film Studio workspace root.");
+      throw new Error("Unable to locate the AI Studio workspace root.");
     }
     current = parent;
   }
@@ -17,6 +17,6 @@ export function resolveDatabasePath(): string {
   const workspaceRoot = findWorkspaceRoot();
   return path.resolve(
     workspaceRoot,
-    process.env.DATABASE_PATH ?? "data/film-studio.sqlite",
+    process.env.DATABASE_PATH ?? "data/ai-studio.sqlite",
   );
 }

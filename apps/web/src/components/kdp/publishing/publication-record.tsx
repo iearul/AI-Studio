@@ -4,7 +4,7 @@ import {
   publicationStatuses,
   type PublicationRecord,
   type PublicationStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { LoaderCircle, Save } from "lucide-react";
 import { useState } from "react";
 

@@ -1,7 +1,7 @@
 import type {
   CloudImageProviderId,
   ImageProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 export type ImageAspectRatio = "9:16" | "16:9" | "1:1" | "4:5";
 

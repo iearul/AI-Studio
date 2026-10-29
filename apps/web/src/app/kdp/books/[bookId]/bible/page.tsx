@@ -6,8 +6,8 @@ import type {
   Clue,
   StoryBible,
   StoryBibleRecord,
-} from "@ai-film-studio/contracts";
-import { clueKinds, clueStatuses } from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
+import { clueKinds, clueStatuses } from "@ai-studio/contracts";
 import { History, Plus, Save, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";

@@ -1,4 +1,8 @@
-# Personal AI Film Studio — Development Blueprint
+# Film Studio — Development Blueprint
+
+> The app is now called **AI Studio**. This blueprint covers its Film Studio
+> module; KDP Story Studio is described in
+> [`docs/architecture/0008-kdp-story-studio.md`](docs/architecture/0008-kdp-story-studio.md).
 
 ## 1. Goal
 
@@ -1129,7 +1133,7 @@ AI files can be large.
 Use a cache such as:
 
 ```text
-~/AI-Film-Studio/cache/
+~/AI-Studio/cache/
 ```
 
 Example:
@@ -1653,7 +1657,7 @@ The SQLite file contains important metadata.
 Example:
 
 ```text
-data/film-studio.sqlite
+data/ai-studio.sqlite
 ```
 
 Automatically back it up to:
@@ -1665,8 +1669,8 @@ Google Drive/OSPO/AI-Film-Studio/backups/database/
 Example:
 
 ```text
-film-studio-2026-09-10.sqlite
-film-studio-2026-09-11.sqlite
+ai-studio-2026-09-10.sqlite
+ai-studio-2026-09-11.sqlite
 ...
 ```
 
@@ -1745,7 +1749,7 @@ Eventually aim for:
 
 ```bash
 git clone <repository>
-cd ai-film-studio
+cd AI-Studio
 ./setup.sh
 ```
 
@@ -1813,7 +1817,7 @@ Do not force every component into Docker if native Apple Silicon acceleration wo
 Example:
 
 ```text
-ai-film-studio/
+AI-Studio/
 │
 ├── apps/
 │   ├── web/

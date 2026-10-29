@@ -15,7 +15,7 @@ import type {
   ReferenceImage,
   ReferenceOwnerType,
   StoryPlan,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   GenerationNotFoundError,
   GenerationStateError,
@@ -23,23 +23,23 @@ import {
   type GenerationRepository,
   type ProjectRepository,
   type StoryPlanRepository,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 import {
   buildReferenceCoverage,
   buildReferencePrompt,
   referenceAspectRatios,
-} from "@ai-film-studio/film-engine";
+} from "@ai-studio/film-engine";
 import type {
   ImageGenerationInput,
   ImageProvider,
   ImageReferenceInput,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 import {
   detectImage,
   type ManifestSynchronizer,
   type ReferenceImageStore,
   type StoryboardAssetStore,
-} from "@ai-film-studio/storage";
+} from "@ai-studio/storage";
 
 type ShotContext = {
   project: Project;

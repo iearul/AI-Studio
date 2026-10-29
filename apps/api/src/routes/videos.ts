@@ -6,8 +6,8 @@ import { z } from "zod";
 import {
   createCloudVideoSchema,
   videoReviewInputSchema,
-} from "@ai-film-studio/contracts";
-import { VideoAssetValidationError } from "@ai-film-studio/storage";
+} from "@ai-studio/contracts";
+import { VideoAssetValidationError } from "@ai-studio/storage";
 
 import { NotFoundError } from "../errors.js";
 import { sendRangedFile } from "./ranged-file.js";

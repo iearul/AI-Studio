@@ -2,7 +2,7 @@ import type {
   AutomaticStoryProviderId,
   StoryGenerationUsage,
   StoryProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 export type TextEffort = "low" | "medium" | "high" | "xhigh" | "max";
 

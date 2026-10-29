@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import type { ChapterCard, StoryBible } from "@ai-film-studio/contracts";
+import type { ChapterCard, StoryBible } from "@ai-studio/contracts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { DatabaseManager } from "../src/database-manager.js";

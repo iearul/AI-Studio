@@ -1,4 +1,4 @@
-import type { IssueSeverity } from "@ai-film-studio/contracts";
+import type { IssueSeverity } from "@ai-studio/contracts";
 
 import { aiPhraseWatchlist, clicheWatchlist } from "./craft.js";
 import { countWords, manuscriptToPlainText } from "./markup.js";

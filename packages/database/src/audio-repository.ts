@@ -7,7 +7,7 @@ import {
   type AudioKind,
   type SaveVoiceProfile,
   type VoiceProfile,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 import {
@@ -362,7 +362,7 @@ export class AudioRepository {
         .prepare(
           `UPDATE audio_attempts SET
             status = 'failed',
-            error_message = 'Interrupted because AI Film Studio stopped before the audio was saved. Generate it again.',
+            error_message = 'Interrupted because AI Studio stopped before the audio was saved. Generate it again.',
             error_details_json = '{"code":"interrupted","recoverable":true}',
             updated_at = ?
            WHERE status = 'generating'`,

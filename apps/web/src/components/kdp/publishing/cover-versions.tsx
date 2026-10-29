@@ -1,6 +1,6 @@
 "use client";
 
-import type { CoverAsset, ProvenanceClass } from "@ai-film-studio/contracts";
+import type { CoverAsset, ProvenanceClass } from "@ai-studio/contracts";
 import {
   BookImage,
   CheckCircle2,

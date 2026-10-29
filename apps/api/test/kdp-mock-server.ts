@@ -1,18 +1,18 @@
 // Runs the real API with a throwaway database and the scripted mock book
 // provider, so the KDP Story Studio UI can be checked without any provider key:
-//   pnpm --filter @ai-film-studio/api kdp:mock
+//   pnpm --filter @ai-studio/api kdp:mock
 // then start the web app with NEXT_PUBLIC_API_URL=http://127.0.0.1:4210/api/v1.
 import path from "node:path";
 
-import { findWorkspaceRoot } from "@ai-film-studio/database";
+import { findWorkspaceRoot } from "@ai-studio/database";
 import type {
   TextCompletionRequest,
   TextGenerationRequest,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 
 const root = path.join(findWorkspaceRoot(), "tmp", "kdp-mock");
 process.env.NODE_ENV = "development";
-process.env.DATABASE_PATH = path.join(root, "film-studio.sqlite");
+process.env.DATABASE_PATH = path.join(root, "ai-studio.sqlite");
 process.env.PROJECTS_PATH = path.join(root, "projects");
 process.env.BACKUPS_PATH = path.join(root, "backups");
 process.env.CACHE_PATH = path.join(root, "cache");

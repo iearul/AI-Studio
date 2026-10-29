@@ -1,4 +1,4 @@
-import { parseManuscript } from "@ai-film-studio/book-engine";
+import { parseManuscript } from "@ai-studio/book-engine";
 
 import type { ExportManuscript } from "../src/index.js";
 

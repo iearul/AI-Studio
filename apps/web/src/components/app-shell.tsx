@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-frame">
       <aside className="sidebar">
-        <Link className="brand" href="/" aria-label="AI Film Studio home">
+        <Link className="brand" href="/" aria-label="AI Studio home">
           <span className="brand-mark">
             <Clapperboard size={20} />
           </span>

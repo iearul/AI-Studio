@@ -1,4 +1,4 @@
-import type { BookMetadata } from "@ai-film-studio/contracts";
+import type { BookMetadata } from "@ai-studio/contracts";
 
 import { kdpRules } from "./kdp-rules.js";
 

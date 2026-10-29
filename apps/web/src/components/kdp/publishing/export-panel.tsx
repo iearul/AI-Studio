@@ -1,6 +1,6 @@
 "use client";
 
-import type { BookExport, ExportFile } from "@ai-film-studio/contracts";
+import type { BookExport, ExportFile } from "@ai-studio/contracts";
 import {
   Download,
   FileArchive,

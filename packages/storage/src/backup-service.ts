@@ -2,12 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
-import { backupSchema, type Backup } from "@ai-film-studio/contracts";
+import { backupSchema, type Backup } from "@ai-studio/contracts";
 import {
   type BackupRepository,
   type DatabaseManager,
   type ProjectRepository,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 
 import type { ManifestSynchronizer } from "./manifest-synchronizer.js";
 
@@ -39,7 +39,7 @@ export class BackupService {
   ): Promise<Backup> {
     const createdAt = new Date();
     const id = randomUUID();
-    const filename = `film-studio-${filesystemTimestamp(createdAt)}-${id.slice(0, 8)}.sqlite`;
+    const filename = `ai-studio-${filesystemTimestamp(createdAt)}-${id.slice(0, 8)}.sqlite`;
     const destination = path.join(this.backupsPath, filename);
     await this.manager.backup(destination);
     const info = await stat(destination);

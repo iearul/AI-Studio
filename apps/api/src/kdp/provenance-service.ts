@@ -1,18 +1,15 @@
-import type {
-  ProvenanceAsset,
-  ProvenanceRecord,
-} from "@ai-film-studio/contracts";
+import type { ProvenanceAsset, ProvenanceRecord } from "@ai-studio/contracts";
 import {
   detectCoverProvenance,
   detectTextProvenance,
   type DetectedProvenance,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 import {
   KdpConflictError,
   type KdpBookRepository,
   type KdpJobRepository,
   type KdpStoryRepository,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 
 const involvement: Partial<Record<ProvenanceRecord["classification"], number>> =
   {

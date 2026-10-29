@@ -3,12 +3,12 @@ import type {
   LengthPresetId,
   PointOfView,
   StoryBrief,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   getLengthPreset,
   presetForWords,
   suggestChapterCount,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 
 import { parseNumber } from "./form-errors";
 

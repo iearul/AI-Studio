@@ -24,7 +24,7 @@ import {
   updatePublicationRecordSchema,
   type CoverConcept,
   type MetadataGeneration,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   checkIdentityConsistency,
   checkMetadata,
@@ -35,8 +35,8 @@ import {
   kdpRules,
   lengthPresets,
   lintManuscript,
-} from "@ai-film-studio/book-engine";
-import { buildDocx, buildMarkdown } from "@ai-film-studio/book-export";
+} from "@ai-studio/book-engine";
+import { buildDocx, buildMarkdown } from "@ai-studio/book-export";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 

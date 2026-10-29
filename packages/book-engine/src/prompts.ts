@@ -6,7 +6,7 @@ import type {
   PassageOperation,
   StoryBible,
   StoryConcept,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   chapterTail,

@@ -21,7 +21,7 @@ describe("BibleRepository", () => {
   let projectId: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-bible-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-bible-"));
     manager = new DatabaseManager(path.join(directory, "test.sqlite"));
     await manager.open();
     projects = new ProjectRepository(manager);

@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
-import { findWorkspaceRoot } from "@ai-film-studio/database";
+import { findWorkspaceRoot } from "@ai-studio/database";
 
 export type StorageConfig = {
   workspaceRoot: string;
@@ -17,7 +17,7 @@ export function resolveStorageConfig(): StorageConfig {
   const resolveFromRoot = (value: string): string =>
     path.resolve(workspaceRoot, value);
   const databasePath = resolveFromRoot(
-    process.env.DATABASE_PATH ?? "data/film-studio.sqlite",
+    process.env.DATABASE_PATH ?? "data/ai-studio.sqlite",
   );
   const defaultSecretsPath =
     process.env.NODE_ENV === "test"

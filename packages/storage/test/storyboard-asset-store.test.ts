@@ -22,7 +22,7 @@ describe("StoryboardAssetStore", () => {
   let store: StoryboardAssetStore;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-assets-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-assets-"));
     store = new StoryboardAssetStore(directory);
   });
 

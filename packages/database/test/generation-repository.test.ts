@@ -20,7 +20,7 @@ describe("GenerationRepository", () => {
   let shotId: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-generation-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-generation-"));
     manager = new DatabaseManager(path.join(directory, "test.sqlite"));
     await manager.open();
     const projects = new ProjectRepository(manager);

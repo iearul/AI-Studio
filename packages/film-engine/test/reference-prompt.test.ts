@@ -1,4 +1,4 @@
-import { bibleSchema, projectSchema } from "@ai-film-studio/contracts";
+import { bibleSchema, projectSchema } from "@ai-studio/contracts";
 import { describe, expect, it } from "vitest";
 
 import { buildReferencePrompt } from "../src/reference-prompt.js";

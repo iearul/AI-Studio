@@ -1,6 +1,6 @@
 "use client";
 
-import type { CreateProjectInput, Project } from "@ai-film-studio/contracts";
+import type { CreateProjectInput, Project } from "@ai-studio/contracts";
 import {
   ArrowLeft,
   ArrowRight,

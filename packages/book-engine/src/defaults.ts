@@ -3,7 +3,7 @@ import type {
   KdpModelPrice,
   KdpSettings,
   KdpTextProviderId,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 // Claude prices from Anthropic's published table (2026-10-06): cache reads
 // are listed per model, cache writes cost 1.25× input for the 5-minute TTL.

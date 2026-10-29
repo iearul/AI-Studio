@@ -2,7 +2,7 @@ import type {
   CoverConcept,
   StoryConcept,
   StoryProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   TextProviderAbortedError,
   TextProviderUnavailableError,
@@ -11,7 +11,7 @@ import {
   type TextCompletionRequest,
   type TextGenerationRequest,
   type TextProvider,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 
 const concept = (index: number): StoryConcept => ({
   workingTitle: `The Glass Orchard ${index}`,

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { kdpLocalOwnerId } from "@ai-film-studio/contracts";
+import { kdpLocalOwnerId } from "@ai-studio/contracts";
 import {
   AudioRepository,
   BackupRepository,
@@ -15,7 +15,7 @@ import {
   SettingsRepository,
   StoryPlanRepository,
   VideoRepository,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 import {
   AnthropicTextProvider,
   ElevenLabsAudioProvider,
@@ -39,7 +39,7 @@ import {
   type ImageProvider,
   type TextProvider,
   type VideoProvider,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 import {
   AudioAssetStore,
   BackupService,
@@ -53,7 +53,7 @@ import {
   StoryboardAssetStore,
   VideoAssetStore,
   type StorageConfig,
-} from "@ai-film-studio/storage";
+} from "@ai-studio/storage";
 
 import type { FastifyRequest } from "fastify";
 

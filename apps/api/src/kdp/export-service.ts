@@ -10,19 +10,19 @@ import type {
   ExportFile,
   ExportFileKind,
   ExportValidation,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   checkMetadata,
   disclosureChecklist,
   kdpRules,
   languageName,
   parseManuscript,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 import type {
   KdpBookRepository,
   KdpJobRepository,
   KdpStoryRepository,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 import {
   buildDocx,
   buildEpub,
@@ -34,7 +34,7 @@ import {
   validateEpubStructure,
   type ExportManuscript,
   type ExportSection,
-} from "@ai-film-studio/book-export";
+} from "@ai-studio/book-export";
 
 import { fileSlug, type BookFileStore } from "./book-files.js";
 import type { KdpProvenanceService } from "./provenance-service.js";

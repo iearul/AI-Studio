@@ -7,8 +7,8 @@ import { z } from "zod";
 import {
   createCloudImageSchema,
   imageReviewInputSchema,
-} from "@ai-film-studio/contracts";
-import { StoryboardAssetValidationError } from "@ai-film-studio/storage";
+} from "@ai-studio/contracts";
+import { StoryboardAssetValidationError } from "@ai-studio/storage";
 
 import { NotFoundError } from "../errors.js";
 import type { Services } from "../services.js";

@@ -4,7 +4,7 @@ import {
   readinessAreas,
   type BookReadiness,
   type ReadinessCheck,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { CheckCircle2, LoaderCircle, ShieldCheck } from "lucide-react";
 
 import { Pill } from "@/components/kdp/kdp-ui";

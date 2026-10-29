@@ -17,25 +17,25 @@ importers:
 
   apps/api:
     dependencies:
-      '@ai-film-studio/book-engine':
+      '@ai-studio/book-engine':
         specifier: workspace:^
         version: link:../../packages/book-engine
-      '@ai-film-studio/book-export':
+      '@ai-studio/book-export':
         specifier: workspace:^
         version: link:../../packages/book-export
-      '@ai-film-studio/contracts':
+      '@ai-studio/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@ai-film-studio/database':
+      '@ai-studio/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@ai-film-studio/film-engine':
+      '@ai-studio/film-engine':
         specifier: workspace:*
         version: link:../../packages/film-engine
-      '@ai-film-studio/providers':
+      '@ai-studio/providers':
         specifier: workspace:*
         version: link:../../packages/providers
-      '@ai-film-studio/storage':
+      '@ai-studio/storage':
         specifier: workspace:*
         version: link:../../packages/storage
       '@fastify/cors':
@@ -60,7 +60,7 @@ importers:
         specifier: ^4.1.5
         version: 4.6.1
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../../packages/tooling
       '@types/node':
@@ -81,10 +81,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@ai-film-studio/book-engine':
+      '@ai-studio/book-engine':
         specifier: workspace:^
         version: link:../../packages/book-engine
-      '@ai-film-studio/contracts':
+      '@ai-studio/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       '@tiptap/pm':
@@ -109,7 +109,7 @@ importers:
         specifier: ^19.1.1
         version: 19.3.0(react@19.3.0)
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../../packages/tooling
       '@tailwindcss/postcss':
@@ -142,11 +142,11 @@ importers:
 
   packages/book-engine:
     dependencies:
-      '@ai-film-studio/contracts':
+      '@ai-studio/contracts':
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../tooling
       eslint:
@@ -161,10 +161,10 @@ importers:
 
   packages/book-export:
     dependencies:
-      '@ai-film-studio/book-engine':
+      '@ai-studio/book-engine':
         specifier: workspace:*
         version: link:../book-engine
-      '@ai-film-studio/contracts':
+      '@ai-studio/contracts':
         specifier: workspace:*
         version: link:../contracts
       docx:
@@ -177,7 +177,7 @@ importers:
         specifier: ^0.8.3
         version: 0.8.3
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../tooling
       '@types/node':
@@ -199,7 +199,7 @@ importers:
         specifier: ^4.1.5
         version: 4.6.1
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../tooling
       eslint:
@@ -214,17 +214,17 @@ importers:
 
   packages/database:
     dependencies:
-      '@ai-film-studio/book-engine':
+      '@ai-studio/book-engine':
         specifier: workspace:^
         version: link:../book-engine
-      '@ai-film-studio/contracts':
+      '@ai-studio/contracts':
         specifier: workspace:*
         version: link:../contracts
       better-sqlite3:
         specifier: ^12.2.0
         version: 12.11.1
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../tooling
       '@types/better-sqlite3':
@@ -248,11 +248,11 @@ importers:
 
   packages/film-engine:
     dependencies:
-      '@ai-film-studio/contracts':
+      '@ai-studio/contracts':
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../tooling
       eslint:
@@ -267,14 +267,14 @@ importers:
 
   packages/providers:
     dependencies:
-      '@ai-film-studio/contracts':
+      '@ai-studio/contracts':
         specifier: workspace:*
         version: link:../contracts
       '@anthropic-ai/sdk':
         specifier: ^0.133.0
         version: 0.133.0(zod@4.6.1)
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../tooling
       '@types/node':
@@ -292,14 +292,14 @@ importers:
 
   packages/storage:
     dependencies:
-      '@ai-film-studio/contracts':
+      '@ai-studio/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@ai-film-studio/database':
+      '@ai-studio/database':
         specifier: workspace:*
         version: link:../database
     devDependencies:
-      '@ai-film-studio/tooling':
+      '@ai-studio/tooling':
         specifier: workspace:*
         version: link:../tooling
       '@types/node':

@@ -1,4 +1,4 @@
-import type { BookMetadata } from "@ai-film-studio/contracts";
+import type { BookMetadata } from "@ai-studio/contracts";
 import { describe, expect, it } from "vitest";
 
 import {

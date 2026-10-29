@@ -4,13 +4,13 @@ import type {
   KdpTask,
   KdpTaskRoute,
   KdpTextProviderId,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   computeCostMicros,
   estimateTokens,
   type PromptSpec,
-} from "@ai-film-studio/book-engine";
-import type { KdpJobRepository } from "@ai-film-studio/database";
+} from "@ai-studio/book-engine";
+import type { KdpJobRepository } from "@ai-studio/database";
 import {
   TextProviderAbortedError,
   TextProviderConfigurationError,
@@ -19,7 +19,7 @@ import {
   type GeneratedProse,
   type TextProvider,
   type TextUsage,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 import { z, type ZodType } from "zod";
 
 export class KdpBudgetExceededError extends Error {

@@ -4,7 +4,7 @@ import {
   createProjectSchema,
   projectListQuerySchema,
   updateProjectSchema,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import { NotFoundError } from "../errors.js";
 import type { Services } from "../services.js";

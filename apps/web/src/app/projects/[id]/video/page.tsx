@@ -9,8 +9,8 @@ import type {
   VideoResolution,
   VideoShotPlan,
   VideoWorkspace,
-} from "@ai-film-studio/contracts";
-import { paidVideoConfirmation } from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
+import { paidVideoConfirmation } from "@ai-studio/contracts";
 import {
   AlertTriangle,
   ArrowLeft,

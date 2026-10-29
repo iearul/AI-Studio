@@ -1,4 +1,4 @@
-import type { StoryBrief } from "@ai-film-studio/contracts";
+import type { StoryBrief } from "@ai-studio/contracts";
 
 const minimumChapterWords = 300;
 

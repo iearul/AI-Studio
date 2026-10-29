@@ -4,7 +4,7 @@ import type {
   ProvenanceClass,
   ProvenanceRecord,
   RevisionSource,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 export type ChapterHistoryFacts = {
   chapterNumber: number;

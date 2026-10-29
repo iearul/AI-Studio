@@ -8,7 +8,7 @@ import {
   type ReferenceCoverage,
   type ReferenceImage,
   type ShotReferenceContext,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   AlertTriangle,
   ArrowLeft,

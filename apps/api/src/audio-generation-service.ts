@@ -11,7 +11,7 @@ import {
   type StoryPlan,
   type Voice,
   type VoiceProfile,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   GenerationNotFoundError,
   GenerationStateError,
@@ -19,7 +19,7 @@ import {
   type BibleRepository,
   type ProjectRepository,
   type StoryPlanRepository,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 import {
   buildMusicPrompt,
   buildSoundEffectPrompt,
@@ -27,12 +27,9 @@ import {
   parseDialogue,
   soundEffectDuration,
   speechLanguageCode,
-} from "@ai-film-studio/film-engine";
-import type { AudioProvider, GeneratedAudio } from "@ai-film-studio/providers";
-import type {
-  AudioAssetStore,
-  ManifestSynchronizer,
-} from "@ai-film-studio/storage";
+} from "@ai-studio/film-engine";
+import type { AudioProvider, GeneratedAudio } from "@ai-studio/providers";
+import type { AudioAssetStore, ManifestSynchronizer } from "@ai-studio/storage";
 
 // ElevenLabs text-to-dialogue accepts at most this much text and ten voices.
 const maxDialogueCharacters = 2000;

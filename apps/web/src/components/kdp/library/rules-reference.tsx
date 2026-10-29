@@ -1,6 +1,6 @@
 "use client";
 
-import type { LengthPreset, kdpRules } from "@ai-film-studio/book-engine";
+import type { LengthPreset, kdpRules } from "@ai-studio/book-engine";
 import { RefreshCw } from "lucide-react";
 
 import { CopyButton } from "@/components/kdp/kdp-ui";

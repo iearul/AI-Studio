@@ -1,5 +1,5 @@
-import { blocksToPlainText } from "@ai-film-studio/book-engine";
-import type { InlineRun, ManuscriptBlock } from "@ai-film-studio/book-engine";
+import { blocksToPlainText } from "@ai-studio/book-engine";
+import type { InlineRun, ManuscriptBlock } from "@ai-studio/book-engine";
 
 import { assertExportable, identifierUrn, tocEntries } from "./manuscript.js";
 import type {

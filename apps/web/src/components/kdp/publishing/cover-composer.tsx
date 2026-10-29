@@ -1,6 +1,6 @@
 "use client";
 
-import type { BookSummary, CoverAsset } from "@ai-film-studio/contracts";
+import type { BookSummary, CoverAsset } from "@ai-studio/contracts";
 import { LoaderCircle, Move, RotateCcw, Save, Type } from "lucide-react";
 import {
   useEffect,

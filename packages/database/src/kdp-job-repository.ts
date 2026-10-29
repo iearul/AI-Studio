@@ -16,7 +16,7 @@ import {
   type KdpJobKind,
   type KdpTask,
   type ProvenanceClass,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 import { KdpNotFoundError } from "./kdp-book-repository.js";

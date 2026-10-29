@@ -28,7 +28,7 @@ describe("VideoAssetStore", () => {
   let store: VideoAssetStore;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-videos-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-videos-"));
     store = new VideoAssetStore(directory);
   });
 

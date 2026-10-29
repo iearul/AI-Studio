@@ -4,7 +4,7 @@ import type {
   EditorialIssue,
   EditorialKind,
   IssueSeverity,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { Check, CheckCheck, LoaderCircle, RotateCcw, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 

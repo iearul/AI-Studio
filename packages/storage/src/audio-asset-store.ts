@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AudioKind } from "@ai-film-studio/contracts";
+import type { AudioKind } from "@ai-studio/contracts";
 
 import { ReferenceImageValidationError } from "./reference-image-store.js";
 

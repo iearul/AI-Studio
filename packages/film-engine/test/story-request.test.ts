@@ -1,4 +1,4 @@
-import { projectSchema } from "@ai-film-studio/contracts";
+import { projectSchema } from "@ai-studio/contracts";
 import { describe, expect, it } from "vitest";
 
 import { buildStoryRequest } from "../src/story-request.js";

@@ -1,14 +1,14 @@
 #!/bin/bash
-# Runs AI Film Studio as a macOS LaunchAgent: a production build that starts at
+# Runs AI Studio as a macOS LaunchAgent: a production build that starts at
 # login and is restarted by launchd whenever the API or web server exits.
 #
 # Usage: scripts/local-app.sh install|update|start|stop|restart|status|logs|uninstall
 set -euo pipefail
 
-LABEL="com.iearul.ai-film-studio"
+LABEL="com.iearul.ai-studio"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
-LOG_DIR="$HOME/Library/Logs/AI-Film-Studio"
+LOG_DIR="$HOME/Library/Logs/AI-Studio"
 LOG_FILE="$LOG_DIR/app.log"
 # Port 3000 is often taken by other local projects.
 WEB_PORT=3100
@@ -31,7 +31,7 @@ run() {
     mv "$LOG_FILE" "$LOG_FILE.1"
   fi
   exec >>"$LOG_FILE" 2>&1
-  echo "--- $(date '+%Y-%m-%d %H:%M:%S') starting AI Film Studio"
+  echo "--- $(date '+%Y-%m-%d %H:%M:%S') starting AI Studio"
 
   cd "$ROOT"
   if [[ ! -f apps/api/dist/server.js || ! -f "$WEB_STANDALONE/server.js" ]]; then
@@ -103,12 +103,12 @@ start() {
   else
     launchctl bootstrap "$DOMAIN" "$PLIST"
   fi
-  echo "AI Film Studio is starting at $WEB_URL"
+  echo "AI Studio is starting at $WEB_URL"
 }
 
 stop() {
   if loaded; then launchctl bootout "$DOMAIN/$LABEL"; fi
-  echo "AI Film Studio stopped. It starts again at next login or with 'start'."
+  echo "AI Studio stopped. It starts again at next login or with 'start'."
 }
 
 status() {
@@ -148,7 +148,7 @@ case "${1:-}" in
   uninstall)
     stop >/dev/null
     rm -f "$PLIST"
-    echo "AI Film Studio LaunchAgent removed. Logs remain in $LOG_DIR."
+    echo "AI Studio LaunchAgent removed. Logs remain in $LOG_DIR."
     ;;
   run) run ;;
   *)

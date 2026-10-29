@@ -1,4 +1,4 @@
-import { backupSchema, type Backup } from "@ai-film-studio/contracts";
+import { backupSchema, type Backup } from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 

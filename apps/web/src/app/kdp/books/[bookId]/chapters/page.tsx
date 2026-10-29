@@ -8,8 +8,8 @@ import type {
   PassageOperation,
   PassageResult,
   StoryBibleRecord,
-} from "@ai-film-studio/contracts";
-import { countManuscriptWords } from "@ai-film-studio/book-engine";
+} from "@ai-studio/contracts";
+import { countManuscriptWords } from "@ai-studio/book-engine";
 import type { Editor } from "@tiptap/react";
 import {
   AlertTriangle,

@@ -1,4 +1,4 @@
-import { bibleSchema } from "@ai-film-studio/contracts";
+import { bibleSchema } from "@ai-studio/contracts";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -5,7 +5,7 @@ import type {
   ImageProviderModel,
   ImageProviderStatus,
   ImageQuality,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { useCallback, useEffect, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
@@ -22,11 +22,15 @@ export type ResolvedImageChoice = {
   quality: ImageQuality;
 };
 
-const storageKey = "ai-film-studio.image-generator";
+const storageKey = "ai-studio.image-generator";
+// Saved before the app was renamed from AI Film Studio.
+const legacyStorageKey = "ai-film-studio.image-generator";
 
 function readStoredChoice(): ImageChoice | undefined {
   try {
-    const value = window.localStorage.getItem(storageKey);
+    const value =
+      window.localStorage.getItem(storageKey) ??
+      window.localStorage.getItem(legacyStorageKey);
     return value ? (JSON.parse(value) as ImageChoice) : undefined;
   } catch {
     return undefined;

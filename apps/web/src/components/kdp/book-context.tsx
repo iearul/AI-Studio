@@ -1,6 +1,6 @@
 "use client";
 
-import type { BookSummary, KdpJob } from "@ai-film-studio/contracts";
+import type { BookSummary, KdpJob } from "@ai-studio/contracts";
 import {
   createContext,
   useCallback,

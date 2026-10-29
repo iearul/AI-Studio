@@ -1,6 +1,6 @@
-import type { KdpJob, KdpJobKind } from "@ai-film-studio/contracts";
-import type { KdpJobRepository } from "@ai-film-studio/database";
-import { TextProviderAbortedError } from "@ai-film-studio/providers";
+import type { KdpJob, KdpJobKind } from "@ai-studio/contracts";
+import type { KdpJobRepository } from "@ai-studio/database";
+import { TextProviderAbortedError } from "@ai-studio/providers";
 
 import { KdpBudgetExceededError } from "./ai-router.js";
 

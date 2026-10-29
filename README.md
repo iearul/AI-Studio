@@ -1,4 +1,4 @@
-# AI Film Studio
+# AI Studio
 
 A local-first, human-in-the-loop workspace for planning and producing AI-assisted
 Reels and longer videos. Project metadata lives in SQLite, portable manifests live
@@ -45,7 +45,7 @@ login, and restarts it if it stops. In Safari, open that address and choose
 | -------------------- | ----------------------------------------------------- |
 | `pnpm app:update`    | Rebuild after code changes and restart                |
 | `pnpm app:status`    | Show whether the API and web server are up            |
-| `pnpm app:logs`      | Follow `~/Library/Logs/AI-Film-Studio/app.log`        |
+| `pnpm app:logs`      | Follow `~/Library/Logs/AI-Studio/app.log`             |
 | `pnpm app:stop`      | Stop until next login, e.g. before running `pnpm dev` |
 | `pnpm app:start`     | Start again                                           |
 | `pnpm app:uninstall` | Remove the LaunchAgent                                |
@@ -56,7 +56,7 @@ on port 3000.
 All runtime data is excluded from Git:
 
 ```text
-data/film-studio.sqlite  application database
+data/ai-studio.sqlite  application database
 data/projects/           portable project manifests and future assets
 data/backups/            verified SQLite backups
 data/secrets/            private local OAuth tokens (mode 0600)
@@ -176,7 +176,7 @@ Before relying on the paid providers, follow
 
 ## Google Drive backup
 
-AI Film Studio uses the least-privilege `drive.file` OAuth scope and creates this
+AI Studio uses the least-privilege `drive.file` OAuth scope and creates this
 visible hierarchy in your own Drive:
 
 ```text
@@ -212,5 +212,5 @@ pnpm build
 ```
 
 The implementation plan and decision register live in
-[`AI_Film_Studio_Development_Blueprint.md`](AI_Film_Studio_Development_Blueprint.md).
+[`Film_Studio_Development_Blueprint.md`](Film_Studio_Development_Blueprint.md).
 Architectural decisions live under [`docs/architecture`](docs/architecture).

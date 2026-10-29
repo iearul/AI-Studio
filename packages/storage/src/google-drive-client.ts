@@ -234,7 +234,7 @@ export class GoogleDriveClient {
           name,
           mimeType: "application/vnd.google-apps.folder",
           parents: [parentId],
-          appProperties: { owner: "ai-film-studio" },
+          appProperties: { owner: "ai-studio" },
         }),
       },
     );

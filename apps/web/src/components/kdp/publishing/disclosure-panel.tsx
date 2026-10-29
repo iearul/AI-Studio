@@ -1,13 +1,13 @@
 "use client";
 
-import type { DisclosureAnswer } from "@ai-film-studio/book-engine";
+import type { DisclosureAnswer } from "@ai-studio/book-engine";
 import {
   provenanceAssets,
   provenanceClasses,
   type ProvenanceAsset,
   type ProvenanceClass,
   type ProvenanceRecord,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 

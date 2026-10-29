@@ -1,7 +1,7 @@
 "use client";
 
-import { estimateRoyalty, kdpRules } from "@ai-film-studio/book-engine";
-import type { BookExport, CoverAsset } from "@ai-film-studio/contracts";
+import { estimateRoyalty, kdpRules } from "@ai-studio/book-engine";
+import type { BookExport, CoverAsset } from "@ai-studio/contracts";
 import { Download, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";

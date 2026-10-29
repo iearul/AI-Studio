@@ -1,4 +1,4 @@
-import type { ManifestOutboxRepository } from "@ai-film-studio/database";
+import type { ManifestOutboxRepository } from "@ai-studio/database";
 
 import type {
   ProjectManifestContent,

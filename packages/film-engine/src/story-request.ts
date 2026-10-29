@@ -4,7 +4,7 @@ import {
   lenses,
   shotTypes,
   type Project,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 const responseTemplate = {
   visualBible: {

@@ -11,7 +11,7 @@ import {
   type VideoProviderModel,
   type VideoResolution,
   type VideoWorkspace,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   GenerationNotFoundError,
   GenerationStateError,
@@ -19,18 +19,18 @@ import {
   type ProjectRepository,
   type StoryPlanRepository,
   type VideoRepository,
-} from "@ai-film-studio/database";
-import { buildVideoPrompt } from "@ai-film-studio/film-engine";
+} from "@ai-studio/database";
+import { buildVideoPrompt } from "@ai-studio/film-engine";
 import {
   VideoProviderResponseError,
   VideoProviderUnavailableError,
   type VideoProvider,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 import type {
   ManifestSynchronizer,
   StoryboardAssetStore,
   VideoAssetStore,
-} from "@ai-film-studio/storage";
+} from "@ai-studio/storage";
 
 const providerResultHosts: Record<VideoProviderId, string[]> = {
   kling: ["klingai.com"],

@@ -13,13 +13,13 @@ import {
   referenceViewsByOwnerType,
   type ReferenceOwnerType,
   type ReferenceView,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   buildReferenceCoverage,
   buildReferencePrompt,
   defaultReferenceViews,
-} from "@ai-film-studio/film-engine";
-import { ReferenceImageValidationError } from "@ai-film-studio/storage";
+} from "@ai-studio/film-engine";
+import { ReferenceImageValidationError } from "@ai-studio/storage";
 
 import { NotFoundError } from "../errors.js";
 import type { Services } from "../services.js";

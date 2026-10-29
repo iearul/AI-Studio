@@ -1,9 +1,9 @@
-import { settingsSchema, type Settings } from "@ai-film-studio/contracts";
+import { settingsSchema, type Settings } from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 
 const defaults: Settings = {
-  studioName: "My Film Studio",
+  studioName: "My AI Studio",
   currency: "EUR",
   defaultLanguage: "en",
   automaticBackups: true,

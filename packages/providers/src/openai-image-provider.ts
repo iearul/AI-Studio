@@ -2,7 +2,7 @@ import {
   imageProviderStatusSchema,
   type ImageProviderModel,
   type ImageProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   ImageProviderConfigurationError,
@@ -87,7 +87,7 @@ export class OpenAiImageProvider implements ImageProvider {
       configured: Boolean(this.config.apiKey),
       message: this.config.apiKey
         ? "Ready. Images use separately billed OpenAI API tokens."
-        : "Add OPENAI_API_KEY to .env.local and restart AI Film Studio.",
+        : "Add OPENAI_API_KEY to .env.local and restart AI Studio.",
       defaultModel: this.config.defaultModel,
       models: models.map((model): ImageProviderModel => ({
         ...model,

@@ -7,8 +7,8 @@ import {
   audioReviewInputSchema,
   createAudioGenerationSchema,
   saveVoiceProfileSchema,
-} from "@ai-film-studio/contracts";
-import { AudioAssetValidationError } from "@ai-film-studio/storage";
+} from "@ai-studio/contracts";
+import { AudioAssetValidationError } from "@ai-studio/storage";
 
 import { NotFoundError } from "../errors.js";
 import { sendRangedFile } from "./ranged-file.js";

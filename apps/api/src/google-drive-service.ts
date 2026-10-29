@@ -10,13 +10,13 @@ import {
   type DriveBackupResult,
   type DriveSyncResult,
   type IntegrationStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import type {
   BackupService,
   GoogleDriveClient,
   ManifestSynchronizer,
-} from "@ai-film-studio/storage";
-import { driveMimeType } from "@ai-film-studio/storage";
+} from "@ai-studio/storage";
+import { driveMimeType } from "@ai-studio/storage";
 
 const oauthStateLifetimeMs = 10 * 60_000;
 
@@ -75,7 +75,7 @@ export class GoogleDriveService {
       connectedAt: credentials.connectedAt,
       lastSyncAt: credentials.lastSyncAt ?? null,
       message:
-        "Connected with limited drive.file access. AI Film Studio can manage only the OSPO files and folders it creates.",
+        "Connected with limited drive.file access. AI Studio can manage only the OSPO files and folders it creates.",
     });
   }
 

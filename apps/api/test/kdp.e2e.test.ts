@@ -16,8 +16,8 @@ import type {
   KdpJob,
   ProvenanceRecord,
   StoryBibleRecord,
-} from "@ai-film-studio/contracts";
-import { readZip, findEpubCheck } from "@ai-film-studio/book-export";
+} from "@ai-studio/contracts";
+import { readZip, findEpubCheck } from "@ai-studio/book-export";
 import type { FastifyInstance, InjectOptions } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -62,7 +62,7 @@ describe("KDP Story Studio API", () => {
 
   beforeEach(async () => {
     directory = await mkdtemp(path.join(tmpdir(), "kdp-api-"));
-    process.env.DATABASE_PATH = path.join(directory, "film-studio.sqlite");
+    process.env.DATABASE_PATH = path.join(directory, "ai-studio.sqlite");
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");

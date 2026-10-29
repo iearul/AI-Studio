@@ -1,6 +1,6 @@
 "use client";
 
-import type { CoverAsset, ProvenanceClass } from "@ai-film-studio/contracts";
+import type { CoverAsset, ProvenanceClass } from "@ai-studio/contracts";
 import { ImagePlus, LoaderCircle, Upload } from "lucide-react";
 import { useCallback, useEffect, useState, type DragEvent } from "react";
 

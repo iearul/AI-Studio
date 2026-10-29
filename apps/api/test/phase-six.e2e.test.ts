@@ -8,12 +8,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   paidVideoConfirmation,
   type VideoProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import type {
   VideoProvider,
   VideoProviderResult,
   VideoSubmission,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 
 import { buildApp } from "../src/app.js";
 import { createServices, type Services } from "../src/services.js";
@@ -117,8 +117,8 @@ describe("Phase 6 video API", () => {
   let provider: MockKlingProvider;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-video-api-"));
-    process.env.DATABASE_PATH = path.join(directory, "film-studio.sqlite");
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-video-api-"));
+    process.env.DATABASE_PATH = path.join(directory, "ai-studio.sqlite");
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");

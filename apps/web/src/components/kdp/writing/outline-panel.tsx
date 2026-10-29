@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChapterCard, ChapterListItem } from "@ai-film-studio/contracts";
+import type { ChapterCard, ChapterListItem } from "@ai-studio/contracts";
 import {
   ArrowDown,
   ArrowUp,

@@ -1,6 +1,6 @@
 "use client";
 
-import type { KdpProviderHealth } from "@ai-film-studio/contracts";
+import type { KdpProviderHealth } from "@ai-studio/contracts";
 import { RefreshCw, ServerCog } from "lucide-react";
 
 import { Pill } from "@/components/kdp/kdp-ui";

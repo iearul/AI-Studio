@@ -10,7 +10,7 @@ import {
   type ImageAttempt,
   type ImageHistory,
   type ReferenceImage,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import type { DatabaseManager } from "./database-manager.js";
 import type { ProjectRepository } from "./project-repository.js";
@@ -278,7 +278,7 @@ export class GenerationRepository {
         .prepare(
           `UPDATE generation_attempts SET
             status = 'failed',
-            error_message = 'Interrupted because AI Film Studio stopped before the image was saved. Generate it again.',
+            error_message = 'Interrupted because AI Studio stopped before the image was saved. Generate it again.',
             error_details_json = '{"code":"interrupted","recoverable":true}',
             updated_at = ?
            WHERE provider IN ('manual', 'openai', 'gemini')

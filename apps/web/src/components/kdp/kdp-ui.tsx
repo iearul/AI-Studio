@@ -1,6 +1,6 @@
 "use client";
 
-import type { KdpJob } from "@ai-film-studio/contracts";
+import type { KdpJob } from "@ai-studio/contracts";
 import {
   AlertTriangle,
   Check,

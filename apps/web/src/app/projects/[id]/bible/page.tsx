@@ -13,7 +13,7 @@ import {
   type ReferenceOwnerType,
   type ReferencePrompt,
   type ReferenceView,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   ArrowLeft,
   Check,

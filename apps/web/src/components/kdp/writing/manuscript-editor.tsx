@@ -4,7 +4,7 @@ import {
   manuscriptToRichText,
   richTextToManuscript,
   type RichTextNode,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, Italic, Redo2, SeparatorHorizontal, Undo2 } from "lucide-react";

@@ -2,7 +2,7 @@ import {
   imageProviderStatusSchema,
   type ImageProviderModel,
   type ImageProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   ImageProviderConfigurationError,
@@ -88,7 +88,7 @@ export class GeminiImageProvider implements ImageProvider {
       configured: Boolean(this.config.apiKey),
       message: this.config.apiKey
         ? "Ready. Images are billed to your Google AI Studio project."
-        : "Add GEMINI_API_KEY from Google AI Studio to .env.local and restart AI Film Studio.",
+        : "Add GEMINI_API_KEY from Google AI Studio to .env.local and restart AI Studio.",
       defaultModel: this.config.defaultModel,
       models: models.map((model): ImageProviderModel => ({
         id: model.id,

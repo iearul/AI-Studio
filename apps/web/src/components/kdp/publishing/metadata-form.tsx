@@ -6,14 +6,14 @@ import {
   estimateRoyalty,
   kdpRules,
   type MetadataFinding,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 import {
   marketplaces,
   type BookMetadata,
   type BookMetadataRecord,
   type BookSummary,
   type Marketplace,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   CheckCircle2,
   LoaderCircle,

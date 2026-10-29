@@ -7,7 +7,7 @@ import type {
   StoryPlan,
   StoryPlanInput,
   StoryProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   ArrowLeft,
   Bot,
@@ -748,7 +748,7 @@ export default function StoryWorkspacePage() {
                   </div>
                 )}
                 <footer>
-                  <span>JSON is validated locally by the Film Studio API.</span>
+                  <span>JSON is validated locally by the AI Studio API.</span>
                   <button
                     className="button primary"
                     disabled={busy || importText.trim().length === 0}

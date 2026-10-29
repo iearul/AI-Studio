@@ -9,13 +9,13 @@ import type {
   ProvenanceClass,
   ProvenanceRecord,
   ReadinessCheck,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import type {
   DisclosureAnswer,
   MetadataFinding,
   RoyaltyEstimate,
   kdpRules,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 

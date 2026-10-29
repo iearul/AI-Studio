@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import type { StoryPlanInput } from "@ai-film-studio/contracts";
+import type { StoryPlanInput } from "@ai-studio/contracts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { DatabaseManager } from "../src/database-manager.js";
@@ -87,7 +87,7 @@ describe("StoryPlanRepository", () => {
   let projectId: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-plan-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-plan-"));
     manager = new DatabaseManager(path.join(directory, "test.sqlite"));
     await manager.open();
     projects = new ProjectRepository(manager);

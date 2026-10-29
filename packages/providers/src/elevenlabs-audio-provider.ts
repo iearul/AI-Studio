@@ -3,7 +3,7 @@ import {
   voiceSchema,
   type AudioProviderStatus,
   type Voice,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   AudioProviderConfigurationError,
@@ -69,7 +69,7 @@ export class ElevenLabsAudioProvider implements AudioProvider {
       configured: Boolean(this.config.apiKey),
       message: this.config.apiKey
         ? "Ready. Audio is billed to your ElevenLabs account."
-        : "Add ELEVENLABS_API_KEY to .env.local and restart AI Film Studio.",
+        : "Add ELEVENLABS_API_KEY to .env.local and restart AI Studio.",
       speechModel: this.config.speechModel,
       soundEffectModel,
       musicModel: this.config.musicModel,

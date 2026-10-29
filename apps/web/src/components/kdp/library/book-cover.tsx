@@ -1,6 +1,6 @@
 "use client";
 
-import type { BookSummary } from "@ai-film-studio/contracts";
+import type { BookSummary } from "@ai-studio/contracts";
 import Image from "next/image";
 
 import { coverUrl } from "@/lib/kdp";

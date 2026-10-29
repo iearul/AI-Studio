@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-  AuthorProfile,
-  AuthorProfileInput,
-} from "@ai-film-studio/contracts";
+import type { AuthorProfile, AuthorProfileInput } from "@ai-studio/contracts";
 import {
   PenLine,
   Plus,

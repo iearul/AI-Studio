@@ -5,7 +5,7 @@ import type {
   CoverUploadFields,
   KdpJob,
   StartKdpJob,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiError, apiBaseUrl, apiFetch } from "@/lib/api";
@@ -74,7 +74,7 @@ export async function uploadCover(
   file: Blob,
   filename: string,
   fields: CoverUploadFields,
-): Promise<import("@ai-film-studio/contracts").CoverAsset> {
+): Promise<import("@ai-studio/contracts").CoverAsset> {
   const params = new URLSearchParams({
     kind: fields.kind,
     source: fields.source,

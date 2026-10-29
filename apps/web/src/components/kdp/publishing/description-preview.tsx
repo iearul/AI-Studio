@@ -1,6 +1,6 @@
 "use client";
 
-import { kdpRules } from "@ai-film-studio/book-engine";
+import { kdpRules } from "@ai-studio/book-engine";
 import { createElement, useMemo, type ReactNode } from "react";
 
 type AllowedTag = (typeof kdpRules.metadata.descriptionAllowedTags)[number];

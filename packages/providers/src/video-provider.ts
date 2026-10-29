@@ -2,7 +2,7 @@ import type {
   VideoProviderId,
   VideoProviderStatus,
   VideoResolution,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 export type VideoSubmission = {
   model: string;

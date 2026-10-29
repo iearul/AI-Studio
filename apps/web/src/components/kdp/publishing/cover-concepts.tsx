@@ -1,6 +1,6 @@
 "use client";
 
-import type { CoverConcept } from "@ai-film-studio/contracts";
+import type { CoverConcept } from "@ai-studio/contracts";
 import { LoaderCircle, Palette, Sparkles } from "lucide-react";
 
 import { CopyButton, EmptyPanel } from "@/components/kdp/kdp-ui";

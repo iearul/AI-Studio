@@ -9,13 +9,13 @@ import type {
   KdpTask,
   KdpTextProviderId,
   UpdateKdpSettings,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   kdpEfforts,
   kdpTaskLabels,
   kdpTasks,
   kdpTextProviderIds,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import { Plus, RefreshCw, Save, TriangleAlert, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 

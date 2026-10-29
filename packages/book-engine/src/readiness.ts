@@ -9,7 +9,7 @@ import type {
   EditorialIssue,
   ProvenanceRecord,
   ReadinessCheck,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import { kdpRules } from "./kdp-rules.js";
 import { checkIdentityConsistency, checkMetadata } from "./metadata-checks.js";

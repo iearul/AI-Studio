@@ -1,5 +1,5 @@
 {
-  "name": "@ai-film-studio/web",
+  "name": "@ai-studio/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-film-studio/book-engine": "workspace:^",
-    "@ai-film-studio/contracts": "workspace:*",
+    "@ai-studio/book-engine": "workspace:^",
+    "@ai-studio/contracts": "workspace:*",
     "@tiptap/pm": "^3.32.1",
     "@tiptap/react": "^3.32.1",
     "@tiptap/starter-kit": "^3.32.1",
@@ -22,7 +22,7 @@
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
-    "@ai-film-studio/tooling": "workspace:*",
+    "@ai-studio/tooling": "workspace:*",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.12",

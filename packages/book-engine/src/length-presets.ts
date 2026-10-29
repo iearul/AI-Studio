@@ -1,4 +1,4 @@
-import type { LengthPresetId, StoryBrief } from "@ai-film-studio/contracts";
+import type { LengthPresetId, StoryBrief } from "@ai-studio/contracts";
 
 export type LengthPreset = {
   id: LengthPresetId;

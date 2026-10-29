@@ -21,7 +21,7 @@ import {
   type MetadataGeneration,
   type StoryBible,
   type StoryBibleGeneration,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 import {
   architecturePrompt,
   biblePrompt,
@@ -48,12 +48,12 @@ import {
   shouldDraftByScene,
   suggestListPriceUsd,
   type DraftContextInput,
-} from "@ai-film-studio/book-engine";
+} from "@ai-studio/book-engine";
 import {
   KdpConflictError,
   type KdpBookRepository,
   type KdpStoryRepository,
-} from "@ai-film-studio/database";
+} from "@ai-studio/database";
 
 import type { AiCallContext, KdpAiRouter } from "./ai-router.js";
 import type { JobContext, JobHandler } from "./job-runner.js";

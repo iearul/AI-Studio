@@ -4,15 +4,15 @@ import {
   type AutomaticStoryProviderId,
   type StoryGenerationResult,
   type StoryProviderStatus,
-} from "@ai-film-studio/contracts";
-import type { ProjectRepository } from "@ai-film-studio/database";
-import { buildStoryRequest } from "@ai-film-studio/film-engine";
+} from "@ai-studio/contracts";
+import type { ProjectRepository } from "@ai-studio/database";
+import { buildStoryRequest } from "@ai-studio/film-engine";
 import {
   TextProviderConfigurationError,
   TextProviderResponseError,
   TextProviderUnavailableError,
   type TextProvider,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 import { z } from "zod";
 
 import { NotFoundError, StoryGenerationBusyError } from "./errors.js";

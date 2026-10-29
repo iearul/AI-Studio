@@ -1,4 +1,4 @@
-import type { InlineRun, ManuscriptBlock } from "@ai-film-studio/book-engine";
+import type { InlineRun, ManuscriptBlock } from "@ai-studio/book-engine";
 import {
   AlignmentType,
   Bookmark,

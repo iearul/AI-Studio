@@ -4,8 +4,8 @@ import type {
   AuthorProfile,
   BookStatus,
   BookSummary,
-} from "@ai-film-studio/contracts";
-import { bookStatuses } from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
+import { bookStatuses } from "@ai-studio/contracts";
 import {
   BookPlus,
   LayoutGrid,

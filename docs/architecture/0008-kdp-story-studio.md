@@ -5,7 +5,7 @@
 
 ## Context
 
-AI Film Studio gains a module that turns a short brief into a complete, edited
+AI Studio gains a module that turns a short brief into a complete, edited
 fiction eBook plus everything needed to publish it manually on Amazon KDP. The
 module must live inside the existing app and reuse its infrastructure without
 disturbing the film workflows.

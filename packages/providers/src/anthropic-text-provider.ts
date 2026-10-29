@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import {
   storyProviderStatusSchema,
   type StoryProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   isPermanentHttpStatus,

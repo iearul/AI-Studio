@@ -1,6 +1,6 @@
 "use client";
 
-import type { BookStage, BookSummary } from "@ai-film-studio/contracts";
+import type { BookStage, BookSummary } from "@ai-studio/contracts";
 import {
   Archive,
   ArchiveRestore,

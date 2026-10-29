@@ -1,4 +1,4 @@
-import type { ProblemDetails } from "@ai-film-studio/contracts";
+import type { ProblemDetails } from "@ai-studio/contracts";
 
 export const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:4100/api/v1";

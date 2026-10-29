@@ -4,7 +4,7 @@ import type {
   ChapterCard,
   StoryBible,
   StoryConcept,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import { manuscriptToPlainText } from "./markup.js";
 

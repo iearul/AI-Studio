@@ -2,13 +2,13 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import type { ImageProviderStatus } from "@ai-film-studio/contracts";
+import type { ImageProviderStatus } from "@ai-studio/contracts";
 import {
   ImageProviderUnavailableError,
   type GeneratedImage,
   type ImageGenerationInput,
   type ImageProvider,
-} from "@ai-film-studio/providers";
+} from "@ai-studio/providers";
 import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -67,7 +67,7 @@ class FakeImageProvider implements ImageProvider {
 }
 
 function multipartImage(buffer: Buffer) {
-  const boundary = "film-studio-image-api-boundary";
+  const boundary = "ai-studio-image-api-boundary";
   return {
     contentType: `multipart/form-data; boundary=${boundary}`,
     payload: Buffer.concat([
@@ -90,8 +90,8 @@ describe("image API generation", () => {
   let characterId: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-image-api-"));
-    process.env.DATABASE_PATH = path.join(directory, "film-studio.sqlite");
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-image-api-"));
+    process.env.DATABASE_PATH = path.join(directory, "ai-studio.sqlite");
     process.env.PROJECTS_PATH = path.join(directory, "projects");
     process.env.BACKUPS_PATH = path.join(directory, "backups");
     process.env.CACHE_PATH = path.join(directory, "cache");

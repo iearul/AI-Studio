@@ -16,7 +16,7 @@ describe("AudioRepository", () => {
   let projectId: string;
 
   beforeEach(async () => {
-    directory = await mkdtemp(path.join(tmpdir(), "film-studio-audio-"));
+    directory = await mkdtemp(path.join(tmpdir(), "ai-studio-audio-"));
     manager = new DatabaseManager(path.join(directory, "test.sqlite"));
     await manager.open();
     const projects = new ProjectRepository(manager);

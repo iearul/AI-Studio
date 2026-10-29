@@ -1,7 +1,7 @@
 import type {
   VideoProviderModel,
   VideoProviderStatus,
-} from "@ai-film-studio/contracts";
+} from "@ai-studio/contracts";
 
 import {
   type VideoProvider,

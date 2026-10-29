@@ -1,4 +1,4 @@
-import type { ManuscriptBlock } from "@ai-film-studio/book-engine";
+import type { ManuscriptBlock } from "@ai-studio/book-engine";
 
 export type ExportBookMeta = {
   /** Stable UUID; written as `urn:uuid:…`. */
